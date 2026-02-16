@@ -1,7 +1,7 @@
 # FFL Sleeper Tools
 
 ## Project Overview
-Fantasy football roster viewer for a long-running league group. Pulls roster data from the Sleeper API and generates HTML tables showing all rostered players organized by owner.
+Fantasy football roster viewer for a long-running league group. Pulls roster data from the Sleeper API and generates HTML tables showing all rostered players organized by owner (the preferred term for league members/teams).
 
 ## Tech Stack
 - TypeScript / Node.js (ES modules)
@@ -14,10 +14,10 @@ Fantasy football roster viewer for a long-running league group. Pulls roster dat
   - `rosters-post-draft.json` — generated from draft picks data (see Post-Draft Snapshots below)
   - `rosters-end-of-season.json` — captured after NFL Week 18 concludes
   - Rosters are mutable (trades, adds/drops change them), so snapshots preserve a specific moment's state. Each snapshot is self-contained with resolved player names, positions, and teams. Season folders correspond to NFL seasons (e.g., `data/2025` for the 2025-2026 season).
-- **Post-Draft Snapshots**: Generated from `draft-picks.json` rather than the live rosters API. Since draft picks contain full player metadata (name, position, team) and roster assignments, post-draft rosters can be perfectly reconstructed from draft data alone. This also means post-draft snapshots can be retroactively created for any past season where draft picks data exists. Use `--snapshot-draft` for this.
+- **Post-Draft Snapshots**: Generated from `draft-picks.json` rather than the live rosters API. Since draft picks contain full player metadata (name, position, team) and roster assignments, post-draft rosters can be perfectly reconstructed from draft data alone. This also means post-draft snapshots can be retroactively created for any past season where draft picks data exists. Use `--snapshot-draft` for this. Rosters are ordered by draft slot (round 1 pick order) and players within each roster appear in draft pick order (not sorted by position).
 - **Draft Data**: Draft picks and traded picks are immutable historical records that can always be re-fetched from the Sleeper API. Saved as `draft-picks.json` and `draft-traded-picks.json` in `data/<season>/` — no date suffix needed since the data never changes.
 - **Player Data**: The Sleeper `/players/nfl` endpoint (~5MB) is fetched during `--snapshot` runs and saved to `data/<season>/players-YYYY-MM-DD.json`. Not fetched during `--snapshot-draft` since draft picks already contain all player metadata. The date in the filename allows multiple saves per season (one per snapshot run).
-- **HTML Output**: Generated to `output/<season>/` with one HTML file per snapshot type. An `output/index.html` home page links to all snapshots across all seasons and is auto-regenerated with every command. Each roster page includes a nav bar with Home link and cross-links to sibling snapshots.
+- **HTML Output**: Generated to `output/<season>/` with one HTML file per snapshot type. An `output/index.html` home page links to all snapshots across all seasons and is auto-regenerated with every command. Each roster page includes a nav bar (grouped by season) with Home link and cross-links to all snapshots. Table cells are color-coded by position (QB pink, RB green, WR blue, TE orange, DEF tan, K purple).
 
 ## Sleeper API
 - Official docs: https://docs.sleeper.com/
@@ -71,7 +71,7 @@ Each season has three snapshots taken at specific moments:
 - Note: NFL seasons span two calendar years (e.g., 2025 season runs Sep 2025 – Feb 2026)
 
 ## Project Structure
-- `src/types.ts` — All TypeScript interfaces (API responses, draft types, snapshots, nav links)
+- `src/types.ts` — All TypeScript interfaces (API responses, draft types, snapshots, nav links) and `SNAPSHOT_TYPE_LABELS` display name map
 - `src/sleeper-api.ts` — Sleeper API fetch wrappers (league, rosters, users, players, draft picks)
 - `src/snapshot.ts` — Snapshot capture (live + from draft picks), save, load, path helpers, nav link discovery
 - `src/html.ts` — HTML table generation from snapshots, index page generation
@@ -98,13 +98,14 @@ interface Snapshot {
 
 interface SnapshotRoster {
   ownerName: string;           // team name or display name
-  players: SnapshotPlayer[];   // already resolved, sorted
+  players: SnapshotPlayer[];   // already resolved; see ordering notes below
 }
 
 interface SnapshotPlayer {
   name: string;                // "Last, First"
   position: string;            // "QB", "RB", etc.
   team: string;                // "KC", "SF", etc.
+  round?: number;              // Draft round (post-draft snapshots only)
 }
 ```
 
@@ -115,6 +116,12 @@ interface SnapshotPlayer {
 | Draft picks | No | Immutable after draft; always available from API |
 | Traded picks | No | Immutable after draft; always available from API |
 | Player data | Yes | Changes as NFL rosters change; saved per snapshot run with date |
+
+## Roster & Player Ordering
+- **HTML column order**: Draft slot order (round 1 pick order from the post-draft snapshot). All snapshot types within a season use the same owner column order. Falls back to alphabetical if no post-draft snapshot exists for the season. The draft order is loaded from `rosters-post-draft.json` at render time via `loadDraftOrder()`.
+- **HTML row labels**: Post-draft tables have a "Rnd" column showing draft round numbers. Pre-draft and end-of-season tables have no row-number column.
+- **Live snapshots** (`--snapshot`): JSON rosters alphabetical by owner name. Players sorted by position (QB, RB, WR, TE, K, DEF) then alphabetically within position.
+- **Post-draft snapshots** (`--snapshot-draft`): JSON rosters ordered by draft slot (round 1 pick order). Players in draft pick order (preserves draft sequence). Each player includes `round` number. HTML rows are labeled by round (1, 2, 3...). When an owner has multiple picks in one round (from traded picks), rows get letter suffixes (4a, 4b, 4c). Owners without a pick in that round get a blank cell.
 
 ## Owner Name Overrides
 Some Sleeper display names don't match the preferred team names. These are automatically corrected at snapshot capture time via `OWNER_NAME_OVERRIDES` in `src/snapshot.ts`:

@@ -83,6 +83,7 @@ export interface SnapshotPlayer {
   name: string;       // "Last, First"
   position: string;   // "QB", "RB", etc.
   team: string;       // "KC", "SF", "FA", etc.
+  round?: number;     // Draft round (post-draft snapshots only)
 }
 
 export interface SnapshotRoster {

@@ -159,6 +159,7 @@ export async function takePostDraftSnapshot(
       name: `${pick.metadata.last_name}, ${pick.metadata.first_name}`,
       position: pick.metadata.position,
       team: pick.metadata.team,
+      round: pick.round,
     }));
 
     snapshotRosters.push({ ownerName, players });
@@ -271,4 +272,15 @@ export function buildIndexNavLinks(): NavLink[] {
 
 export function getIndexOutputPath(): string {
   return join(DATA_DIR, "..", "output", "index.html");
+}
+
+/**
+ * Load the draft order (owner names) for a season from the post-draft snapshot.
+ * Returns undefined if no post-draft snapshot exists.
+ */
+export async function loadDraftOrder(season: string): Promise<string[] | undefined> {
+  const path = getSnapshotPath(season, "post-draft");
+  if (!existsSync(path)) return undefined;
+  const snapshot = await loadSnapshot(path);
+  return snapshot.rosters.map((r) => r.ownerName);
 }

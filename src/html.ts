@@ -1,6 +1,6 @@
 import { writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
-import type { Snapshot, NavLink } from "./types.js";
+import type { Snapshot, SnapshotRoster, NavLink } from "./types.js";
 import { SNAPSHOT_TYPE_LABELS } from "./types.js";
 
 function escapeHtml(text: string): string {
@@ -11,9 +11,80 @@ function escapeHtml(text: string): string {
     .replace(/"/g, "&quot;");
 }
 
-export function generateHtml(snapshot: Snapshot, navLinks: NavLink[] = []): string {
+function playerCell(p: { name: string; position: string; team: string } | undefined): string {
+  if (!p) return "      <td></td>";
+  const posClass = `pos-${p.position.toLowerCase()}`;
+  const display = `${escapeHtml(p.name)} ${escapeHtml(p.team)} ${escapeHtml(p.position)}`;
+  return `      <td class="${posClass}">${display}</td>`;
+}
+
+function buildSequentialRows(rosters: SnapshotRoster[], maxPlayers: number): string[] {
+  const rows: string[] = [];
+  for (let i = 0; i < maxPlayers; i++) {
+    const cells = rosters.map((r) => playerCell(r.players[i])).join("\n");
+    rows.push(`    <tr>\n${cells}\n    </tr>`);
+  }
+  return rows;
+}
+
+function buildPostDraftRows(rosters: SnapshotRoster[]): string[] {
+  // Collect all rounds across all rosters
+  const allRounds = new Set<number>();
+  for (const r of rosters) {
+    for (const p of r.players) {
+      if (p.round != null) allRounds.add(p.round);
+    }
+  }
+  const sortedRounds = [...allRounds].sort((a, b) => a - b);
+
+  // For each round, find max picks any owner has
+  const roundMaxPicks = new Map<number, number>();
+  for (const round of sortedRounds) {
+    let max = 1;
+    for (const r of rosters) {
+      const count = r.players.filter((p) => p.round === round).length;
+      if (count > max) max = count;
+    }
+    roundMaxPicks.set(round, max);
+  }
+
+  // Build row labels and map picks
+  const rows: string[] = [];
+  for (const round of sortedRounds) {
+    const maxPicks = roundMaxPicks.get(round)!;
+    const needsSuffix = maxPicks > 1;
+
+    for (let slot = 0; slot < maxPicks; slot++) {
+      const label = needsSuffix
+        ? `${round}${String.fromCharCode(97 + slot)}`  // 97 = 'a'
+        : `${round}`;
+
+      const cells = rosters.map((r) => {
+        const roundPlayers = r.players.filter((p) => p.round === round);
+        return playerCell(roundPlayers[slot]);
+      }).join("\n");
+
+      rows.push(`    <tr>\n      <td>${label}</td>\n${cells}\n    </tr>`);
+    }
+  }
+
+  return rows;
+}
+
+export function generateHtml(snapshot: Snapshot, navLinks: NavLink[] = [], ownerOrder?: string[]): string {
   const typeLabel = SNAPSHOT_TYPE_LABELS[snapshot.snapshotType] ?? "Rosters";
-  const { rosters } = snapshot;
+  // Sort rosters by draft order if available, otherwise alphabetically
+  const rosters = [...snapshot.rosters].sort((a, b) => {
+    if (ownerOrder) {
+      const idxA = ownerOrder.indexOf(a.ownerName);
+      const idxB = ownerOrder.indexOf(b.ownerName);
+      // Owners not in the order list go to the end, sorted alphabetically
+      if (idxA >= 0 && idxB >= 0) return idxA - idxB;
+      if (idxA >= 0) return -1;
+      if (idxB >= 0) return 1;
+    }
+    return a.ownerName.localeCompare(b.ownerName);
+  });
   const maxPlayers = Math.max(...rosters.map((r) => r.players.length));
 
   // Build header row
@@ -22,18 +93,10 @@ export function generateHtml(snapshot: Snapshot, navLinks: NavLink[] = []): stri
     .join("\n");
 
   // Build data rows
-  const dataRows: string[] = [];
-  for (let i = 0; i < maxPlayers; i++) {
-    const cells = rosters
-      .map((r) => {
-        const p = r.players[i];
-        if (!p) return "      <td></td>";
-        const display = `${escapeHtml(p.name)} ${escapeHtml(p.team)} ${escapeHtml(p.position)}`;
-        return `      <td>${display}</td>`;
-      })
-      .join("\n");
-    dataRows.push(`    <tr>\n      <td>${i + 1}</td>\n${cells}\n    </tr>`);
-  }
+  const isPostDraft = snapshot.snapshotType === "post-draft" && rosters.some((r) => r.players.some((p) => p.round != null));
+  const dataRows: string[] = isPostDraft
+    ? buildPostDraftRows(rosters)
+    : buildSequentialRows(rosters, maxPlayers);
 
   // Build nav bar
   let navHtml = "";
@@ -128,13 +191,18 @@ export function generateHtml(snapshot: Snapshot, navLinks: NavLink[] = []): stri
       position: sticky;
       top: 0;
     }
-    tr:nth-child(even) { background: #f0f4f8; }
-    td:first-child {
+${isPostDraft ? `    td:first-child {
       text-align: center;
       font-weight: bold;
       color: #888;
       width: 30px;
-    }
+    }` : ""}
+    .pos-wr  { background: #d0e8ff; }
+    .pos-rb  { background: #d0f0d0; }
+    .pos-qb  { background: #ffc0cb; }
+    .pos-te  { background: #ffe0b2; }
+    .pos-def { background: #d2b48c; }
+    .pos-k   { background: #e0d0f0; }
   </style>
 </head>
 <body>
@@ -144,8 +212,7 @@ ${navHtml}
   <div class="meta">Captured ${escapeHtml(snapshot.capturedAt)}</div>
   <table>
     <tr>
-      <th>#</th>
-${headerCells}
+${isPostDraft ? '      <th>Rnd</th>\n' : ''}${headerCells}
     </tr>
 ${dataRows.join("\n")}
   </table>

@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, savePlayerData, loadSnapshot, getSnapshotPath, getDraftPicksPath, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath } from "./snapshot.js";
+import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, savePlayerData, loadSnapshot, getSnapshotPath, getDraftPicksPath, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder } from "./snapshot.js";
 import { generateHtml, generateIndexHtml, writeHtml } from "./html.js";
 import { getDraftPicks, fetchAllPlayers } from "./sleeper-api.js";
 import type { SnapshotType, DraftPick } from "./types.js";
@@ -54,8 +54,9 @@ async function snapshotAndGenerate(snapshotType: SnapshotType, leagueId: string)
   const snapshotPath = await saveSnapshot(snapshot);
   console.log(`\nSnapshot saved: ${snapshotPath}`);
 
+  const ownerOrder = await loadDraftOrder(snapshot.season);
   const navLinks = buildNavLinks(snapshot.season, snapshotType);
-  const html = generateHtml(snapshot, navLinks);
+  const html = generateHtml(snapshot, navLinks, ownerOrder);
   const outputPath = getOutputPath(snapshot.season, snapshotType);
   await writeHtml(html, outputPath);
   console.log(`HTML written: ${outputPath}`);
@@ -88,8 +89,9 @@ async function draftSnapshotAndGenerate(season: string, leagueId: string): Promi
   const snapshotPath = await saveSnapshot(snapshot);
   console.log(`\nSnapshot saved: ${snapshotPath}`);
 
+  const ownerOrder = snapshot.rosters.map((r) => r.ownerName);
   const navLinks = buildNavLinks(season, "post-draft");
-  const html = generateHtml(snapshot, navLinks);
+  const html = generateHtml(snapshot, navLinks, ownerOrder);
   const outputPath = getOutputPath(season, "post-draft");
   await writeHtml(html, outputPath);
   console.log(`HTML written: ${outputPath}`);
@@ -97,13 +99,14 @@ async function draftSnapshotAndGenerate(season: string, leagueId: string): Promi
 
 async function generateFromExisting(season: string, snapshotType?: SnapshotType): Promise<void> {
   const types = snapshotType ? [snapshotType] : SNAPSHOT_TYPES;
+  const ownerOrder = await loadDraftOrder(season);
 
   for (const type of types) {
     const snapshotPath = getSnapshotPath(season, type);
     try {
       const snapshot = await loadSnapshot(snapshotPath);
       const navLinks = buildNavLinks(season, type);
-      const html = generateHtml(snapshot, navLinks);
+      const html = generateHtml(snapshot, navLinks, ownerOrder);
       const outputPath = getOutputPath(season, type);
       await writeHtml(html, outputPath);
       console.log(`HTML written: ${outputPath}`);
