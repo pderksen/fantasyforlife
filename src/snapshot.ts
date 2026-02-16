@@ -21,6 +21,15 @@ const POS_ORDER: Record<string, number> = {
   QB: 1, RB: 2, WR: 3, TE: 4, K: 5, DEF: 6,
 };
 
+// Sleeper display names that need correction
+const OWNER_NAME_OVERRIDES: Record<string, string> = {
+  ClovisJets: "Clovis Jets",
+};
+
+function applyOwnerNameOverride(name: string): string {
+  return OWNER_NAME_OVERRIDES[name] ?? name;
+}
+
 function resolvePlayer(
   playerId: string,
   playerDb: PlayerDatabase
@@ -60,7 +69,7 @@ export async function takeSnapshot(leagueId: string, snapshotType: SnapshotType,
   // Map owner_id → display name
   const ownerMap = new Map<string, string>();
   for (const user of users) {
-    const name = user.metadata?.team_name || user.display_name;
+    const name = applyOwnerNameOverride(user.metadata?.team_name || user.display_name);
     ownerMap.set(user.user_id, name);
   }
 
@@ -108,7 +117,7 @@ export async function takePostDraftSnapshot(
   // Map owner_id → display name
   const ownerMap = new Map<string, string>();
   for (const user of users) {
-    const name = user.metadata?.team_name || user.display_name;
+    const name = applyOwnerNameOverride(user.metadata?.team_name || user.display_name);
     ownerMap.set(user.user_id, name);
   }
 
@@ -120,17 +129,27 @@ export async function takePostDraftSnapshot(
     }
   }
 
-  // Group picks by roster_id
+  // Determine draft slot order from round 1 picks
+  const draftSlotOrder: number[] = draftPicks
+    .filter((p) => p.round === 1)
+    .sort((a, b) => a.pick_no - b.pick_no)
+    .map((p) => p.roster_id);
+
+  // Group picks by roster_id, sorted by pick_no (draft order)
   const picksByRoster = new Map<number, DraftPick[]>();
   for (const pick of draftPicks) {
     const existing = picksByRoster.get(pick.roster_id) ?? [];
     existing.push(pick);
     picksByRoster.set(pick.roster_id, existing);
   }
+  for (const picks of picksByRoster.values()) {
+    picks.sort((a, b) => a.pick_no - b.pick_no);
+  }
 
-  // Build resolved rosters from draft picks
+  // Build resolved rosters from draft picks, ordered by draft slot
   const snapshotRosters: SnapshotRoster[] = [];
-  for (const [rosterId, picks] of picksByRoster) {
+  for (const rosterId of draftSlotOrder) {
+    const picks = picksByRoster.get(rosterId) ?? [];
     const ownerId = rosterOwnerMap.get(rosterId);
     const ownerName = ownerId
       ? (ownerMap.get(ownerId) ?? `Owner ${rosterId}`)
@@ -141,13 +160,9 @@ export async function takePostDraftSnapshot(
       position: pick.metadata.position,
       team: pick.metadata.team,
     }));
-    sortPlayers(players);
 
     snapshotRosters.push({ ownerName, players });
   }
-
-  // Sort rosters alphabetically by owner name
-  snapshotRosters.sort((a, b) => a.ownerName.localeCompare(b.ownerName));
 
   return {
     leagueId,

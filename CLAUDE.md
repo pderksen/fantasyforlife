@@ -116,5 +116,9 @@ interface SnapshotPlayer {
 | Traded picks | No | Immutable after draft; always available from API |
 | Player data | Yes | Changes as NFL rosters change; saved per snapshot run with date |
 
+## Owner Name Overrides
+Some Sleeper display names don't match the preferred team names. These are automatically corrected at snapshot capture time via `OWNER_NAME_OVERRIDES` in `src/snapshot.ts`:
+- `ClovisJets` → `Clovis Jets` (Sleeper has no space)
+
 ## Manual Editing
 Snapshot JSON and draft data files are human-readable and can be manually edited (add/remove/move players, fix names, correct trade records). After manual edits, regenerate HTML with: `npm run dev -- --generate <season> [type]`
