@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, savePlayerData, loadSnapshot, getSnapshotPath, getDraftPicksPath, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRounds, buildRosterOwnerMap, resolveTradedPicks, saveTradedPicks, loadTradedPicks } from "./snapshot.js";
 import { generateHtml, generateIndexHtml, writeHtml } from "./html.js";
 import { getDraftPicks, fetchAllPlayers, getLeagueTradedPicks, getLeague } from "./sleeper-api.js";
-import { getTierConfig } from "./tiers.js";
+import { getTierConfig, getLatestDraftOrder } from "./tiers.js";
 import type { SnapshotType, DraftPick, ResolvedTradedPick } from "./types.js";
 
 const DEFAULT_LEAGUE_ID = "1220634180434526208";
@@ -45,7 +45,8 @@ async function regenerateIndex(futureTradedPicks?: ResolvedTradedPick[]): Promis
     futureTradedPicks = await loadTradedPicks(latestSeason);
   }
 
-  const html = generateIndexHtml(LEAGUE_NAME, navLinks, futureTradedPicks);
+  const draftOrder = getLatestDraftOrder();
+  const html = generateIndexHtml(LEAGUE_NAME, navLinks, futureTradedPicks, draftOrder);
   const outputPath = getIndexOutputPath();
   await writeHtml(html, outputPath);
   console.log(`Index written: ${outputPath}`);

@@ -2,9 +2,23 @@ import { writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
 import type { Snapshot, SnapshotRoster, SnapshotPlayer, NavLink, TierConfig, ResolvedTradedPick } from "./types.js";
 import { SNAPSHOT_TYPE_LABELS } from "./types.js";
+import type { DraftOrder } from "./tiers.js";
 
 /** Map of "Last, First" player name → draft round number */
 export type DraftRoundLookup = Map<string, number>;
+
+function formatPacificTime(isoString: string): string {
+  const date = new Date(isoString);
+  return date.toLocaleString("en-US", {
+    timeZone: "America/Los_Angeles",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }) + " PT";
+}
 
 function escapeHtml(text: string): string {
   return text
@@ -192,7 +206,7 @@ function tradedPicksSection(tradedPicks?: ResolvedTradedPick[], title = "Traded 
   }
   const rows = tradedPicks
     .map((p) =>
-      `    <tr><td class="px-2 py-1.5 border-b border-gray-100 text-sm text-gray-900">${escapeHtml(p.season)}</td><td class="px-2 py-1.5 border-b border-gray-100 text-sm text-gray-900">Rnd ${p.round}</td><td class="px-2 py-1.5 border-b border-gray-100 text-sm text-gray-900">${escapeHtml(p.originalOwner)}</td><td class="px-2 py-1.5 border-b border-gray-100 text-sm text-gray-900">${escapeHtml(p.currentOwner)}</td></tr>`)
+      `    <tr><td class="px-2 py-1.5 border-b border-gray-100 text-sm text-gray-900">${escapeHtml(p.season)}</td><td class="px-2 py-1.5 border-b border-gray-100 text-sm text-gray-900">Round ${p.round}</td><td class="px-2 py-1.5 border-b border-gray-100 text-sm text-gray-900">${escapeHtml(p.originalOwner)}</td><td class="px-2 py-1.5 border-b border-gray-100 text-sm text-gray-900">${escapeHtml(p.currentOwner)}</td></tr>`)
     .join("\n");
   return `${heading}
   <table class="mt-2 w-full">
@@ -231,32 +245,23 @@ export function generateHtml(snapshot: Snapshot, navLinks: NavLink[] = [], owner
       ? buildTieredRows(rosters, tiers!, draftRounds!)
       : buildSequentialRows(rosters, maxPlayers, tiers);
 
-  // Build nav bar
+  // Build nav bar — only links for the current season
   let navHtml = "";
-  if (navLinks.length > 1) {
-    // Group by season
-    const seasons = new Map<string, NavLink[]>();
-    for (const link of navLinks) {
-      const group = seasons.get(link.season) ?? [];
-      group.push(link);
-      seasons.set(link.season, group);
-    }
-
-    const seasonBlocks: string[] = [];
-    for (const [season, links] of seasons) {
-      const items = links
-        .map((l) => {
-          const shortLabel = SNAPSHOT_TYPE_LABELS[l.snapshotType]
-            .replace(" Rosters", "");
-          if (l.current) {
-            return `<span class="text-gray-900 font-semibold px-2 py-0.5 bg-gray-200 rounded">${escapeHtml(shortLabel)}</span>`;
-          }
-          return `<a href="${escapeHtml(l.href)}" class="text-blue-600 no-underline px-2 py-0.5 rounded hover:bg-gray-100 hover:underline">${escapeHtml(shortLabel)}</a>`;
-        })
-        .join("");
-      seasonBlocks.push(`<span class="font-semibold text-gray-600 ml-1">${escapeHtml(season)}</span>${items}`);
-    }
-    navHtml = `  <nav class="flex items-center gap-1.5 mb-4 text-sm"><a href="../index.html" class="text-blue-600 no-underline px-2 py-0.5 rounded hover:bg-gray-100 hover:underline">Home</a><span class="w-px h-4 bg-gray-300 mx-1.5"></span>${seasonBlocks.join('<span class="w-px h-4 bg-gray-300 mx-1.5"></span>')}</nav>`;
+  if (navLinks.length > 0) {
+    const currentSeasonLinks = navLinks.filter((l) => l.season === snapshot.season);
+    const navItems = currentSeasonLinks
+      .map((l) => {
+        const shortLabel = SNAPSHOT_TYPE_LABELS[l.snapshotType].replace(" Rosters", "");
+        if (l.current) {
+          return `<span class="inline-block px-3.5 py-1.5 text-sm font-medium text-gray-900 bg-gray-200 rounded-lg">${escapeHtml(shortLabel)}</span>`;
+        }
+        return `<a href="${escapeHtml(l.href)}" class="inline-block px-3.5 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg transition-colors hover:bg-gray-200 no-underline">${escapeHtml(shortLabel)}</a>`;
+      })
+      .join("\n      ");
+    navHtml = `  <nav class="flex items-center gap-2 mb-6">
+      <a href="../index.html" class="inline-block px-3.5 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg transition-colors hover:bg-gray-200 no-underline">Home</a>
+      ${navItems}
+    </nav>`;
   }
 
   return `<!DOCTYPE html>
@@ -310,22 +315,22 @@ ${isPostDraft ? `    /* Round label column */
   </style>
 </head>
 <body class="bg-gray-50 text-gray-900 font-sans antialiased p-5">
-  <h1 class="text-2xl font-bold tracking-tight mb-1">${escapeHtml(snapshot.leagueName)}</h1>
-  <h2 class="text-lg font-semibold text-gray-700 mb-2">${escapeHtml(snapshot.season)} ${escapeHtml(typeLabel)}</h2>
+  <h1 class="text-3xl font-bold tracking-tight text-gray-900 mb-1">${escapeHtml(snapshot.season)} ${escapeHtml(typeLabel)}</h1>
+  <div class="text-sm text-gray-500 mb-4">${escapeHtml(snapshot.leagueName)}</div>
 ${navHtml}
-  <div class="text-sm text-gray-500 mb-4">Captured ${escapeHtml(snapshot.capturedAt)}</div>
-  <table class="border-collapse bg-white text-[13px]">
+  <table class="border-collapse bg-white text-xs">
     <tr>
-${isPostDraft ? '      <th class="border border-gray-300 px-2 py-1 whitespace-nowrap bg-gray-800 text-white sticky top-0">Rnd</th>\n' : ''}${headerCells}
+${isPostDraft ? '      <th class="border border-gray-300 px-2 py-1 whitespace-nowrap bg-gray-800 text-white sticky top-0">Round</th>\n' : ''}${headerCells}
     </tr>
 ${dataRows.join("\n")}
   </table>
 ${tradedPicksSection(tradedPicks)}
+  <footer class="mt-8 text-xs text-gray-400">Data retrieved ${escapeHtml(formatPacificTime(snapshot.capturedAt))}</footer>
 </body>
 </html>`;
 }
 
-export function generateIndexHtml(leagueName: string, navLinks: NavLink[], futureTradedPicks?: ResolvedTradedPick[]): string {
+export function generateIndexHtml(leagueName: string, navLinks: NavLink[], futureTradedPicks?: ResolvedTradedPick[], draftOrder?: DraftOrder): string {
   // Group by season (most recent first)
   const seasons = new Map<string, NavLink[]>();
   for (const link of navLinks) {
@@ -363,6 +368,27 @@ export function generateIndexHtml(leagueName: string, navLinks: NavLink[], futur
     })
     .join("\n");
 
+  // Draft order section
+  let draftOrderHtml = "";
+  if (draftOrder) {
+    const draftRows = draftOrder.order
+      .map((owner, i) =>
+        `          <tr>
+            <td class="px-3 py-2 border-b border-gray-100 text-gray-400 font-medium w-10">${i + 1}</td>
+            <td class="px-3 py-2 border-b border-gray-100 text-gray-900">${escapeHtml(owner)}</td>
+          </tr>`)
+      .join("\n");
+    draftOrderHtml = `
+    <section class="mb-12">
+      <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-5">${escapeHtml(draftOrder.season)} Draft Order</h2>
+      <table class="w-full text-sm">
+        <tbody>
+${draftRows}
+        </tbody>
+      </table>
+    </section>`;
+  }
+
   // Traded picks table (built inline to avoid touching the shared helper)
   let tradedPicksHtml = "";
   if (futureTradedPicks && futureTradedPicks.length > 0) {
@@ -377,7 +403,7 @@ export function generateIndexHtml(leagueName: string, navLinks: NavLink[], futur
       .join("\n");
     tradedPicksHtml = `
     <section class="mb-12">
-      <h2 class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-5">Traded Picks</h2>
+      <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-5">Traded Picks</h2>
       <table class="w-full text-sm">
         <thead>
           <tr>
@@ -432,9 +458,10 @@ ${tpRows}
     </header>
 
     <section class="mb-12">
-      <h2 class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-5">Current Tiers by Season</h2>
+      <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-5">Current Tiers by Season</h2>
 ${seasonRows}
     </section>
+${draftOrderHtml}
 ${tradedPicksHtml}
 ${archiveHtml}
     <footer class="pt-8"></footer>

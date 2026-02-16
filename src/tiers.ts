@@ -21,3 +21,36 @@ const TIER_CONFIGS: Record<string, TierConfig> = {
 export function getTierConfig(season: string, snapshotType: SnapshotType): TierConfig | undefined {
   return TIER_CONFIGS[`${season}:${snapshotType}`];
 }
+
+/**
+ * Draft order for upcoming season, displayed on the index page.
+ * Only one season shown at a time — update each year with the new order.
+ * Keyed by season string.
+ */
+export interface DraftOrder {
+  season: string;
+  order: string[];  // owner names in pick order (index 0 = pick 1)
+}
+
+const DRAFT_ORDERS: Record<string, string[]> = {
+  "2026": [
+    "Lemoore Liberators",
+    "Easton Evil Empire",
+    "Clovis Jets",
+    "South Town FF",
+    "Kingsburg Killaz",
+    "Riverstone Stoners",
+    "Vancouver Moose Drool",
+    "Dinkey Creek Dirt Clods",
+    "Sanger Squatty Pottys",
+    "Visalia Viagra Vipers",
+  ],
+};
+
+/** Returns the most recent draft order config, or undefined if none exist. */
+export function getLatestDraftOrder(): DraftOrder | undefined {
+  const seasons = Object.keys(DRAFT_ORDERS).sort().reverse();
+  if (seasons.length === 0) return undefined;
+  const season = seasons[0];
+  return { season, order: DRAFT_ORDERS[season] };
+}
