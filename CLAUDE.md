@@ -7,8 +7,9 @@ Fantasy football roster viewer for a long-running league group. Pulls roster dat
 - TypeScript / Node.js (ES modules)
 - Native `fetch` (Node 18+, no HTTP library)
 - Zero npm runtime dependencies
-- **Tailwind CSS** via CDN (`<script src="https://cdn.tailwindcss.com">`) — loaded in generated HTML, not installed as a dependency
+- **Tailwind CSS** via CDN (`<script src="https://cdn.tailwindcss.com">`) — loaded in generated HTML, not installed as a dependency. CDN mode is for dev/prototyping per Tailwind docs, but appropriate here for a personal static site with a handful of pages
 - **Inter** font via Google Fonts CDN
+- **No separate CSS files** — all styling is either Tailwind utility classes or a small inline `<style>` block (~10 lines of custom colors). Each generated HTML file is fully self-contained
 
 ## Key Concepts
 - **Roster Snapshots**: Point-in-time captures of league roster data saved as JSON in `data/<season>/`. Three snapshots per season:
@@ -20,7 +21,7 @@ Fantasy football roster viewer for a long-running league group. Pulls roster dat
 - **Draft Data**: Draft picks and traded picks are immutable historical records that can always be re-fetched from the Sleeper API. Saved as `draft-picks.json` and `draft-traded-picks.json` in `data/<season>/` — no date suffix needed since the data never changes.
 - **Player Data**: The Sleeper `/players/nfl` endpoint (~5MB) is fetched during `--snapshot` runs and saved to `data/<season>/players-YYYY-MM-DD.json`. Not fetched during `--snapshot-draft` since draft picks already contain all player metadata. The date in the filename allows multiple saves per season (one per snapshot run).
 - **Traded Picks**: Fetched from the league-level `/league/{id}/traded_picks` endpoint, which returns all traded draft picks including upcoming seasons. Saved as `data/<season>/traded-picks.json` with both resolved (human-readable) and raw API data. Displayed on end-of-season roster pages and on the index page. The data is re-fetched with each snapshot command and can also be fetched standalone with `--traded-picks`.
-- **HTML Output**: Generated to `output/<season>/` with one HTML file per snapshot type. An `output/index.html` home page links to all snapshots across all seasons and shows traded picks; auto-regenerated with every command (see Index Page UI below). Each roster page includes a chip-style nav bar with Home link and same-season snapshot links (matching the index page's muted chip style). End-of-season pages include a "Traded Picks" section below the roster table. Table cells are color-coded by position (QB pink, RB green, WR blue, TE orange, DEF tan, K purple). Tables include tier separator rows when configured (see Tiers section). All pages use Tailwind CSS via CDN and Inter font via Google Fonts CDN. Position colors and tier colors are defined in a small inline `<style>` block on roster pages (no Tailwind equivalents for those custom colors). A "Data retrieved" footer shows the capture timestamp in Pacific time.
+- **HTML Output**: Generated to `output/<season>/` with one HTML file per snapshot type. An `output/index.html` home page links to all snapshots across all seasons and shows traded picks; auto-regenerated with every command (see Index Page UI below). Each roster page includes a chip-style nav bar with Home link and same-season snapshot links. End-of-season pages include a "Traded Picks" section below the roster table. Table cells are color-coded by position (QB pink, RB green, WR blue, TE orange, DEF tan, K purple). Tables include tier separator rows when configured (see Tiers section). All pages share the same `<head>` boilerplate via `htmlHead()` (Tailwind CSS CDN, Inter font CDN, optional inline styles). Position colors and tier colors are defined in a small inline `<style>` block on roster pages (no Tailwind equivalents for those custom colors). No separate CSS files — inline styles are appropriate given the small amount of custom CSS and standalone static HTML architecture. A "Data retrieved" footer shows the capture timestamp in Pacific time.
 
 ## Sleeper API
 - Official docs: https://docs.sleeper.com/
@@ -83,7 +84,7 @@ Each season has three snapshots taken at specific moments:
 - `src/types.ts` — All TypeScript interfaces (API responses, draft types, snapshots, nav links, tier types) and `SNAPSHOT_TYPE_LABELS` display name map
 - `src/sleeper-api.ts` — Sleeper API fetch wrappers (league, rosters, users, players, draft picks, traded picks)
 - `src/snapshot.ts` — Snapshot capture (live + from draft picks), save, load, path helpers, nav link discovery, draft round lookup, traded picks resolution
-- `src/html.ts` — HTML table generation from snapshots (sequential, post-draft round-based, tiered), index page generation
+- `src/html.ts` — HTML table generation from snapshots (sequential, post-draft round-based, tiered), index page generation. Shared class-string constants (`CELL`, `TH`, `PILL_LINK`, etc.) and helpers (`htmlHead()`, `tradedPicksTable()`, `esc()`) reduce duplication across both page generators
 - `src/tiers.ts` — Tier configuration per season/snapshot-type (round boundaries, labels) and draft order configuration per season
 - `src/index.ts` — CLI entry point (`--snapshot`, `--snapshot-draft`, `--generate`, `--traded-picks`)
 - `data/<season>/rosters-<type>.json` — Roster snapshots (pre-draft, post-draft, end-of-season)
@@ -200,7 +201,7 @@ The home page (`output/index.html`, generated by `generateIndexHtml` in `src/htm
 ### Sections
 1. **"Current Tiers by Season"** — Season rows with year on left, muted chip links on right. Seasons sorted most-recent first. Only shows links for snapshots that exist on disk.
 2. **"20XX Draft Order"** — Numbered 1–10 list of owner names in draft pick order. Configured per season in `DRAFT_ORDERS` in `src/tiers.ts`. Only the most recent season's order is shown (via `getLatestDraftOrder()`). Updated manually each year.
-3. **Traded Picks** — Clean borderless table with subtle row separators (`border-gray-100`). Only shown if future traded picks exist. Built inline (not using the shared `tradedPicksSection` helper used by roster pages).
+3. **Traded Picks** — Clean borderless table with subtle row separators (`border-gray-100`). Only shown if future traded picks exist. Uses the shared `tradedPicksTable()` helper (same as roster pages).
 4. **Archive link** — "Seasons 2006–2024 ↗" linking to the Google Sheet. Opens in new tab. `text-lg text-blue-600`, underline on hover. No heading or wrapper text.
 
 ### Throwback Year
@@ -224,12 +225,14 @@ Roster pages (`output/<season>/rosters-<type>.html`, generated by `generateHtml`
 
 ### Styling approach
 - Tailwind utility classes for layout, typography, nav bar, table structure
+- Repeated Tailwind class strings extracted into constants at the top of `html.ts` (`CELL`, `TH`, `PILL_LINK`, `PILL_ACTIVE`, `SECTION_H2`, `TP_TH`, `TP_TD`) — keeps markup DRY and class changes in one place
 - Table font size: `text-xs` (12px)
-- Small inline `<style>` block for custom colors that have no Tailwind equivalents:
+- Small inline `<style>` block (via `ROSTER_STYLES` / `ROUND_COL_STYLE` constants) for custom colors that have no Tailwind equivalents:
   - **Position colors**: `.pos-qb` pink, `.pos-rb` green, `.pos-wr` blue, `.pos-te` orange, `.pos-def` tan, `.pos-k` lavender
   - **Tier colors**: `.tier-1` dark green, `.tier-2` dark gold, `.tier-3` dark red
   - **Round label column** (post-draft only): centered bold gray text in first `<td>`
 - Table headers: `bg-gray-800 text-white sticky top-0`
+- No separate CSS files needed — Tailwind CDN handles the bulk, and the ~10 lines of custom CSS are appropriately inlined for a static site generator producing standalone HTML files
 
 ### Footer
 - "Data retrieved" timestamp at bottom of page in `text-xs text-gray-400`
