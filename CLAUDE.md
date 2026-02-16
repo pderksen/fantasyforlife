@@ -17,7 +17,7 @@ Fantasy football roster viewer for a long-running league group. Pulls roster dat
 - **Post-Draft Snapshots**: Generated from `draft-picks.json` rather than the live rosters API. Since draft picks contain full player metadata (name, position, team) and roster assignments, post-draft rosters can be perfectly reconstructed from draft data alone. This also means post-draft snapshots can be retroactively created for any past season where draft picks data exists. Use `--snapshot-draft` for this. Rosters are ordered by draft slot (round 1 pick order) and players within each roster appear in draft pick order (not sorted by position).
 - **Draft Data**: Draft picks and traded picks are immutable historical records that can always be re-fetched from the Sleeper API. Saved as `draft-picks.json` and `draft-traded-picks.json` in `data/<season>/` — no date suffix needed since the data never changes.
 - **Player Data**: The Sleeper `/players/nfl` endpoint (~5MB) is fetched during `--snapshot` runs and saved to `data/<season>/players-YYYY-MM-DD.json`. Not fetched during `--snapshot-draft` since draft picks already contain all player metadata. The date in the filename allows multiple saves per season (one per snapshot run).
-- **HTML Output**: Generated to `output/<season>/` with one HTML file per snapshot type. An `output/index.html` home page links to all snapshots across all seasons and is auto-regenerated with every command. Each roster page includes a nav bar (grouped by season) with Home link and cross-links to all snapshots. Table cells are color-coded by position (QB pink, RB green, WR blue, TE orange, DEF tan, K purple).
+- **HTML Output**: Generated to `output/<season>/` with one HTML file per snapshot type. An `output/index.html` home page links to all snapshots across all seasons and is auto-regenerated with every command. Each roster page includes a nav bar (grouped by season) with Home link and cross-links to all snapshots. Table cells are color-coded by position (QB pink, RB green, WR blue, TE orange, DEF tan, K purple). Tables include tier separator rows when configured (see Tiers section).
 
 ## Sleeper API
 - Official docs: https://docs.sleeper.com/
@@ -71,10 +71,11 @@ Each season has three snapshots taken at specific moments:
 - Note: NFL seasons span two calendar years (e.g., 2025 season runs Sep 2025 – Feb 2026)
 
 ## Project Structure
-- `src/types.ts` — All TypeScript interfaces (API responses, draft types, snapshots, nav links) and `SNAPSHOT_TYPE_LABELS` display name map
+- `src/types.ts` — All TypeScript interfaces (API responses, draft types, snapshots, nav links, tier types) and `SNAPSHOT_TYPE_LABELS` display name map
 - `src/sleeper-api.ts` — Sleeper API fetch wrappers (league, rosters, users, players, draft picks)
-- `src/snapshot.ts` — Snapshot capture (live + from draft picks), save, load, path helpers, nav link discovery
-- `src/html.ts` — HTML table generation from snapshots, index page generation
+- `src/snapshot.ts` — Snapshot capture (live + from draft picks), save, load, path helpers, nav link discovery, draft round lookup
+- `src/html.ts` — HTML table generation from snapshots (sequential, post-draft round-based, tiered), index page generation
+- `src/tiers.ts` — Tier configuration per season/snapshot-type (round boundaries, labels)
 - `src/index.ts` — CLI entry point (`--snapshot`, `--snapshot-draft`, `--generate`)
 - `data/<season>/rosters-<type>.json` — Roster snapshots (pre-draft, post-draft, end-of-season)
 - `data/<season>/draft-picks.json` — Draft picks from Sleeper API (immutable, no date needed)
@@ -122,6 +123,22 @@ interface SnapshotPlayer {
 - **HTML row labels**: Post-draft tables have a "Rnd" column showing draft round numbers. Pre-draft and end-of-season tables have no row-number column.
 - **Live snapshots** (`--snapshot`): JSON rosters alphabetical by owner name. Players sorted by position (QB, RB, WR, TE, K, DEF) then alphabetically within position.
 - **Post-draft snapshots** (`--snapshot-draft`): JSON rosters ordered by draft slot (round 1 pick order). Players in draft pick order (preserves draft sequence). Each player includes `round` number. HTML rows are labeled by round (1, 2, 3...). When an owner has multiple picks in one round (from traded picks), rows get letter suffixes (4a, 4b, 4c). Owners without a pick in that round get a blank cell.
+- **End-of-season tiered ordering**: When tier config and post-draft data exist, players are grouped into tiers by their original draft round (regardless of which owner they're on at end-of-season). Within each tier, players sort by draft round ascending. Undrafted players (waiver/FA pickups) go into the last tier, after drafted players. In the last tier, DEF sorts second-to-last and K sorts last. The draft round lookup is built from the post-draft snapshot via `loadDraftRounds()`.
+
+## Tiers
+Full-width colored separator rows that divide the HTML table into draft value tiers. Configured per season and snapshot type in `src/tiers.ts`.
+
+- **Tier config**: `TIER_CONFIGS` map keyed by `"season:snapshotType"` (e.g., `"2025:post-draft"`). Each entry is an array of `{ label, beforeRound }` objects. Tier boundaries are season-specific and will change for future seasons.
+- **Three tier colors** (dark backgrounds, white left-aligned bold text):
+  - Tier 1: dark green (`#1a6b2a`)
+  - Tier 2: dark gold (`#8b6914`)
+  - Tier 3: dark red (`#8b1a1a`)
+- **Owner header row**: dark gray (`#333`)
+- **Post-draft rendering**: Tier rows inserted before the specified round number. Uses `buildPostDraftRows()`.
+- **End-of-season rendering**: Players regrouped into tiers by their draft round from the post-draft snapshot. Uses `buildTieredRows()` which buckets each roster's players by tier, sorts within each bucket, then renders tier-by-tier with the max players in any roster determining row count per tier section.
+- **Tier assignment follows the player, not the owner**: A player drafted in round 3 who was traded mid-season is still Tier 1 at end-of-season.
+- **2025 boundaries**: Tier 1 = rounds 1–5, Tier 2 = rounds 6–10, Tier 3 = rounds 11+ and undrafted. These boundaries will change for 2026 and beyond.
+- **Adding a new season**: Add a new entry to `TIER_CONFIGS` in `src/tiers.ts`. Seasons/snapshot types without a config render with no tier rows.
 
 ## Owner Name Overrides
 Some Sleeper display names don't match the preferred team names. These are automatically corrected at snapshot capture time via `OWNER_NAME_OVERRIDES` in `src/snapshot.ts`:

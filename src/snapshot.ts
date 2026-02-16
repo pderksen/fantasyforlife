@@ -284,3 +284,22 @@ export async function loadDraftOrder(season: string): Promise<string[] | undefin
   const snapshot = await loadSnapshot(path);
   return snapshot.rosters.map((r) => r.ownerName);
 }
+
+/**
+ * Load a map of player name → draft round from the post-draft snapshot.
+ * Returns undefined if no post-draft snapshot exists.
+ */
+export async function loadDraftRounds(season: string): Promise<Map<string, number> | undefined> {
+  const path = getSnapshotPath(season, "post-draft");
+  if (!existsSync(path)) return undefined;
+  const snapshot = await loadSnapshot(path);
+  const lookup = new Map<string, number>();
+  for (const roster of snapshot.rosters) {
+    for (const player of roster.players) {
+      if (player.round != null) {
+        lookup.set(player.name, player.round);
+      }
+    }
+  }
+  return lookup;
+}

@@ -1,7 +1,10 @@
 import { writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
-import type { Snapshot, SnapshotRoster, NavLink } from "./types.js";
+import type { Snapshot, SnapshotRoster, SnapshotPlayer, NavLink, TierConfig } from "./types.js";
 import { SNAPSHOT_TYPE_LABELS } from "./types.js";
+
+/** Map of "Last, First" player name → draft round number */
+export type DraftRoundLookup = Map<string, number>;
 
 function escapeHtml(text: string): string {
   return text
@@ -18,16 +21,114 @@ function playerCell(p: { name: string; position: string; team: string } | undefi
   return `      <td class="${posClass}">${display}</td>`;
 }
 
-function buildSequentialRows(rosters: SnapshotRoster[], maxPlayers: number): string[] {
+function tierRow(label: string, tierIndex: number, colSpan: number): string {
+  return `    <tr class="tier tier-${tierIndex + 1}">\n      <td colspan="${colSpan}">${escapeHtml(label)}</td>\n    </tr>`;
+}
+
+function buildSequentialRows(rosters: SnapshotRoster[], maxPlayers: number, tiers?: TierConfig): string[] {
+  // Build a map of "before row index" → tier row HTML
+  const tierAtRow = new Map<number, string>();
+  if (tiers) {
+    for (let i = 0; i < tiers.length; i++) {
+      // beforeRound is 1-based row index for sequential snapshots
+      tierAtRow.set(tiers[i].beforeRound - 1, tierRow(tiers[i].label, i, rosters.length));
+    }
+  }
+
   const rows: string[] = [];
   for (let i = 0; i < maxPlayers; i++) {
+    const tier = tierAtRow.get(i);
+    if (tier) rows.push(tier);
     const cells = rosters.map((r) => playerCell(r.players[i])).join("\n");
     rows.push(`    <tr>\n${cells}\n    </tr>`);
   }
   return rows;
 }
 
-function buildPostDraftRows(rosters: SnapshotRoster[]): string[] {
+const POS_SORT_TAIL: Record<string, number> = { DEF: 1, K: 2 };
+
+/**
+ * Build rows for non-post-draft snapshots when tiered by draft round.
+ * Players are grouped into tiers based on their draft round from the post-draft snapshot.
+ * Undrafted players go into the last tier. Within the last tier, DEF and K sort to the bottom.
+ */
+function buildTieredRows(
+  rosters: SnapshotRoster[],
+  tiers: TierConfig,
+  draftRounds: DraftRoundLookup,
+): string[] {
+  const colSpan = rosters.length;
+
+  // Compute tier round ranges: tier i covers [tiers[i].beforeRound, tiers[i+1].beforeRound)
+  // The last tier covers [tiers[last].beforeRound, Infinity) plus undrafted
+  const tierRanges: Array<{ min: number; max: number }> = [];
+  for (let i = 0; i < tiers.length; i++) {
+    const min = tiers[i].beforeRound;
+    const max = i + 1 < tiers.length ? tiers[i + 1].beforeRound : Infinity;
+    tierRanges.push({ min, max });
+  }
+
+  // Classify a player into a tier index
+  function getTierIndex(p: SnapshotPlayer): number {
+    const round = draftRounds.get(p.name);
+    if (round == null) return tiers.length - 1; // undrafted → last tier
+    for (let i = 0; i < tierRanges.length; i++) {
+      if (round >= tierRanges[i].min && round < tierRanges[i].max) return i;
+    }
+    return tiers.length - 1;
+  }
+
+  // Sort key for a player within a tier
+  function playerSortKey(p: SnapshotPlayer, tierIdx: number): number {
+    const round = draftRounds.get(p.name);
+    const isLastTier = tierIdx === tiers.length - 1;
+
+    // In the last tier, DEF and K always go to the bottom
+    if (isLastTier && POS_SORT_TAIL[p.position]) {
+      return 90000 + POS_SORT_TAIL[p.position] * 1000;
+    }
+
+    if (round != null) return round;
+    // Undrafted (last tier only): after drafted players, before DEF/K
+    return 80000;
+  }
+
+  // For each roster, split players into tier buckets and sort each bucket
+  const rosterTierBuckets: SnapshotPlayer[][][] = rosters.map((r) => {
+    const buckets: SnapshotPlayer[][] = tiers.map(() => []);
+    for (const p of r.players) {
+      buckets[getTierIndex(p)].push(p);
+    }
+    // Sort each bucket
+    for (let t = 0; t < buckets.length; t++) {
+      buckets[t].sort((a, b) => playerSortKey(a, t) - playerSortKey(b, t));
+    }
+    return buckets;
+  });
+
+  // Build rows tier by tier
+  const rows: string[] = [];
+  for (let t = 0; t < tiers.length; t++) {
+    // Max players any roster has in this tier
+    const maxInTier = Math.max(...rosterTierBuckets.map((rb) => rb[t].length));
+    if (maxInTier === 0) continue;
+
+    // Tier header row
+    rows.push(tierRow(tiers[t].label, t, colSpan));
+
+    // Player rows for this tier
+    for (let i = 0; i < maxInTier; i++) {
+      const cells = rosterTierBuckets
+        .map((rb) => playerCell(rb[t][i]))
+        .join("\n");
+      rows.push(`    <tr>\n${cells}\n    </tr>`);
+    }
+  }
+
+  return rows;
+}
+
+function buildPostDraftRows(rosters: SnapshotRoster[], tiers?: TierConfig): string[] {
   // Collect all rounds across all rosters
   const allRounds = new Set<number>();
   for (const r of rosters) {
@@ -48,9 +149,22 @@ function buildPostDraftRows(rosters: SnapshotRoster[]): string[] {
     roundMaxPicks.set(round, max);
   }
 
+  // Build a map of "before round number" → tier row HTML
+  // colspan = rosters + 1 for the Rnd column
+  const tierAtRound = new Map<number, string>();
+  if (tiers) {
+    for (let i = 0; i < tiers.length; i++) {
+      tierAtRound.set(tiers[i].beforeRound, tierRow(tiers[i].label, i, rosters.length + 1));
+    }
+  }
+
   // Build row labels and map picks
   const rows: string[] = [];
   for (const round of sortedRounds) {
+    // Insert tier row before this round if configured
+    const tier = tierAtRound.get(round);
+    if (tier) rows.push(tier);
+
     const maxPicks = roundMaxPicks.get(round)!;
     const needsSuffix = maxPicks > 1;
 
@@ -71,7 +185,7 @@ function buildPostDraftRows(rosters: SnapshotRoster[]): string[] {
   return rows;
 }
 
-export function generateHtml(snapshot: Snapshot, navLinks: NavLink[] = [], ownerOrder?: string[]): string {
+export function generateHtml(snapshot: Snapshot, navLinks: NavLink[] = [], ownerOrder?: string[], tiers?: TierConfig, draftRounds?: DraftRoundLookup): string {
   const typeLabel = SNAPSHOT_TYPE_LABELS[snapshot.snapshotType] ?? "Rosters";
   // Sort rosters by draft order if available, otherwise alphabetically
   const rosters = [...snapshot.rosters].sort((a, b) => {
@@ -94,9 +208,12 @@ export function generateHtml(snapshot: Snapshot, navLinks: NavLink[] = [], owner
 
   // Build data rows
   const isPostDraft = snapshot.snapshotType === "post-draft" && rosters.some((r) => r.players.some((p) => p.round != null));
+  const useTieredLayout = !isPostDraft && tiers && draftRounds && draftRounds.size > 0;
   const dataRows: string[] = isPostDraft
-    ? buildPostDraftRows(rosters)
-    : buildSequentialRows(rosters, maxPlayers);
+    ? buildPostDraftRows(rosters, tiers)
+    : useTieredLayout
+      ? buildTieredRows(rosters, tiers!, draftRounds!)
+      : buildSequentialRows(rosters, maxPlayers, tiers);
 
   // Build nav bar
   let navHtml = "";
@@ -186,12 +303,23 @@ export function generateHtml(snapshot: Snapshot, navLinks: NavLink[] = [], owner
       white-space: nowrap;
     }
     th {
-      background: #2a5a8a;
+      background: #333;
       color: white;
       position: sticky;
       top: 0;
     }
-${isPostDraft ? `    td:first-child {
+    .tier td {
+      font-weight: bold;
+      color: white;
+      text-align: left;
+      font-size: 12px;
+      letter-spacing: 1px;
+      padding: 3px 8px;
+    }
+    .tier-1 td { background: #1a6b2a; }
+    .tier-2 td { background: #8b6914; }
+    .tier-3 td { background: #8b1a1a; }
+${isPostDraft ? `    tr:not(.tier) > td:first-child {
       text-align: center;
       font-weight: bold;
       color: #888;

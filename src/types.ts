@@ -107,3 +107,14 @@ export interface NavLink {
   href: string;       // relative path from current HTML file
   current: boolean;   // true if this is the page being rendered
 }
+
+// ── Tier Types ──
+
+/** Tier boundary: the tier label row appears right above this round (post-draft) or row index (other snapshots). */
+export interface TierBreak {
+  label: string;         // e.g. "TIER 1", "TIER 2", "TIER 3"
+  beforeRound: number;   // For post-draft: round number. For others: 1-based row index.
+}
+
+/** Tier configuration for a specific snapshot within a season. */
+export type TierConfig = TierBreak[];
