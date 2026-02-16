@@ -45,13 +45,14 @@ function sortPlayers(players: SnapshotPlayer[]): SnapshotPlayer[] {
   });
 }
 
-export async function takeSnapshot(leagueId: string, snapshotType: SnapshotType): Promise<Snapshot> {
-  const [league, rosters, users, playerDb] = await Promise.all([
+export async function takeSnapshot(leagueId: string, snapshotType: SnapshotType, playerDb?: PlayerDatabase): Promise<Snapshot> {
+  const [league, rosters, users, resolvedPlayerDb] = await Promise.all([
     getLeague(leagueId),
     getRosters(leagueId),
     getUsers(leagueId),
-    fetchAllPlayers(),
+    playerDb ? Promise.resolve(playerDb) : fetchAllPlayers(),
   ]);
+  playerDb = resolvedPlayerDb;
 
   console.log(`League: ${league.name} (${league.season})`);
   console.log(`Teams: ${league.total_rosters}`);
@@ -168,6 +169,19 @@ export function getDraftPicksPath(season: string): string {
 
 export function getOutputPath(season: string, snapshotType: SnapshotType): string {
   return join(DATA_DIR, "..", "output", season, `rosters-${snapshotType}.html`);
+}
+
+export function getPlayerDataPath(season: string, date: string): string {
+  return join(DATA_DIR, season, `players-${date}.json`);
+}
+
+export async function savePlayerData(playerDb: PlayerDatabase, season: string): Promise<string> {
+  const seasonDir = join(DATA_DIR, season);
+  await mkdir(seasonDir, { recursive: true });
+  const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const filePath = getPlayerDataPath(season, date);
+  await writeFile(filePath, JSON.stringify(playerDb), "utf-8");
+  return filePath;
 }
 
 export async function saveSnapshot(snapshot: Snapshot): Promise<string> {

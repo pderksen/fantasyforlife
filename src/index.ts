@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath } from "./snapshot.js";
+import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, savePlayerData, loadSnapshot, getSnapshotPath, getDraftPicksPath, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath } from "./snapshot.js";
 import { generateHtml, generateIndexHtml, writeHtml } from "./html.js";
-import { getDraftPicks } from "./sleeper-api.js";
+import { getDraftPicks, fetchAllPlayers } from "./sleeper-api.js";
 import type { SnapshotType, DraftPick } from "./types.js";
 
 const DEFAULT_LEAGUE_ID = "1220634180434526208";
@@ -28,7 +28,7 @@ function printUsage(): void {
     Take a new roster snapshot and generate HTML.
     type: pre-draft | post-draft | end-of-season
 
-  npm run dev -- --draft-snapshot <season> [league_id]
+  npm run dev -- --snapshot-draft <season> [league_id]
     Generate post-draft roster snapshot from draft picks data.
     Uses existing data/<season>/draft-picks.json if available,
     otherwise fetches from the Sleeper API.
@@ -42,7 +42,15 @@ function printUsage(): void {
 async function snapshotAndGenerate(snapshotType: SnapshotType, leagueId: string): Promise<void> {
   console.log(`Taking ${snapshotType} snapshot for league: ${leagueId}\n`);
 
-  const snapshot = await takeSnapshot(leagueId, snapshotType);
+  // Fetch player DB so we can both use it for the snapshot and save it
+  console.log("Fetching player database...");
+  const playerDb = await fetchAllPlayers();
+
+  const snapshot = await takeSnapshot(leagueId, snapshotType, playerDb);
+
+  const playerDataPath = await savePlayerData(playerDb, snapshot.season);
+  console.log(`Player data saved: ${playerDataPath}`);
+
   const snapshotPath = await saveSnapshot(snapshot);
   console.log(`\nSnapshot saved: ${snapshotPath}`);
 
@@ -121,7 +129,7 @@ async function main(): Promise<void> {
     const leagueId = args[2] || DEFAULT_LEAGUE_ID;
     await snapshotAndGenerate(type, leagueId);
 
-  } else if (args[0] === "--draft-snapshot") {
+  } else if (args[0] === "--snapshot-draft") {
     const season = args[1];
     if (!season) {
       printUsage();
