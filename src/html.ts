@@ -15,10 +15,10 @@ function escapeHtml(text: string): string {
 }
 
 function playerCell(p: { name: string; position: string; team: string } | undefined): string {
-  if (!p) return "      <td></td>";
+  if (!p) return `      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>`;
   const posClass = `pos-${p.position.toLowerCase()}`;
   const display = `${escapeHtml(p.name)} ${escapeHtml(p.team)} ${escapeHtml(p.position)}`;
-  return `      <td class="${posClass}">${display}</td>`;
+  return `      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap ${posClass}">${display}</td>`;
 }
 
 function tierRow(label: string, tierIndex: number, colSpan: number): string {
@@ -178,7 +178,7 @@ function buildPostDraftRows(rosters: SnapshotRoster[], tiers?: TierConfig): stri
         return playerCell(roundPlayers[slot]);
       }).join("\n");
 
-      rows.push(`    <tr>\n      <td>${label}</td>\n${cells}\n    </tr>`);
+      rows.push(`    <tr>\n      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap">${label}</td>\n${cells}\n    </tr>`);
     }
   }
 
@@ -186,17 +186,17 @@ function buildPostDraftRows(rosters: SnapshotRoster[], tiers?: TierConfig): stri
 }
 
 function tradedPicksSection(tradedPicks?: ResolvedTradedPick[], title = "Traded Picks"): string {
-  const heading = `  <h3 style="margin-top:24px;">${escapeHtml(title)}</h3>`;
+  const heading = `  <h3 class="mt-6 text-lg font-semibold text-gray-900">${escapeHtml(title)}</h3>`;
   if (!tradedPicks || tradedPicks.length === 0) {
-    return `${heading}\n  <p class="meta">None</p>`;
+    return `${heading}\n  <p class="text-sm text-gray-500">None</p>`;
   }
   const rows = tradedPicks
     .map((p) =>
-      `    <tr><td>${escapeHtml(p.season)}</td><td>Rnd ${p.round}</td><td>${escapeHtml(p.originalOwner)}</td><td>${escapeHtml(p.currentOwner)}</td></tr>`)
+      `    <tr><td class="px-2 py-1.5 border-b border-gray-100 text-sm text-gray-900">${escapeHtml(p.season)}</td><td class="px-2 py-1.5 border-b border-gray-100 text-sm text-gray-900">Rnd ${p.round}</td><td class="px-2 py-1.5 border-b border-gray-100 text-sm text-gray-900">${escapeHtml(p.originalOwner)}</td><td class="px-2 py-1.5 border-b border-gray-100 text-sm text-gray-900">${escapeHtml(p.currentOwner)}</td></tr>`)
     .join("\n");
   return `${heading}
-  <table class="traded-picks">
-    <tr><th>Season</th><th>Round</th><th>Original Owner</th><th>Current Owner</th></tr>
+  <table class="mt-2 w-full">
+    <tr><th class="text-left text-xs font-semibold uppercase tracking-wide text-gray-400 px-2 pb-2 border-b-2 border-gray-200">Season</th><th class="text-left text-xs font-semibold uppercase tracking-wide text-gray-400 px-2 pb-2 border-b-2 border-gray-200">Round</th><th class="text-left text-xs font-semibold uppercase tracking-wide text-gray-400 px-2 pb-2 border-b-2 border-gray-200">Original Owner</th><th class="text-left text-xs font-semibold uppercase tracking-wide text-gray-400 px-2 pb-2 border-b-2 border-gray-200">Current Owner</th></tr>
 ${rows}
   </table>`;
 }
@@ -219,7 +219,7 @@ export function generateHtml(snapshot: Snapshot, navLinks: NavLink[] = [], owner
 
   // Build header row
   const headerCells = rosters
-    .map((r) => `      <th>${escapeHtml(r.ownerName)}</th>`)
+    .map((r) => `      <th class="border border-gray-300 px-2 py-1 whitespace-nowrap bg-gray-800 text-white sticky top-0">${escapeHtml(r.ownerName)}</th>`)
     .join("\n");
 
   // Build data rows
@@ -249,81 +249,46 @@ export function generateHtml(snapshot: Snapshot, navLinks: NavLink[] = [], owner
           const shortLabel = SNAPSHOT_TYPE_LABELS[l.snapshotType]
             .replace(" Rosters", "");
           if (l.current) {
-            return `<span class="nav-current">${escapeHtml(shortLabel)}</span>`;
+            return `<span class="text-gray-900 font-semibold px-2 py-0.5 bg-gray-200 rounded">${escapeHtml(shortLabel)}</span>`;
           }
-          return `<a href="${escapeHtml(l.href)}">${escapeHtml(shortLabel)}</a>`;
+          return `<a href="${escapeHtml(l.href)}" class="text-blue-600 no-underline px-2 py-0.5 rounded hover:bg-gray-100 hover:underline">${escapeHtml(shortLabel)}</a>`;
         })
         .join("");
-      seasonBlocks.push(`<span class="nav-season">${escapeHtml(season)}</span>${items}`);
+      seasonBlocks.push(`<span class="font-semibold text-gray-600 ml-1">${escapeHtml(season)}</span>${items}`);
     }
-    navHtml = `  <nav class="nav"><a href="../index.html">Home</a><span class="nav-sep"></span>${seasonBlocks.join('<span class="nav-sep"></span>')}</nav>`;
+    navHtml = `  <nav class="flex items-center gap-1.5 mb-4 text-sm"><a href="../index.html" class="text-blue-600 no-underline px-2 py-0.5 rounded hover:bg-gray-100 hover:underline">Home</a><span class="w-px h-4 bg-gray-300 mx-1.5"></span>${seasonBlocks.join('<span class="w-px h-4 bg-gray-300 mx-1.5"></span>')}</nav>`;
   }
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(snapshot.leagueName)} - ${escapeHtml(snapshot.season)} ${escapeHtml(typeLabel)}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+        },
+      },
+    }
+  </script>
   <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      margin: 20px;
-      background: #f5f5f5;
-    }
-    h1 { margin-bottom: 4px; }
-    .meta { color: #666; margin-bottom: 16px; }
-    .nav {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      margin-bottom: 16px;
-      font-size: 13px;
-    }
-    .nav-season {
-      font-weight: 600;
-      color: #444;
-      margin-left: 4px;
-    }
-    .nav-season:first-child { margin-left: 0; }
-    .nav a {
-      color: #2a5a8a;
-      text-decoration: none;
-      padding: 2px 8px;
-      border-radius: 3px;
-    }
-    .nav a:hover {
-      background: #e0e8f0;
-      text-decoration: underline;
-    }
-    .nav-current {
-      color: #333;
-      font-weight: 600;
-      padding: 2px 8px;
-      background: #d8e2ec;
-      border-radius: 3px;
-    }
-    .nav-sep {
-      width: 1px;
-      height: 16px;
-      background: #ccc;
-      margin: 0 6px;
-    }
-    table {
-      border-collapse: collapse;
-      background: white;
-      font-size: 13px;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 4px 8px;
-      white-space: nowrap;
-    }
-    th {
-      background: #333;
-      color: white;
-      position: sticky;
-      top: 0;
-    }
+    /* Position colors */
+    .pos-wr  { background: #d0e8ff; }
+    .pos-rb  { background: #d0f0d0; }
+    .pos-qb  { background: #ffc0cb; }
+    .pos-te  { background: #ffe0b2; }
+    .pos-def { background: #d2b48c; }
+    .pos-k   { background: #e0d0f0; }
+    /* Tier colors */
     .tier td {
       font-weight: bold;
       color: white;
@@ -335,30 +300,23 @@ export function generateHtml(snapshot: Snapshot, navLinks: NavLink[] = [], owner
     .tier-1 td { background: #1a6b2a; }
     .tier-2 td { background: #8b6914; }
     .tier-3 td { background: #8b1a1a; }
-${isPostDraft ? `    tr:not(.tier) > td:first-child {
+${isPostDraft ? `    /* Round label column */
+    tr:not(.tier) > td:first-child {
       text-align: center;
       font-weight: bold;
       color: #888;
       width: 30px;
     }` : ""}
-    .pos-wr  { background: #d0e8ff; }
-    .pos-rb  { background: #d0f0d0; }
-    .pos-qb  { background: #ffc0cb; }
-    .pos-te  { background: #ffe0b2; }
-    .pos-def { background: #d2b48c; }
-    .pos-k   { background: #e0d0f0; }
-    .traded-picks { margin-top: 8px; }
-    .traded-picks th { background: #555; }
   </style>
 </head>
-<body>
-  <h1>${escapeHtml(snapshot.leagueName)}</h1>
-  <h2>${escapeHtml(snapshot.season)} ${escapeHtml(typeLabel)}</h2>
+<body class="bg-gray-50 text-gray-900 font-sans antialiased p-5">
+  <h1 class="text-2xl font-bold tracking-tight mb-1">${escapeHtml(snapshot.leagueName)}</h1>
+  <h2 class="text-lg font-semibold text-gray-700 mb-2">${escapeHtml(snapshot.season)} ${escapeHtml(typeLabel)}</h2>
 ${navHtml}
-  <div class="meta">Captured ${escapeHtml(snapshot.capturedAt)}</div>
-  <table>
+  <div class="text-sm text-gray-500 mb-4">Captured ${escapeHtml(snapshot.capturedAt)}</div>
+  <table class="border-collapse bg-white text-[13px]">
     <tr>
-${isPostDraft ? '      <th>Rnd</th>\n' : ''}${headerCells}
+${isPostDraft ? '      <th class="border border-gray-300 px-2 py-1 whitespace-nowrap bg-gray-800 text-white sticky top-0">Rnd</th>\n' : ''}${headerCells}
     </tr>
 ${dataRows.join("\n")}
   </table>
@@ -386,19 +344,19 @@ export function generateIndexHtml(leagueName: string, navLinks: NavLink[], futur
       const pills = links
         .map((l) => {
           const shortLabel = SNAPSHOT_TYPE_LABELS[l.snapshotType].replace(" Rosters", "");
-          return `<a class="pill" href="${escapeHtml(l.href)}">${escapeHtml(shortLabel)}</a>`;
+          return `<a href="${escapeHtml(l.href)}" class="inline-block px-3.5 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg transition-colors hover:bg-gray-200 no-underline">${escapeHtml(shortLabel)}</a>`;
         })
         .join("\n          ");
 
       // Show "Throwback Year" label if this season has snapshots but no pre-draft
       const throwbackLabel = !hasPreDraft && links.length > 0
-        ? `<span class="throwback-label">Throwback Year</span>`
+        ? `<span class="text-xs text-amber-700 mr-auto pl-1">Throwback Year</span>`
         : "";
 
-      return `      <div class="season-row">
-        <span class="season-year">${escapeHtml(season)}</span>
+      return `      <div class="flex items-center py-4 border-b border-gray-100 first:border-t">
+        <span class="text-xl font-semibold text-gray-900 min-w-[72px]">${escapeHtml(season)}</span>
         ${throwbackLabel}
-        <div class="season-pills">
+        <div class="flex gap-2 flex-wrap ml-auto">
           ${pills}
         </div>
       </div>`;
@@ -411,22 +369,22 @@ export function generateIndexHtml(leagueName: string, navLinks: NavLink[], futur
     const tpRows = futureTradedPicks
       .map((p) =>
         `          <tr>
-            <td>${escapeHtml(p.season)}</td>
-            <td>Round ${p.round}</td>
-            <td>${escapeHtml(p.originalOwner)}</td>
-            <td>${escapeHtml(p.currentOwner)}</td>
+            <td class="px-3 py-2.5 border-b border-gray-100 text-gray-900">${escapeHtml(p.season)}</td>
+            <td class="px-3 py-2.5 border-b border-gray-100 text-gray-900">Round ${p.round}</td>
+            <td class="px-3 py-2.5 border-b border-gray-100 text-gray-900">${escapeHtml(p.originalOwner)}</td>
+            <td class="px-3 py-2.5 border-b border-gray-100 text-gray-900">${escapeHtml(p.currentOwner)}</td>
           </tr>`)
       .join("\n");
     tradedPicksHtml = `
-    <section class="section">
-      <h2 class="section-title">Traded Picks</h2>
-      <table class="tp-table">
+    <section class="mb-12">
+      <h2 class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-5">Traded Picks</h2>
+      <table class="w-full text-sm">
         <thead>
           <tr>
-            <th>Season</th>
-            <th>Round</th>
-            <th>Original Owner</th>
-            <th>Current Owner</th>
+            <th class="text-left text-xs font-semibold uppercase tracking-wide text-gray-400 px-3 pb-2.5 border-b-2 border-gray-200">Season</th>
+            <th class="text-left text-xs font-semibold uppercase tracking-wide text-gray-400 px-3 pb-2.5 border-b-2 border-gray-200">Round</th>
+            <th class="text-left text-xs font-semibold uppercase tracking-wide text-gray-400 px-3 pb-2.5 border-b-2 border-gray-200">Original Owner</th>
+            <th class="text-left text-xs font-semibold uppercase tracking-wide text-gray-400 px-3 pb-2.5 border-b-2 border-gray-200">Current Owner</th>
           </tr>
         </thead>
         <tbody>
@@ -438,8 +396,8 @@ ${tpRows}
 
   // Archive link (always shown)
   const archiveHtml = `
-    <div class="archive">
-      <a class="archive-link" href="https://docs.google.com/spreadsheets/d/16rS1aBhJR0xg7xzCQGEzE2_-8_wO9F1MFlMVSGpS4g8/pubhtml" target="_blank" rel="noopener noreferrer">
+    <div class="pt-2">
+      <a href="https://docs.google.com/spreadsheets/d/16rS1aBhJR0xg7xzCQGEzE2_-8_wO9F1MFlMVSGpS4g8/pubhtml" target="_blank" rel="noopener noreferrer" class="text-lg font-medium text-blue-600 no-underline transition-colors hover:text-blue-800 hover:underline">
         Seasons 2006&ndash;2024 &#x2197;
       </a>
     </div>`;
@@ -450,166 +408,36 @@ ${tpRows}
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(leagueName)}</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background: #fff;
-      color: #1d1d1f;
-      -webkit-font-smoothing: antialiased;
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+        },
+      },
     }
-
-    .container {
-      max-width: 680px;
-      margin: 0 auto;
-      padding: 80px 24px 60px;
-    }
-
-    /* Header */
-    .header {
-      text-align: center;
-      margin-bottom: 64px;
-    }
-    .header h1 {
-      font-size: 36px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-      margin: 0 0 6px;
-    }
-    .header .byline {
-      font-size: 14px;
-      color: #86868b;
-      font-weight: 400;
-      letter-spacing: 0.5px;
-    }
-
-    /* Seasons */
-    .section { margin-bottom: 48px; }
-    .section-title {
-      font-size: 13px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #86868b;
-      margin: 0 0 20px;
-    }
-
-    .season-row {
-      display: flex;
-      align-items: center;
-      padding: 16px 0;
-      border-bottom: 1px solid #f0f0f0;
-    }
-    .season-row:first-child {
-      border-top: 1px solid #f0f0f0;
-    }
-
-    .season-year {
-      font-size: 20px;
-      font-weight: 600;
-      color: #1d1d1f;
-      min-width: 72px;
-    }
-
-    .season-pills {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-left: auto;
-    }
-
-    .pill {
-      display: inline-block;
-      padding: 7px 18px;
-      font-size: 13px;
-      font-weight: 500;
-      color: #1d1d1f;
-      background: #fff;
-      border: 1px solid #d2d2d7;
-      border-radius: 8px;
-      text-decoration: none;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-      transition: all 0.15s;
-      cursor: pointer;
-    }
-    .pill:hover {
-      background: #0071e3;
-      color: #fff;
-      border-color: #0071e3;
-      box-shadow: 0 2px 6px rgba(0,113,227,0.2);
-    }
-
-    .throwback-label {
-      font-size: 12px;
-      color: #92400e;
-      margin-right: auto;
-      padding-left: 4px;
-    }
-
-    /* Archive */
-    .archive {
-      padding-top: 8px;
-    }
-    .archive-link {
-      font-size: 18px;
-      font-weight: 500;
-      color: #0071e3;
-      text-decoration: none;
-      transition: color 0.15s;
-    }
-    .archive-link:hover {
-      color: #0059b3;
-      text-decoration: underline;
-    }
-
-    /* Traded Picks Table */
-    .tp-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-    }
-    .tp-table th {
-      text-align: left;
-      font-weight: 600;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: #86868b;
-      padding: 0 12px 10px;
-      border-bottom: 2px solid #e8e8e8;
-    }
-    .tp-table td {
-      padding: 10px 12px;
-      border-bottom: 1px solid #f0f0f0;
-      color: #1d1d1f;
-    }
-    .tp-table tbody tr:last-child td {
-      border-bottom: none;
-    }
-
-    /* Footer */
-    .footer {
-      padding-top: 32px;
-    }
-  </style>
+  </script>
 </head>
-<body>
-  <div class="container">
-    <header class="header">
-      <h1>${escapeHtml(leagueName)}</h1>
-      <div class="byline">est. 2006</div>
+<body class="bg-white text-gray-900 font-sans antialiased">
+  <div class="max-w-2xl mx-auto px-6 py-20">
+    <header class="text-center mb-16">
+      <h1 class="text-4xl font-bold tracking-tight m-0 mb-1.5">${escapeHtml(leagueName)}</h1>
+      <div class="text-sm text-gray-400 tracking-wide">est. 2006</div>
     </header>
 
-    <section class="section">
-      <h2 class="section-title">Current Tiers by Season</h2>
+    <section class="mb-12">
+      <h2 class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-5">Current Tiers by Season</h2>
 ${seasonRows}
     </section>
 ${tradedPicksHtml}
 ${archiveHtml}
-    <footer class="footer"></footer>
+    <footer class="pt-8"></footer>
   </div>
 </body>
 </html>`;
