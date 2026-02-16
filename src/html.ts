@@ -380,73 +380,237 @@ export function generateIndexHtml(leagueName: string, navLinks: NavLink[], futur
   const seasonRows = sortedSeasons
     .map((season) => {
       const links = seasons.get(season)!;
-      const items = links
+      const linkTypes = new Set(links.map((l) => l.snapshotType));
+      const hasPreDraft = linkTypes.has("pre-draft");
+
+      const pills = links
         .map((l) => {
           const shortLabel = SNAPSHOT_TYPE_LABELS[l.snapshotType].replace(" Rosters", "");
-          return `<a href="${escapeHtml(l.href)}">${escapeHtml(shortLabel)}</a>`;
+          return `<a class="pill" href="${escapeHtml(l.href)}">${escapeHtml(shortLabel)}</a>`;
         })
-        .join("");
-      return `    <div class="season"><span class="year">${escapeHtml(season)}</span>${items}</div>`;
+        .join("\n          ");
+
+      // Show "Throwback Year" label if this season has snapshots but no pre-draft
+      const throwbackLabel = !hasPreDraft && links.length > 0
+        ? `<span class="throwback-label">Throwback Year</span>`
+        : "";
+
+      return `      <div class="season-row">
+        <span class="season-year">${escapeHtml(season)}</span>
+        ${throwbackLabel}
+        <div class="season-pills">
+          ${pills}
+        </div>
+      </div>`;
     })
     .join("\n");
+
+  // Traded picks table (built inline to avoid touching the shared helper)
+  let tradedPicksHtml = "";
+  if (futureTradedPicks && futureTradedPicks.length > 0) {
+    const tpRows = futureTradedPicks
+      .map((p) =>
+        `          <tr>
+            <td>${escapeHtml(p.season)}</td>
+            <td>Round ${p.round}</td>
+            <td>${escapeHtml(p.originalOwner)}</td>
+            <td>${escapeHtml(p.currentOwner)}</td>
+          </tr>`)
+      .join("\n");
+    tradedPicksHtml = `
+    <section class="section">
+      <h2 class="section-title">Traded Picks</h2>
+      <table class="tp-table">
+        <thead>
+          <tr>
+            <th>Season</th>
+            <th>Round</th>
+            <th>Original Owner</th>
+            <th>Current Owner</th>
+          </tr>
+        </thead>
+        <tbody>
+${tpRows}
+        </tbody>
+      </table>
+    </section>`;
+  }
+
+  // Archive link (always shown)
+  const archiveHtml = `
+    <div class="archive">
+      <a class="archive-link" href="https://docs.google.com/spreadsheets/d/16rS1aBhJR0xg7xzCQGEzE2_-8_wO9F1MFlMVSGpS4g8/pubhtml" target="_blank" rel="noopener noreferrer">
+        Seasons 2006&ndash;2024 &#x2197;
+      </a>
+    </div>`;
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(leagueName)}</title>
   <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      margin: 40px 20px;
-      background: #f5f5f5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #fff;
+      color: #1d1d1f;
+      -webkit-font-smoothing: antialiased;
     }
-    h1 { margin-bottom: 24px; }
-    .seasons { display: flex; flex-direction: column; gap: 8px; }
-    .season {
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 80px 24px 60px;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+    .header h1 {
+      font-size: 36px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin: 0 0 6px;
+    }
+    .header .byline {
+      font-size: 14px;
+      color: #86868b;
+      font-weight: 400;
+      letter-spacing: 0.5px;
+    }
+
+    /* Seasons */
+    .section { margin-bottom: 48px; }
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #86868b;
+      margin: 0 0 20px;
+    }
+
+    .season-row {
       display: flex;
       align-items: center;
-      gap: 6px;
-      font-size: 14px;
+      padding: 16px 0;
+      border-bottom: 1px solid #f0f0f0;
     }
-    .year {
+    .season-row:first-child {
+      border-top: 1px solid #f0f0f0;
+    }
+
+    .season-year {
+      font-size: 20px;
       font-weight: 600;
-      color: #444;
-      min-width: 48px;
+      color: #1d1d1f;
+      min-width: 72px;
     }
-    .season a {
-      color: #2a5a8a;
+
+    .season-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-left: auto;
+    }
+
+    .pill {
+      display: inline-block;
+      padding: 7px 18px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #1d1d1f;
+      background: #fff;
+      border: 1px solid #d2d2d7;
+      border-radius: 8px;
       text-decoration: none;
-      padding: 3px 10px;
-      border-radius: 3px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+      transition: all 0.15s;
+      cursor: pointer;
     }
-    .season a:hover {
-      background: #e0e8f0;
+    .pill:hover {
+      background: #0071e3;
+      color: #fff;
+      border-color: #0071e3;
+      box-shadow: 0 2px 6px rgba(0,113,227,0.2);
+    }
+
+    .throwback-label {
+      font-size: 12px;
+      color: #92400e;
+      margin-right: auto;
+      padding-left: 4px;
+    }
+
+    /* Archive */
+    .archive {
+      padding-top: 8px;
+    }
+    .archive-link {
+      font-size: 18px;
+      font-weight: 500;
+      color: #0071e3;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .archive-link:hover {
+      color: #0059b3;
       text-decoration: underline;
     }
-    .traded-picks { margin-top: 8px; }
-    .traded-picks th {
-      background: #555;
-      color: white;
-      border: 1px solid #ccc;
-      padding: 4px 8px;
-      white-space: nowrap;
+
+    /* Traded Picks Table */
+    .tp-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
     }
-    .traded-picks td {
-      border: 1px solid #ccc;
-      padding: 4px 8px;
-      white-space: nowrap;
-      background: white;
+    .tp-table th {
+      text-align: left;
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #86868b;
+      padding: 0 12px 10px;
+      border-bottom: 2px solid #e8e8e8;
     }
-    table { border-collapse: collapse; font-size: 13px; }
+    .tp-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #f0f0f0;
+      color: #1d1d1f;
+    }
+    .tp-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Footer */
+    .footer {
+      padding-top: 32px;
+    }
   </style>
 </head>
 <body>
-  <h1>${escapeHtml(leagueName)}</h1>
-  <div class="seasons">
+  <div class="container">
+    <header class="header">
+      <h1>${escapeHtml(leagueName)}</h1>
+      <div class="byline">est. 2006</div>
+    </header>
+
+    <section class="section">
+      <h2 class="section-title">Current Tiers by Season</h2>
 ${seasonRows}
+    </section>
+${tradedPicksHtml}
+${archiveHtml}
+    <footer class="footer"></footer>
   </div>
-${futureTradedPicks && futureTradedPicks.length > 0 ? tradedPicksSection(futureTradedPicks) : ''}
 </body>
 </html>`;
 }
