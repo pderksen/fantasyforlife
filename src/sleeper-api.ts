@@ -4,6 +4,7 @@ import type {
   LeagueUser,
   PlayerDatabase,
   DraftPick,
+  LeagueTradedPick,
 } from "./types.js";
 
 const BASE_URL = "https://api.sleeper.app/v1";
@@ -37,4 +38,8 @@ export async function fetchAllPlayers(): Promise<PlayerDatabase> {
 
 export async function getDraftPicks(draftId: string): Promise<DraftPick[]> {
   return fetchJson<DraftPick[]>(`/draft/${draftId}/picks`);
+}
+
+export async function getLeagueTradedPicks(leagueId: string): Promise<LeagueTradedPick[]> {
+  return fetchJson<LeagueTradedPick[]>(`/league/${leagueId}/traded_picks`);
 }

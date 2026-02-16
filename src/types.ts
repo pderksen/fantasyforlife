@@ -108,6 +108,34 @@ export interface NavLink {
   current: boolean;   // true if this is the page being rendered
 }
 
+// ── Traded Pick Types ──
+
+/** Traded pick from the league-level /league/{id}/traded_picks endpoint. */
+export interface LeagueTradedPick {
+  round: number;
+  season: string;
+  roster_id: number;
+  owner_id: number;
+  previous_owner_id: number;
+}
+
+/** Traded pick resolved with human-readable owner names. */
+export interface ResolvedTradedPick {
+  round: number;
+  season: string;
+  originalOwner: string;
+  currentOwner: string;
+}
+
+/** Saved traded picks file shape. */
+export interface TradedPicksData {
+  leagueId: string;
+  season: string;
+  fetchedAt: string;
+  picks: ResolvedTradedPick[];
+  raw: LeagueTradedPick[];
+}
+
 // ── Tier Types ──
 
 /** Tier boundary: the tier label row appears right above this round (post-draft) or row index (other snapshots). */

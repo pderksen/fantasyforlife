@@ -17,7 +17,8 @@ Fantasy football roster viewer for a long-running league group. Pulls roster dat
 - **Post-Draft Snapshots**: Generated from `draft-picks.json` rather than the live rosters API. Since draft picks contain full player metadata (name, position, team) and roster assignments, post-draft rosters can be perfectly reconstructed from draft data alone. This also means post-draft snapshots can be retroactively created for any past season where draft picks data exists. Use `--snapshot-draft` for this. Rosters are ordered by draft slot (round 1 pick order) and players within each roster appear in draft pick order (not sorted by position).
 - **Draft Data**: Draft picks and traded picks are immutable historical records that can always be re-fetched from the Sleeper API. Saved as `draft-picks.json` and `draft-traded-picks.json` in `data/<season>/` — no date suffix needed since the data never changes.
 - **Player Data**: The Sleeper `/players/nfl` endpoint (~5MB) is fetched during `--snapshot` runs and saved to `data/<season>/players-YYYY-MM-DD.json`. Not fetched during `--snapshot-draft` since draft picks already contain all player metadata. The date in the filename allows multiple saves per season (one per snapshot run).
-- **HTML Output**: Generated to `output/<season>/` with one HTML file per snapshot type. An `output/index.html` home page links to all snapshots across all seasons and is auto-regenerated with every command. Each roster page includes a nav bar (grouped by season) with Home link and cross-links to all snapshots. Table cells are color-coded by position (QB pink, RB green, WR blue, TE orange, DEF tan, K purple). Tables include tier separator rows when configured (see Tiers section).
+- **Traded Picks**: Fetched from the league-level `/league/{id}/traded_picks` endpoint, which returns all traded draft picks including upcoming seasons. Saved as `data/<season>/traded-picks.json` with both resolved (human-readable) and raw API data. Displayed on end-of-season roster pages and on the index page. The data is re-fetched with each snapshot command and can also be fetched standalone with `--traded-picks`.
+- **HTML Output**: Generated to `output/<season>/` with one HTML file per snapshot type. An `output/index.html` home page links to all snapshots across all seasons and shows traded picks; auto-regenerated with every command. Each roster page includes a nav bar (grouped by season) with Home link and cross-links to all snapshots. End-of-season pages include a "Traded Picks" section below the roster table. Table cells are color-coded by position (QB pink, RB green, WR blue, TE orange, DEF tan, K purple). Tables include tier separator rows when configured (see Tiers section).
 
 ## Sleeper API
 - Official docs: https://docs.sleeper.com/
@@ -30,7 +31,9 @@ Fantasy football roster viewer for a long-running league group. Pulls roster dat
   - `/league/{id}/drafts` — list of drafts (returns array of draft objects)
   - `/draft/{draft_id}` — draft metadata (settings, draft order, timestamps)
   - `/draft/{draft_id}/picks` — all draft picks with player metadata, keeper status, roster IDs
-  - `/draft/{draft_id}/traded_picks` — traded pick info (original vs current owner)
+  - `/draft/{draft_id}/traded_picks` — traded pick info for a specific draft (original vs current owner)
+  - `/league/{id}/traded_picks` — all traded picks across seasons (including future picks); `roster_id` is original owner, `owner_id` is current owner (both are numeric roster IDs despite the field name)
+  - `/league/{id}/transactions/{week}` — all transactions (trades, waivers, FA) for a given week; trade transactions include player adds/drops and draft pick exchanges
   - `/players/nfl` — full player database (~5MB)
 - Stay under 1000 calls/min
 
@@ -44,6 +47,8 @@ Fantasy football roster viewer for a long-running league group. Pulls roster dat
   - Preferred method for post-draft snapshots (works retroactively)
 - Generate HTML from existing snapshot(s): `npm run dev -- --generate <season> [pre-draft|post-draft|end-of-season]`
   - Omit type to generate HTML for all existing snapshots in that season
+- Fetch traded picks: `npm run dev -- --traded-picks [league_id]`
+  - Fetches traded picks for upcoming seasons from the Sleeper API and saves to `data/<season>/traded-picks.json`
 - All commands auto-regenerate `output/index.html`
 
 ## League
@@ -60,6 +65,8 @@ Fantasy football roster viewer for a long-running league group. Pulls roster dat
 **After NFL Week 18** (~early January):
 3. Final rosters: `npm run dev -- --snapshot end-of-season`
 
+Steps 1, 2, and 3 automatically fetch and save traded picks from the Sleeper API (no separate `--traded-picks` call needed). Use `--traded-picks` standalone if you only want to update the traded picks data without taking a snapshot.
+
 If you forget step 2 on draft day, the post-draft snapshot can be created retroactively anytime from the draft picks data. The pre-draft snapshot cannot — it requires capturing live rosters before the draft happens.
 
 ## Snapshot Timing
@@ -72,14 +79,15 @@ Each season has three snapshots taken at specific moments:
 
 ## Project Structure
 - `src/types.ts` — All TypeScript interfaces (API responses, draft types, snapshots, nav links, tier types) and `SNAPSHOT_TYPE_LABELS` display name map
-- `src/sleeper-api.ts` — Sleeper API fetch wrappers (league, rosters, users, players, draft picks)
-- `src/snapshot.ts` — Snapshot capture (live + from draft picks), save, load, path helpers, nav link discovery, draft round lookup
+- `src/sleeper-api.ts` — Sleeper API fetch wrappers (league, rosters, users, players, draft picks, traded picks)
+- `src/snapshot.ts` — Snapshot capture (live + from draft picks), save, load, path helpers, nav link discovery, draft round lookup, traded picks resolution
 - `src/html.ts` — HTML table generation from snapshots (sequential, post-draft round-based, tiered), index page generation
 - `src/tiers.ts` — Tier configuration per season/snapshot-type (round boundaries, labels)
-- `src/index.ts` — CLI entry point (`--snapshot`, `--snapshot-draft`, `--generate`)
+- `src/index.ts` — CLI entry point (`--snapshot`, `--snapshot-draft`, `--generate`, `--traded-picks`)
 - `data/<season>/rosters-<type>.json` — Roster snapshots (pre-draft, post-draft, end-of-season)
 - `data/<season>/draft-picks.json` — Draft picks from Sleeper API (immutable, no date needed)
 - `data/<season>/draft-traded-picks.json` — Traded draft pick data (immutable, no date needed)
+- `data/<season>/traded-picks.json` — League-level traded picks with resolved owner names (re-fetched with each snapshot/traded-picks command)
 - `data/<season>/players-YYYY-MM-DD.json` — Player database snapshot (saved with each snapshot run)
 - `output/index.html` — Home page linking to all snapshots across all seasons
 - `output/<season>/rosters-<type>.html` — Generated HTML tables per snapshot type
@@ -110,12 +118,39 @@ interface SnapshotPlayer {
 }
 ```
 
+## Traded Picks
+Traded picks are fetched from the league-level `/league/{id}/traded_picks` endpoint and filtered to **future seasons only** (`season > currentSeason`). This means for the 2025 season, only 2026+ picks are saved — picks traded for the current season are consumed during the draft and don't need tracking.
+
+### Display behavior
+- **End-of-season pages**: Show a "Traded Picks" table below the roster table listing all future traded picks with columns: Season, Round, Original Owner, Current Owner.
+- **Post-draft and pre-draft pages**: Show the "Traded Picks" heading with "None" (no in-season trades have happened yet at that point, and any pre-draft traded picks were consumed during the draft).
+- **Index page**: Shows traded picks table if any exist (loaded from the most recent season's `traded-picks.json`).
+
+### Traded Picks JSON Shape (`data/<season>/traded-picks.json`)
+```typescript
+interface TradedPicksData {
+  leagueId: string;
+  season: string;          // season the data was fetched during
+  fetchedAt: string;       // ISO timestamp
+  picks: ResolvedTradedPick[];  // human-readable, filtered to future seasons
+  raw: LeagueTradedPick[];      // raw API response (all traded picks, unfiltered)
+}
+
+interface ResolvedTradedPick {
+  round: number;
+  season: string;          // the future season the pick belongs to (e.g., "2026")
+  originalOwner: string;   // team name whose pick it originally was
+  currentOwner: string;    // team name who now owns the pick
+}
+```
+
 ## Data Mutability
 | Data Type | Mutable? | Notes |
 |-----------|----------|-------|
 | Rosters | Yes | Changes with trades/adds/drops; snapshot at 3 key moments per season |
 | Draft picks | No | Immutable after draft; always available from API |
-| Traded picks | No | Immutable after draft; always available from API |
+| Draft traded picks | No | Immutable after draft; always available from API |
+| League traded picks | Yes | Changes as in-season trades happen; re-fetched with each command |
 | Player data | Yes | Changes as NFL rosters change; saved per snapshot run with date |
 
 ## Roster & Player Ordering

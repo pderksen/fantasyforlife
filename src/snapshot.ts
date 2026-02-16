@@ -10,6 +10,9 @@ import type {
   PlayerDatabase,
   DraftPick,
   NavLink,
+  LeagueTradedPick,
+  ResolvedTradedPick,
+  TradedPicksData,
 } from "./types.js";
 import { SNAPSHOT_TYPE_LABELS } from "./types.js";
 import { getLeague, getRosters, getUsers, fetchAllPlayers } from "./sleeper-api.js";
@@ -54,6 +57,25 @@ function sortPlayers(players: SnapshotPlayer[]): SnapshotPlayer[] {
   });
 }
 
+/**
+ * Build a roster_id → owner name map from the Sleeper API.
+ */
+export async function buildRosterOwnerMap(leagueId: string): Promise<Map<number, string>> {
+  const [rosters, users] = await Promise.all([getRosters(leagueId), getUsers(leagueId)]);
+  const userMap = new Map<string, string>();
+  for (const user of users) {
+    const name = applyOwnerNameOverride(user.metadata?.team_name || user.display_name);
+    userMap.set(user.user_id, name);
+  }
+  const rosterOwnerMap = new Map<number, string>();
+  for (const roster of rosters) {
+    if (roster.owner_id) {
+      rosterOwnerMap.set(roster.roster_id, userMap.get(roster.owner_id) ?? `Roster ${roster.roster_id}`);
+    }
+  }
+  return rosterOwnerMap;
+}
+
 export async function takeSnapshot(leagueId: string, snapshotType: SnapshotType, playerDb?: PlayerDatabase): Promise<Snapshot> {
   const [league, rosters, users, resolvedPlayerDb] = await Promise.all([
     getLeague(leagueId),
@@ -66,18 +88,24 @@ export async function takeSnapshot(leagueId: string, snapshotType: SnapshotType,
   console.log(`League: ${league.name} (${league.season})`);
   console.log(`Teams: ${league.total_rosters}`);
 
-  // Map owner_id → display name
-  const ownerMap = new Map<string, string>();
+  // Build owner name map from users
+  const userMap = new Map<string, string>();
   for (const user of users) {
     const name = applyOwnerNameOverride(user.metadata?.team_name || user.display_name);
-    ownerMap.set(user.user_id, name);
+    userMap.set(user.user_id, name);
+  }
+  const rosterOwnerMap = new Map<number, string>();
+  for (const roster of rosters) {
+    if (roster.owner_id) {
+      rosterOwnerMap.set(roster.roster_id, userMap.get(roster.owner_id) ?? `Roster ${roster.roster_id}`);
+    }
   }
 
   // Build resolved rosters
   const snapshotRosters: SnapshotRoster[] = [];
   for (const roster of rosters) {
     const ownerName = roster.owner_id
-      ? (ownerMap.get(roster.owner_id) ?? `Owner ${roster.roster_id}`)
+      ? (rosterOwnerMap.get(roster.roster_id) ?? `Owner ${roster.roster_id}`)
       : `Roster ${roster.roster_id} (unowned)`;
 
     const playerIds = roster.players ?? [];
@@ -104,30 +132,14 @@ export async function takePostDraftSnapshot(
   leagueId: string,
   draftPicks: DraftPick[]
 ): Promise<Snapshot> {
-  const [league, rosters, users] = await Promise.all([
+  const [league, rosterOwnerMap] = await Promise.all([
     getLeague(leagueId),
-    getRosters(leagueId),
-    getUsers(leagueId),
+    buildRosterOwnerMap(leagueId),
   ]);
 
   console.log(`League: ${league.name} (${league.season})`);
   console.log(`Teams: ${league.total_rosters}`);
   console.log(`Draft picks: ${draftPicks.length}`);
-
-  // Map owner_id → display name
-  const ownerMap = new Map<string, string>();
-  for (const user of users) {
-    const name = applyOwnerNameOverride(user.metadata?.team_name || user.display_name);
-    ownerMap.set(user.user_id, name);
-  }
-
-  // Map roster_id → owner_id
-  const rosterOwnerMap = new Map<number, string>();
-  for (const roster of rosters) {
-    if (roster.owner_id) {
-      rosterOwnerMap.set(roster.roster_id, roster.owner_id);
-    }
-  }
 
   // Determine draft slot order from round 1 picks
   const draftSlotOrder: number[] = draftPicks
@@ -150,10 +162,7 @@ export async function takePostDraftSnapshot(
   const snapshotRosters: SnapshotRoster[] = [];
   for (const rosterId of draftSlotOrder) {
     const picks = picksByRoster.get(rosterId) ?? [];
-    const ownerId = rosterOwnerMap.get(rosterId);
-    const ownerName = ownerId
-      ? (ownerMap.get(ownerId) ?? `Owner ${rosterId}`)
-      : `Roster ${rosterId} (unowned)`;
+    const ownerName = rosterOwnerMap.get(rosterId) ?? `Roster ${rosterId} (unowned)`;
 
     const players: SnapshotPlayer[] = picks.map((pick) => ({
       name: `${pick.metadata.last_name}, ${pick.metadata.first_name}`,
@@ -173,6 +182,59 @@ export async function takePostDraftSnapshot(
     capturedAt: new Date().toISOString(),
     rosters: snapshotRosters,
   };
+}
+
+// ── Traded Picks ──
+
+export function resolveTradedPicks(
+  tradedPicks: LeagueTradedPick[],
+  rosterOwnerMap: Map<number, string>,
+  futureOnlySeason?: string,
+): ResolvedTradedPick[] {
+  const filtered = futureOnlySeason
+    ? tradedPicks.filter((p) => p.season > futureOnlySeason)
+    : tradedPicks;
+
+  return filtered
+    .map((p) => ({
+      round: p.round,
+      season: p.season,
+      originalOwner: rosterOwnerMap.get(p.roster_id) ?? `Roster ${p.roster_id}`,
+      currentOwner: rosterOwnerMap.get(p.owner_id) ?? `Roster ${p.owner_id}`,
+    }))
+    .sort((a, b) => a.season.localeCompare(b.season) || a.round - b.round || a.originalOwner.localeCompare(b.originalOwner));
+}
+
+export function getTradedPicksPath(season: string): string {
+  return join(DATA_DIR, season, "traded-picks.json");
+}
+
+export async function saveTradedPicks(
+  leagueId: string,
+  season: string,
+  picks: ResolvedTradedPick[],
+  raw: LeagueTradedPick[],
+): Promise<string> {
+  const seasonDir = join(DATA_DIR, season);
+  await mkdir(seasonDir, { recursive: true });
+  const filePath = getTradedPicksPath(season);
+  const data: TradedPicksData = {
+    leagueId,
+    season,
+    fetchedAt: new Date().toISOString(),
+    picks,
+    raw,
+  };
+  await writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
+  return filePath;
+}
+
+export async function loadTradedPicks(season: string): Promise<ResolvedTradedPick[] | undefined> {
+  const path = getTradedPicksPath(season);
+  if (!existsSync(path)) return undefined;
+  const raw = await readFile(path, "utf-8");
+  const data = JSON.parse(raw) as TradedPicksData;
+  return data.picks;
 }
 
 export function getSnapshotPath(season: string, snapshotType: SnapshotType): string {

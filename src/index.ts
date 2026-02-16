@@ -1,10 +1,10 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, savePlayerData, loadSnapshot, getSnapshotPath, getDraftPicksPath, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRounds } from "./snapshot.js";
+import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, savePlayerData, loadSnapshot, getSnapshotPath, getDraftPicksPath, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRounds, buildRosterOwnerMap, resolveTradedPicks, saveTradedPicks, loadTradedPicks } from "./snapshot.js";
 import { generateHtml, generateIndexHtml, writeHtml } from "./html.js";
-import { getDraftPicks, fetchAllPlayers } from "./sleeper-api.js";
+import { getDraftPicks, fetchAllPlayers, getLeagueTradedPicks, getLeague } from "./sleeper-api.js";
 import { getTierConfig } from "./tiers.js";
-import type { SnapshotType, DraftPick } from "./types.js";
+import type { SnapshotType, DraftPick, ResolvedTradedPick } from "./types.js";
 
 const DEFAULT_LEAGUE_ID = "1220634180434526208";
 const LEAGUE_NAME = "Fantasy For Life (FFL)";
@@ -14,10 +14,38 @@ function isSnapshotType(value: string): value is SnapshotType {
   return (SNAPSHOT_TYPES as string[]).includes(value);
 }
 
-async function regenerateIndex(): Promise<void> {
+async function fetchAndSaveTradedPicks(leagueId: string, season: string): Promise<ResolvedTradedPick[]> {
+  console.log("Fetching traded picks...");
+  const [rawPicks, rosterOwnerMap] = await Promise.all([
+    getLeagueTradedPicks(leagueId),
+    buildRosterOwnerMap(leagueId),
+  ]);
+
+  const tradedPicks = resolveTradedPicks(rawPicks, rosterOwnerMap, season);
+  const tradedPicksPath = await saveTradedPicks(leagueId, season, tradedPicks, rawPicks);
+  console.log(`Traded picks saved: ${tradedPicksPath} (${tradedPicks.length} traded picks)`);
+
+  if (tradedPicks.length > 0) {
+    console.log("\nTraded picks:");
+    for (const pick of tradedPicks) {
+      console.log(`  ${pick.season} Rd ${pick.round}: ${pick.originalOwner}'s pick → ${pick.currentOwner}`);
+    }
+  }
+
+  return tradedPicks;
+}
+
+async function regenerateIndex(futureTradedPicks?: ResolvedTradedPick[]): Promise<void> {
   const navLinks = buildIndexNavLinks();
   if (navLinks.length === 0) return;
-  const html = generateIndexHtml(LEAGUE_NAME, navLinks);
+
+  // If not provided, try to load from the most recent season
+  if (!futureTradedPicks) {
+    const latestSeason = navLinks[navLinks.length - 1].season;
+    futureTradedPicks = await loadTradedPicks(latestSeason);
+  }
+
+  const html = generateIndexHtml(LEAGUE_NAME, navLinks, futureTradedPicks);
   const outputPath = getIndexOutputPath();
   await writeHtml(html, outputPath);
   console.log(`Index written: ${outputPath}`);
@@ -37,6 +65,9 @@ function printUsage(): void {
   npm run dev -- --generate <season> [type]
     Generate HTML from existing snapshot(s).
     If type is omitted, generates for all existing snapshots in the season.
+
+  npm run dev -- --traded-picks [league_id]
+    Fetch and save traded picks for upcoming seasons.
 `);
 }
 
@@ -55,11 +86,16 @@ async function snapshotAndGenerate(snapshotType: SnapshotType, leagueId: string)
   const snapshotPath = await saveSnapshot(snapshot);
   console.log(`\nSnapshot saved: ${snapshotPath}`);
 
+  // Fetch and save traded picks
+  const tradedPicks = await fetchAndSaveTradedPicks(leagueId, snapshot.season);
+
   const ownerOrder = await loadDraftOrder(snapshot.season);
   const navLinks = buildNavLinks(snapshot.season, snapshotType);
   const tiers = getTierConfig(snapshot.season, snapshotType);
   const draftRounds = await loadDraftRounds(snapshot.season);
-  const html = generateHtml(snapshot, navLinks, ownerOrder, tiers, draftRounds);
+  // Only show traded picks on end-of-season snapshots
+  const picksForType = snapshotType === "end-of-season" ? tradedPicks : undefined;
+  const html = generateHtml(snapshot, navLinks, ownerOrder, tiers, draftRounds, picksForType);
   const outputPath = getOutputPath(snapshot.season, snapshotType);
   await writeHtml(html, outputPath);
   console.log(`HTML written: ${outputPath}`);
@@ -92,6 +128,9 @@ async function draftSnapshotAndGenerate(season: string, leagueId: string): Promi
   const snapshotPath = await saveSnapshot(snapshot);
   console.log(`\nSnapshot saved: ${snapshotPath}`);
 
+  // Fetch and save traded picks
+  const tradedPicks = await fetchAndSaveTradedPicks(leagueId, season);
+
   const ownerOrder = snapshot.rosters.map((r) => r.ownerName);
   const navLinks = buildNavLinks(season, "post-draft");
   const tiers = getTierConfig(season, "post-draft");
@@ -105,6 +144,7 @@ async function generateFromExisting(season: string, snapshotType?: SnapshotType)
   const types = snapshotType ? [snapshotType] : SNAPSHOT_TYPES;
   const ownerOrder = await loadDraftOrder(season);
   const draftRounds = await loadDraftRounds(season);
+  const tradedPicks = await loadTradedPicks(season);
 
   for (const type of types) {
     const snapshotPath = getSnapshotPath(season, type);
@@ -112,7 +152,9 @@ async function generateFromExisting(season: string, snapshotType?: SnapshotType)
       const snapshot = await loadSnapshot(snapshotPath);
       const navLinks = buildNavLinks(season, type);
       const tiers = getTierConfig(season, type);
-      const html = generateHtml(snapshot, navLinks, ownerOrder, tiers, draftRounds);
+      // Only show traded picks on end-of-season snapshots (trades happen during the season)
+      const picksForType = type === "end-of-season" ? tradedPicks : undefined;
+      const html = generateHtml(snapshot, navLinks, ownerOrder, tiers, draftRounds, picksForType);
       const outputPath = getOutputPath(season, type);
       await writeHtml(html, outputPath);
       console.log(`HTML written: ${outputPath}`);
@@ -159,6 +201,11 @@ async function main(): Promise<void> {
       process.exit(1);
     }
     await generateFromExisting(season, type as SnapshotType | undefined);
+
+  } else if (args[0] === "--traded-picks") {
+    const leagueId = args[1] || DEFAULT_LEAGUE_ID;
+    const league = await getLeague(leagueId);
+    await fetchAndSaveTradedPicks(leagueId, league.season);
 
   } else {
     printUsage();

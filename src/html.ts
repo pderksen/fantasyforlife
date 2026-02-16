@@ -1,6 +1,6 @@
 import { writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
-import type { Snapshot, SnapshotRoster, SnapshotPlayer, NavLink, TierConfig } from "./types.js";
+import type { Snapshot, SnapshotRoster, SnapshotPlayer, NavLink, TierConfig, ResolvedTradedPick } from "./types.js";
 import { SNAPSHOT_TYPE_LABELS } from "./types.js";
 
 /** Map of "Last, First" player name → draft round number */
@@ -185,7 +185,23 @@ function buildPostDraftRows(rosters: SnapshotRoster[], tiers?: TierConfig): stri
   return rows;
 }
 
-export function generateHtml(snapshot: Snapshot, navLinks: NavLink[] = [], ownerOrder?: string[], tiers?: TierConfig, draftRounds?: DraftRoundLookup): string {
+function tradedPicksSection(tradedPicks?: ResolvedTradedPick[], title = "Traded Picks"): string {
+  const heading = `  <h3 style="margin-top:24px;">${escapeHtml(title)}</h3>`;
+  if (!tradedPicks || tradedPicks.length === 0) {
+    return `${heading}\n  <p class="meta">None</p>`;
+  }
+  const rows = tradedPicks
+    .map((p) =>
+      `    <tr><td>${escapeHtml(p.season)}</td><td>Rnd ${p.round}</td><td>${escapeHtml(p.originalOwner)}</td><td>${escapeHtml(p.currentOwner)}</td></tr>`)
+    .join("\n");
+  return `${heading}
+  <table class="traded-picks">
+    <tr><th>Season</th><th>Round</th><th>Original Owner</th><th>Current Owner</th></tr>
+${rows}
+  </table>`;
+}
+
+export function generateHtml(snapshot: Snapshot, navLinks: NavLink[] = [], ownerOrder?: string[], tiers?: TierConfig, draftRounds?: DraftRoundLookup, tradedPicks?: ResolvedTradedPick[]): string {
   const typeLabel = SNAPSHOT_TYPE_LABELS[snapshot.snapshotType] ?? "Rosters";
   // Sort rosters by draft order if available, otherwise alphabetically
   const rosters = [...snapshot.rosters].sort((a, b) => {
@@ -331,6 +347,8 @@ ${isPostDraft ? `    tr:not(.tier) > td:first-child {
     .pos-te  { background: #ffe0b2; }
     .pos-def { background: #d2b48c; }
     .pos-k   { background: #e0d0f0; }
+    .traded-picks { margin-top: 8px; }
+    .traded-picks th { background: #555; }
   </style>
 </head>
 <body>
@@ -344,11 +362,12 @@ ${isPostDraft ? '      <th>Rnd</th>\n' : ''}${headerCells}
     </tr>
 ${dataRows.join("\n")}
   </table>
+${tradedPicksSection(tradedPicks)}
 </body>
 </html>`;
 }
 
-export function generateIndexHtml(leagueName: string, navLinks: NavLink[]): string {
+export function generateIndexHtml(leagueName: string, navLinks: NavLink[], futureTradedPicks?: ResolvedTradedPick[]): string {
   // Group by season (most recent first)
   const seasons = new Map<string, NavLink[]>();
   for (const link of navLinks) {
@@ -405,6 +424,21 @@ export function generateIndexHtml(leagueName: string, navLinks: NavLink[]): stri
       background: #e0e8f0;
       text-decoration: underline;
     }
+    .traded-picks { margin-top: 8px; }
+    .traded-picks th {
+      background: #555;
+      color: white;
+      border: 1px solid #ccc;
+      padding: 4px 8px;
+      white-space: nowrap;
+    }
+    .traded-picks td {
+      border: 1px solid #ccc;
+      padding: 4px 8px;
+      white-space: nowrap;
+      background: white;
+    }
+    table { border-collapse: collapse; font-size: 13px; }
   </style>
 </head>
 <body>
@@ -412,6 +446,7 @@ export function generateIndexHtml(leagueName: string, navLinks: NavLink[]): stri
   <div class="seasons">
 ${seasonRows}
   </div>
+${futureTradedPicks && futureTradedPicks.length > 0 ? tradedPicksSection(futureTradedPicks) : ''}
 </body>
 </html>`;
 }
