@@ -210,12 +210,14 @@ function tradedPicksTable(picks: ResolvedTradedPick[]): string {
       return `      <tr>${cells}</tr>`;
     })
     .join("\n");
-  return `  <table class="text-sm">
+  return `  <div class="overflow-x-auto -mx-1">
+  <table class="text-sm min-w-full">
     <thead><tr>${headers}</tr></thead>
     <tbody>
 ${rows}
     </tbody>
-  </table>`;
+  </table>
+  </div>`;
 }
 
 function tradedPicksSection(tradedPicks?: ResolvedTradedPick[]): string {
@@ -223,7 +225,7 @@ function tradedPicksSection(tradedPicks?: ResolvedTradedPick[]): string {
   if (!tradedPicks || tradedPicks.length === 0) {
     return `${heading}\n  <p class="text-sm text-gray-500">None</p>`;
   }
-  return `${heading}\n  <div class="inline-block">\n${tradedPicksTable(tradedPicks)}\n  </div>`;
+  return `${heading}\n  <div class="overflow-x-auto">\n${tradedPicksTable(tradedPicks)}\n  </div>`;
 }
 
 // ── Roster page styles ──
@@ -290,7 +292,7 @@ export function generateHtml(
           : `<a href="${esc(l.href)}" class="${PILL_LINK}">${esc(label)}</a>`;
       })
       .join("\n      ");
-    navHtml = `  <nav class="flex items-center gap-2 mb-6">
+    navHtml = `  <nav class="flex flex-wrap items-center gap-2 mb-6">
       <a href="../index.html" class="${PILL_LINK}">Home</a>
       ${items}
     </nav>`;
@@ -302,18 +304,22 @@ export function generateHtml(
   return `<!DOCTYPE html>
 <html lang="en">
 ${htmlHead(`${snapshot.leagueName} - ${snapshot.season} ${typeLabel}`, styles)}
-<body class="bg-gray-50 text-gray-900 font-sans antialiased p-5">
-  <h1 class="text-3xl font-bold tracking-tight text-gray-900 mb-1">${esc(snapshot.season)} ${esc(typeLabel)}</h1>
+<body class="bg-gray-50 text-gray-900 font-sans antialiased">
+  <div class="px-3 sm:px-5 pt-4 sm:pt-5 pb-10">
+  <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 mb-1">${esc(snapshot.season)} ${esc(typeLabel)}</h1>
   <div class="text-sm text-gray-500 mb-4">${esc(snapshot.leagueName)}</div>
 ${navHtml}
+  <div class="overflow-x-auto">
   <table class="border-collapse bg-white text-xs">
     <tr>
 ${roundTh}${headerCells}
     </tr>
 ${dataRows.join("\n")}
   </table>
+  </div>
 ${tradedPicksSection(tradedPicks)}
   <footer class="mt-8 text-xs text-gray-400">Data retrieved ${esc(formatPacificTime(snapshot.capturedAt))}</footer>
+  </div>
 </body>
 </html>`;
 }
@@ -354,7 +360,7 @@ export function generateIndexHtml(
       </div>`
         : "";
 
-      return `      <div class="flex items-center py-4 border-b border-gray-100 first:border-t">
+      return `      <div class="flex flex-wrap items-center gap-y-2 py-4 border-b border-gray-100 first:border-t">
         <span class="text-xl font-semibold text-gray-900 min-w-[72px]">${esc(season)}</span>${throwback}
         <div class="flex gap-2 flex-wrap ml-auto">
           ${pills}
@@ -396,9 +402,9 @@ ${tradedPicksTable(futureTradedPicks)}
 <html lang="en">
 ${htmlHead(leagueName)}
 <body class="bg-white text-gray-900 font-sans antialiased">
-  <div class="max-w-2xl mx-auto px-6 py-20">
-    <header class="text-center mb-16">
-      <h1 class="text-4xl font-bold tracking-tight m-0 mb-1.5">${esc(leagueName)}</h1>
+  <div class="max-w-2xl mx-auto px-4 sm:px-6 py-10 sm:py-20">
+    <header class="text-center mb-10 sm:mb-16">
+      <h1 class="text-3xl sm:text-4xl font-bold tracking-tight m-0 mb-1.5">${esc(leagueName)}</h1>
       <div class="text-sm text-gray-400 tracking-wide">est. 2006</div>
     </header>
 
