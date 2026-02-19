@@ -1,6 +1,6 @@
 node_modules/
 dist/
 data/**/players-*.json
-output/
+# output/ is committed — Cloudflare Pages serves it directly from the repo
 .claude/
 *.code-workspace
