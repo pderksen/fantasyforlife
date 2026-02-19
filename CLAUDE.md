@@ -1,4 +1,4 @@
-# FFL Sleeper Tools
+# Fantasy For Life
 
 ## Project Overview
 Fantasy football roster viewer for a long-running league. Pulls roster data from the Sleeper API and generates HTML tables showing all rostered players organized by owner.
