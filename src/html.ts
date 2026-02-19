@@ -211,7 +211,7 @@ function tradedPicksTable(picks: ResolvedTradedPick[]): string {
     })
     .join("\n");
   return `  <div class="overflow-x-auto -mx-1">
-  <table class="text-sm min-w-full">
+  <table class="text-sm w-auto">
     <thead><tr>${headers}</tr></thead>
     <tbody>
 ${rows}
@@ -225,7 +225,7 @@ function tradedPicksSection(tradedPicks?: ResolvedTradedPick[]): string {
   if (!tradedPicks || tradedPicks.length === 0) {
     return `${heading}\n  <p class="text-sm text-gray-500">None</p>`;
   }
-  return `${heading}\n  <div class="overflow-x-auto">\n${tradedPicksTable(tradedPicks)}\n  </div>`;
+  return `${heading}\n${tradedPicksTable(tradedPicks)}`;
 }
 
 // ── Roster page styles ──
