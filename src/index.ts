@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, savePlayerData, loadSnapshot, getSnapshotPath, getDraftPicksPath, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRounds, buildRosterOwnerMap, resolveTradedPicks, saveTradedPicks, loadTradedPicks } from "./snapshot.js";
+import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRounds, buildRosterOwnerMap, resolveTradedPicks, saveTradedPicks, loadTradedPicks } from "./snapshot.js";
 import { generateHtml, generateIndexHtml, writeHtml } from "./html.js";
 import { getDraftPicks, fetchAllPlayers, getLeagueTradedPicks, getLeague } from "./sleeper-api.js";
 import { getTierConfig, getLatestDraftOrder } from "./tiers.js";
@@ -75,14 +75,11 @@ function printUsage(): void {
 async function snapshotAndGenerate(snapshotType: SnapshotType, leagueId: string): Promise<void> {
   console.log(`Taking ${snapshotType} snapshot for league: ${leagueId}\n`);
 
-  // Fetch player DB so we can both use it for the snapshot and save it
+  // Fetch player DB to resolve player IDs to names/positions/teams
   console.log("Fetching player database...");
   const playerDb = await fetchAllPlayers();
 
   const snapshot = await takeSnapshot(leagueId, snapshotType, playerDb);
-
-  const playerDataPath = await savePlayerData(playerDb, snapshot.season);
-  console.log(`Player data saved: ${playerDataPath}`);
 
   const snapshotPath = await saveSnapshot(snapshot);
   console.log(`\nSnapshot saved: ${snapshotPath}`);

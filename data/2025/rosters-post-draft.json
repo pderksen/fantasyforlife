@@ -1,0 +1,1079 @@
+{
+  "leagueId": "1220634180434526208",
+  "leagueName": "Fantasy For Life (FFL)",
+  "season": "2025",
+  "snapshotType": "post-draft",
+  "capturedAt": "2026-02-16T06:00:59.019Z",
+  "rosters": [
+    {
+      "ownerName": "Easton Evil Empire",
+      "players": [
+        {
+          "name": "Daniels, Jayden",
+          "position": "QB",
+          "team": "WAS",
+          "round": 1
+        },
+        {
+          "name": "Collins, Nico",
+          "position": "WR",
+          "team": "HOU",
+          "round": 2
+        },
+        {
+          "name": "Thomas, Brian",
+          "position": "WR",
+          "team": "JAX",
+          "round": 3
+        },
+        {
+          "name": "Smith-Njigba, Jaxon",
+          "position": "WR",
+          "team": "SEA",
+          "round": 4
+        },
+        {
+          "name": "Henderson, TreVeyon",
+          "position": "RB",
+          "team": "NE",
+          "round": 5
+        },
+        {
+          "name": "Conner, James",
+          "position": "RB",
+          "team": "ARI",
+          "round": 6
+        },
+        {
+          "name": "McCarthy, J.J.",
+          "position": "QB",
+          "team": "MIN",
+          "round": 7
+        },
+        {
+          "name": "Williams, Jameson",
+          "position": "WR",
+          "team": "DET",
+          "round": 8
+        },
+        {
+          "name": "Andrews, Mark",
+          "position": "TE",
+          "team": "BAL",
+          "round": 9
+        },
+        {
+          "name": "Egbuka, Emeka",
+          "position": "WR",
+          "team": "TB",
+          "round": 10
+        },
+        {
+          "name": "Lawrence, Trevor",
+          "position": "QB",
+          "team": "JAX",
+          "round": 11
+        },
+        {
+          "name": "Addison, Jordan",
+          "position": "WR",
+          "team": "MIN",
+          "round": 12
+        },
+        {
+          "name": "Tuten, Bhayshul",
+          "position": "RB",
+          "team": "JAX",
+          "round": 13
+        },
+        {
+          "name": "Benson, Trey",
+          "position": "RB",
+          "team": "ARI",
+          "round": 14
+        },
+        {
+          "name": "Young, Bryce",
+          "position": "QB",
+          "team": "CAR",
+          "round": 15
+        },
+        {
+          "name": "Vikings, Minnesota",
+          "position": "DEF",
+          "team": "MIN",
+          "round": 16
+        },
+        {
+          "name": "Boswell, Chris",
+          "position": "K",
+          "team": "PIT",
+          "round": 17
+        }
+      ]
+    },
+    {
+      "ownerName": "Riverstone Stoners",
+      "players": [
+        {
+          "name": "Jackson, Lamar",
+          "position": "QB",
+          "team": "BAL",
+          "round": 1
+        },
+        {
+          "name": "Nabers, Malik",
+          "position": "WR",
+          "team": "NYG",
+          "round": 2
+        },
+        {
+          "name": "Taylor, Jonathan",
+          "position": "RB",
+          "team": "IND",
+          "round": 3
+        },
+        {
+          "name": "Wilson, Garrett",
+          "position": "WR",
+          "team": "NYJ",
+          "round": 4
+        },
+        {
+          "name": "Higgins, Tee",
+          "position": "WR",
+          "team": "CIN",
+          "round": 5
+        },
+        {
+          "name": "Purdy, Brock",
+          "position": "QB",
+          "team": "SF",
+          "round": 6
+        },
+        {
+          "name": "Hall, Breece",
+          "position": "RB",
+          "team": "NYJ",
+          "round": 7
+        },
+        {
+          "name": "Waddle, Jaylen",
+          "position": "WR",
+          "team": "MIA",
+          "round": 8
+        },
+        {
+          "name": "Jones, Aaron",
+          "position": "RB",
+          "team": "MIN",
+          "round": 9
+        },
+        {
+          "name": "Meyers, Jakobi",
+          "position": "WR",
+          "team": "LV",
+          "round": 10
+        },
+        {
+          "name": "Engram, Evan",
+          "position": "TE",
+          "team": "DEN",
+          "round": 11
+        },
+        {
+          "name": "Smith, Geno",
+          "position": "QB",
+          "team": "LV",
+          "round": 12
+        },
+        {
+          "name": "Stevenson, Rhamondre",
+          "position": "RB",
+          "team": "NE",
+          "round": 13
+        },
+        {
+          "name": "Chubb, Nick",
+          "position": "RB",
+          "team": "HOU",
+          "round": 14
+        },
+        {
+          "name": "Allgeier, Tyler",
+          "position": "RB",
+          "team": "ATL",
+          "round": 15
+        },
+        {
+          "name": "Butker, Harrison",
+          "position": "K",
+          "team": "KC",
+          "round": 16
+        },
+        {
+          "name": "Lions, Detroit",
+          "position": "DEF",
+          "team": "DET",
+          "round": 17
+        }
+      ]
+    },
+    {
+      "ownerName": "Vancouver Moose Drool",
+      "players": [
+        {
+          "name": "Allen, Josh",
+          "position": "QB",
+          "team": "BUF",
+          "round": 1
+        },
+        {
+          "name": "McBride, Trey",
+          "position": "TE",
+          "team": "ARI",
+          "round": 2
+        },
+        {
+          "name": "Irving, Bucky",
+          "position": "RB",
+          "team": "TB",
+          "round": 3
+        },
+        {
+          "name": "Adams, Davante",
+          "position": "WR",
+          "team": "LAR",
+          "round": 5
+        },
+        {
+          "name": "McLaurin, Terry",
+          "position": "WR",
+          "team": "WAS",
+          "round": 6
+        },
+        {
+          "name": "Maye, Drake",
+          "position": "QB",
+          "team": "NE",
+          "round": 8
+        },
+        {
+          "name": "Montgomery, David",
+          "position": "RB",
+          "team": "DET",
+          "round": 9
+        },
+        {
+          "name": "Williams, Javonte",
+          "position": "RB",
+          "team": "DAL",
+          "round": 10
+        },
+        {
+          "name": "Jennings, Jauan",
+          "position": "WR",
+          "team": "SF",
+          "round": 11
+        },
+        {
+          "name": "Golden, Matthew",
+          "position": "WR",
+          "team": "GB",
+          "round": 12
+        },
+        {
+          "name": "Godwin, Chris",
+          "position": "WR",
+          "team": "TB",
+          "round": 13
+        },
+        {
+          "name": "Eagles, Philadelphia",
+          "position": "DEF",
+          "team": "PHI",
+          "round": 14
+        },
+        {
+          "name": "Pitts, Kyle",
+          "position": "TE",
+          "team": "ATL",
+          "round": 15
+        },
+        {
+          "name": "Downs, Josh",
+          "position": "WR",
+          "team": "IND",
+          "round": 16
+        },
+        {
+          "name": "Lutz, Wil",
+          "position": "K",
+          "team": "DEN",
+          "round": 17
+        },
+        {
+          "name": "Mooney, Darnell",
+          "position": "WR",
+          "team": "ATL",
+          "round": 17
+        },
+        {
+          "name": "Spears, Tyjae",
+          "position": "RB",
+          "team": "TEN",
+          "round": 17
+        }
+      ]
+    },
+    {
+      "ownerName": "Visalia Viagra Vipers",
+      "players": [
+        {
+          "name": "Hurts, Jalen",
+          "position": "QB",
+          "team": "PHI",
+          "round": 1
+        },
+        {
+          "name": "Henry, Derrick",
+          "position": "RB",
+          "team": "BAL",
+          "round": 2
+        },
+        {
+          "name": "Nacua, Puka",
+          "position": "WR",
+          "team": "LAR",
+          "round": 3
+        },
+        {
+          "name": "Williams, Kyren",
+          "position": "RB",
+          "team": "LAR",
+          "round": 4
+        },
+        {
+          "name": "Evans, Mike",
+          "position": "WR",
+          "team": "TB",
+          "round": 5
+        },
+        {
+          "name": "Fields, Justin",
+          "position": "QB",
+          "team": "NYJ",
+          "round": 6
+        },
+        {
+          "name": "Pollard, Tony",
+          "position": "RB",
+          "team": "TEN",
+          "round": 7
+        },
+        {
+          "name": "Moore, DJ",
+          "position": "WR",
+          "team": "CHI",
+          "round": 8
+        },
+        {
+          "name": "Pickens, George",
+          "position": "WR",
+          "team": "DAL",
+          "round": 9
+        },
+        {
+          "name": "Dobbins, J.K.",
+          "position": "RB",
+          "team": "DEN",
+          "round": 10
+        },
+        {
+          "name": "Njoku, David",
+          "position": "TE",
+          "team": "CLE",
+          "round": 11
+        },
+        {
+          "name": "Kupp, Cooper",
+          "position": "WR",
+          "team": "SEA",
+          "round": 12
+        },
+        {
+          "name": "Ekeler, Austin",
+          "position": "RB",
+          "team": "WAS",
+          "round": 13
+        },
+        {
+          "name": "Pittman, Michael",
+          "position": "WR",
+          "team": "IND",
+          "round": 14
+        },
+        {
+          "name": "Broncos, Denver",
+          "position": "DEF",
+          "team": "DEN",
+          "round": 15
+        },
+        {
+          "name": "Dicker, Cameron",
+          "position": "K",
+          "team": "LAC",
+          "round": 16
+        },
+        {
+          "name": "Wilson, Russell",
+          "position": "QB",
+          "team": "NYG",
+          "round": 17
+        }
+      ]
+    },
+    {
+      "ownerName": "Lemoore Liberators",
+      "players": [
+        {
+          "name": "Burrow, Joe",
+          "position": "QB",
+          "team": "CIN",
+          "round": 1
+        },
+        {
+          "name": "St. Brown, Amon-Ra",
+          "position": "WR",
+          "team": "DET",
+          "round": 2
+        },
+        {
+          "name": "Mayfield, Baker",
+          "position": "QB",
+          "team": "TB",
+          "round": 3
+        },
+        {
+          "name": "Achane, De'Von",
+          "position": "RB",
+          "team": "MIA",
+          "round": 4
+        },
+        {
+          "name": "Harrison, Marvin",
+          "position": "WR",
+          "team": "ARI",
+          "round": 5
+        },
+        {
+          "name": "Swift, D'Andre",
+          "position": "RB",
+          "team": "CHI",
+          "round": 6
+        },
+        {
+          "name": "Smith, DeVonta",
+          "position": "WR",
+          "team": "PHI",
+          "round": 7
+        },
+        {
+          "name": "Hockenson, T.J.",
+          "position": "TE",
+          "team": "MIN",
+          "round": 8
+        },
+        {
+          "name": "Tracy, Tyrone",
+          "position": "RB",
+          "team": "NYG",
+          "round": 9
+        },
+        {
+          "name": "Warren, Jaylen",
+          "position": "RB",
+          "team": "PIT",
+          "round": 10
+        },
+        {
+          "name": "Penix, Michael",
+          "position": "QB",
+          "team": "ATL",
+          "round": 11
+        },
+        {
+          "name": "Shakir, Khalil",
+          "position": "WR",
+          "team": "BUF",
+          "round": 12
+        },
+        {
+          "name": "Bigsby, Tank",
+          "position": "RB",
+          "team": "JAX",
+          "round": 13
+        },
+        {
+          "name": "Reed, Jayden",
+          "position": "WR",
+          "team": "GB",
+          "round": 14
+        },
+        {
+          "name": "Rodgers, Aaron",
+          "position": "QB",
+          "team": "PIT",
+          "round": 15
+        },
+        {
+          "name": "Ravens, Baltimore",
+          "position": "DEF",
+          "team": "BAL",
+          "round": 16
+        },
+        {
+          "name": "Koo, Younghoe",
+          "position": "K",
+          "team": "ATL",
+          "round": 17
+        }
+      ]
+    },
+    {
+      "ownerName": "Dinkey Creek Dirt Clods",
+      "players": [
+        {
+          "name": "Robinson, Bijan",
+          "position": "RB",
+          "team": "ATL",
+          "round": 1
+        },
+        {
+          "name": "Bowers, Brock",
+          "position": "TE",
+          "team": "LV",
+          "round": 2
+        },
+        {
+          "name": "Nix, Bo",
+          "position": "QB",
+          "team": "DEN",
+          "round": 3
+        },
+        {
+          "name": "Jacobs, Josh",
+          "position": "RB",
+          "team": "GB",
+          "round": 4
+        },
+        {
+          "name": "Herbert, Justin",
+          "position": "QB",
+          "team": "LAC",
+          "round": 5
+        },
+        {
+          "name": "Kamara, Alvin",
+          "position": "RB",
+          "team": "NO",
+          "round": 6
+        },
+        {
+          "name": "Worthy, Xavier",
+          "position": "WR",
+          "team": "KC",
+          "round": 7
+        },
+        {
+          "name": "Diggs, Stefon",
+          "position": "WR",
+          "team": "NE",
+          "round": 8
+        },
+        {
+          "name": "Charbonnet, Zach",
+          "position": "RB",
+          "team": "SEA",
+          "round": 9
+        },
+        {
+          "name": "Pearsall, Ricky",
+          "position": "WR",
+          "team": "SF",
+          "round": 10
+        },
+        {
+          "name": "Ward, Cam",
+          "position": "QB",
+          "team": "TEN",
+          "round": 11
+        },
+        {
+          "name": "Croskey-Merritt, Jacory",
+          "position": "RB",
+          "team": "WAS",
+          "round": 12
+        },
+        {
+          "name": "Loveland, Colston",
+          "position": "TE",
+          "team": "CHI",
+          "round": 13
+        },
+        {
+          "name": "Kirk, Christian",
+          "position": "WR",
+          "team": "HOU",
+          "round": 14
+        },
+        {
+          "name": "Richardson, Anthony",
+          "position": "QB",
+          "team": "IND",
+          "round": 15
+        },
+        {
+          "name": "49ers, San Francisco",
+          "position": "DEF",
+          "team": "SF",
+          "round": 16
+        },
+        {
+          "name": "Bass, Tyler",
+          "position": "K",
+          "team": "BUF",
+          "round": 17
+        }
+      ]
+    },
+    {
+      "ownerName": "Sanger Squatty Pottys",
+      "players": [
+        {
+          "name": "Chase, Ja'Marr",
+          "position": "WR",
+          "team": "CIN",
+          "round": 1
+        },
+        {
+          "name": "Mahomes, Patrick",
+          "position": "QB",
+          "team": "KC",
+          "round": 2
+        },
+        {
+          "name": "Cook, James",
+          "position": "RB",
+          "team": "BUF",
+          "round": 3
+        },
+        {
+          "name": "Kittle, George",
+          "position": "TE",
+          "team": "SF",
+          "round": 4
+        },
+        {
+          "name": "Hubbard, Chuba",
+          "position": "RB",
+          "team": "CAR",
+          "round": 5
+        },
+        {
+          "name": "Goff, Jared",
+          "position": "QB",
+          "team": "DET",
+          "round": 6
+        },
+        {
+          "name": "McMillan, Tetairoa",
+          "position": "WR",
+          "team": "CAR",
+          "round": 7
+        },
+        {
+          "name": "Flowers, Zay",
+          "position": "WR",
+          "team": "BAL",
+          "round": 8
+        },
+        {
+          "name": "Hunter, Travis",
+          "position": "WR",
+          "team": "JAX",
+          "round": 9
+        },
+        {
+          "name": "Etienne, Travis",
+          "position": "RB",
+          "team": "JAX",
+          "round": 10
+        },
+        {
+          "name": "Robinson, Brian",
+          "position": "RB",
+          "team": "SF",
+          "round": 11
+        },
+        {
+          "name": "Stafford, Matthew",
+          "position": "QB",
+          "team": "LAR",
+          "round": 12
+        },
+        {
+          "name": "Coleman, Keon",
+          "position": "WR",
+          "team": "BUF",
+          "round": 13
+        },
+        {
+          "name": "White, Rachaad",
+          "position": "RB",
+          "team": "TB",
+          "round": 14
+        },
+        {
+          "name": "Jones, Daniel",
+          "position": "QB",
+          "team": "IND",
+          "round": 15
+        },
+        {
+          "name": "Bills, Buffalo",
+          "position": "DEF",
+          "team": "BUF",
+          "round": 16
+        },
+        {
+          "name": "McLaughlin, Chase",
+          "position": "K",
+          "team": "TB",
+          "round": 17
+        }
+      ]
+    },
+    {
+      "ownerName": "South Town FF",
+      "players": [
+        {
+          "name": "Barkley, Saquon",
+          "position": "RB",
+          "team": "PHI",
+          "round": 1
+        },
+        {
+          "name": "McCaffrey, Christian",
+          "position": "RB",
+          "team": "SF",
+          "round": 2
+        },
+        {
+          "name": "London, Drake",
+          "position": "WR",
+          "team": "ATL",
+          "round": 3
+        },
+        {
+          "name": "Stroud, C.J.",
+          "position": "QB",
+          "team": "HOU",
+          "round": 4
+        },
+        {
+          "name": "Love, Jordan",
+          "position": "QB",
+          "team": "GB",
+          "round": 5
+        },
+        {
+          "name": "Harvey, RJ",
+          "position": "RB",
+          "team": "DEN",
+          "round": 6
+        },
+        {
+          "name": "Sutton, Courtland",
+          "position": "WR",
+          "team": "DEN",
+          "round": 7
+        },
+        {
+          "name": "Kelce, Travis",
+          "position": "TE",
+          "team": "KC",
+          "round": 7
+        },
+        {
+          "name": "Ridley, Calvin",
+          "position": "WR",
+          "team": "TEN",
+          "round": 8
+        },
+        {
+          "name": "Mixon, Joe",
+          "position": "RB",
+          "team": "HOU",
+          "round": 9
+        },
+        {
+          "name": "Samuel, Deebo",
+          "position": "WR",
+          "team": "WAS",
+          "round": 10
+        },
+        {
+          "name": "Jeudy, Jerry",
+          "position": "WR",
+          "team": "CLE",
+          "round": 11
+        },
+        {
+          "name": "Darnold, Sam",
+          "position": "QB",
+          "team": "SEA",
+          "round": 12
+        },
+        {
+          "name": "Aiyuk, Brandon",
+          "position": "WR",
+          "team": "SF",
+          "round": 13
+        },
+        {
+          "name": "Kraft, Tucker",
+          "position": "TE",
+          "team": "GB",
+          "round": 14
+        },
+        {
+          "name": "Chiefs, Kansas City",
+          "position": "DEF",
+          "team": "KC",
+          "round": 15
+        },
+        {
+          "name": "Karty, Joshua",
+          "position": "K",
+          "team": "LAR",
+          "round": 16
+        }
+      ]
+    },
+    {
+      "ownerName": "Clovis Jets",
+      "players": [
+        {
+          "name": "Jefferson, Justin",
+          "position": "WR",
+          "team": "MIN",
+          "round": 1
+        },
+        {
+          "name": "Jeanty, Ashton",
+          "position": "RB",
+          "team": "LV",
+          "round": 2
+        },
+        {
+          "name": "Hampton, Omarion",
+          "position": "RB",
+          "team": "LAC",
+          "round": 3
+        },
+        {
+          "name": "Brown, A.J.",
+          "position": "WR",
+          "team": "PHI",
+          "round": 4
+        },
+        {
+          "name": "Walker, Kenneth",
+          "position": "RB",
+          "team": "SEA",
+          "round": 4
+        },
+        {
+          "name": "Hill, Tyreek",
+          "position": "WR",
+          "team": "MIA",
+          "round": 5
+        },
+        {
+          "name": "Murray, Kyler",
+          "position": "QB",
+          "team": "ARI",
+          "round": 6
+        },
+        {
+          "name": "Pacheco, Isiah",
+          "position": "RB",
+          "team": "KC",
+          "round": 7
+        },
+        {
+          "name": "LaPorta, Sam",
+          "position": "TE",
+          "team": "DET",
+          "round": 8
+        },
+        {
+          "name": "Rice, Rashee",
+          "position": "WR",
+          "team": "KC",
+          "round": 9
+        },
+        {
+          "name": "Judkins, Quinshon",
+          "position": "RB",
+          "team": "CLE",
+          "round": 10
+        },
+        {
+          "name": "Tagovailoa, Tua",
+          "position": "QB",
+          "team": "MIA",
+          "round": 11
+        },
+        {
+          "name": "Olave, Chris",
+          "position": "WR",
+          "team": "NO",
+          "round": 12
+        },
+        {
+          "name": "Allen, Braelon",
+          "position": "RB",
+          "team": "NYJ",
+          "round": 13
+        },
+        {
+          "name": "Dart, Jaxson",
+          "position": "QB",
+          "team": "NYG",
+          "round": 14
+        },
+        {
+          "name": "Bates, Jake",
+          "position": "K",
+          "team": "DET",
+          "round": 15
+        },
+        {
+          "name": "Texans, Houston",
+          "position": "DEF",
+          "team": "HOU",
+          "round": 16
+        }
+      ]
+    },
+    {
+      "ownerName": "Kingsburg Killaz",
+      "players": [
+        {
+          "name": "Lamb, CeeDee",
+          "position": "WR",
+          "team": "DAL",
+          "round": 1
+        },
+        {
+          "name": "Gibbs, Jahmyr",
+          "position": "RB",
+          "team": "DET",
+          "round": 2
+        },
+        {
+          "name": "McConkey, Ladd",
+          "position": "WR",
+          "team": "LAC",
+          "round": 3
+        },
+        {
+          "name": "Brown, Chase",
+          "position": "RB",
+          "team": "CIN",
+          "round": 4
+        },
+        {
+          "name": "Metcalf, DK",
+          "position": "WR",
+          "team": "PIT",
+          "round": 5
+        },
+        {
+          "name": "Prescott, Dak",
+          "position": "QB",
+          "team": "DAL",
+          "round": 6
+        },
+        {
+          "name": "Williams, Caleb",
+          "position": "QB",
+          "team": "CHI",
+          "round": 7
+        },
+        {
+          "name": "Odunze, Rome",
+          "position": "WR",
+          "team": "CHI",
+          "round": 8
+        },
+        {
+          "name": "Johnson, Kaleb",
+          "position": "RB",
+          "team": "PIT",
+          "round": 9
+        },
+        {
+          "name": "Warren, Tyler",
+          "position": "TE",
+          "team": "IND",
+          "round": 10
+        },
+        {
+          "name": "Skattebo, Cam",
+          "position": "RB",
+          "team": "NYG",
+          "round": 11
+        },
+        {
+          "name": "Mason, Jordan",
+          "position": "RB",
+          "team": "MIN",
+          "round": 12
+        },
+        {
+          "name": "Higgins, Jayden",
+          "position": "WR",
+          "team": "HOU",
+          "round": 13
+        },
+        {
+          "name": "Burden, Luther",
+          "position": "WR",
+          "team": "CHI",
+          "round": 14
+        },
+        {
+          "name": "Aubrey, Brandon",
+          "position": "K",
+          "team": "DAL",
+          "round": 15
+        },
+        {
+          "name": "Steelers, Pittsburgh",
+          "position": "DEF",
+          "team": "PIT",
+          "round": 16
+        },
+        {
+          "name": "Kincaid, Dalton",
+          "position": "TE",
+          "team": "BUF",
+          "round": 17
+        }
+      ]
+    }
+  ]
+}

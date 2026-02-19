@@ -23,7 +23,7 @@ Fantasy football roster viewer for a long-running league. Pulls roster data from
 
 **Draft Data**: Immutable. Saved as `draft-picks.json` and `draft-traded-picks.json` — no date suffix needed.
 
-**Player Data**: Sleeper `/players/nfl` (~5MB) fetched during `--snapshot` runs, saved as `players-YYYY-MM-DD.json`. Not fetched during `--snapshot-draft` (draft picks already contain metadata).
+**Player Data**: Sleeper `/players/nfl` (~5MB) fetched during `--snapshot` runs, used in-memory to resolve player IDs — not saved to disk. Not fetched during `--snapshot-draft` (draft picks already contain metadata).
 
 **Traded Picks**: Fetched from `/league/{id}/traded_picks`, filtered to future seasons only. Re-fetched with each snapshot command. Saved with both resolved (human-readable) and raw API data.
 
@@ -71,7 +71,6 @@ All three steps auto-fetch traded picks. Post-draft snapshots can be created ret
 - `data/<season>/draft-picks.json` — Immutable draft picks
 - `data/<season>/draft-traded-picks.json` — Immutable traded pick data for specific draft
 - `data/<season>/traded-picks.json` — League-level traded picks (re-fetched per command)
-- `data/<season>/players-YYYY-MM-DD.json` — Player snapshot (one per snapshot run)
 - `output/index.html` — Home page
 - `output/<season>/rosters-<type>.html` — Roster pages
 
@@ -117,7 +116,7 @@ interface ResolvedTradedPick {
 | Rosters | Yes | Snapshot at 3 key moments per season |
 | Draft picks | No | Immutable; always available from API |
 | League traded picks | Yes | Re-fetched per command |
-| Player data | Yes | Saved per snapshot run with date |
+| Player data | N/A | Fetched in-memory only; not persisted |
 
 ## Roster & Player Ordering
 - **HTML column order**: Draft slot order (post-draft round 1 pick order) via `loadDraftOrder()`. Falls back to alphabetical if no post-draft snapshot exists.

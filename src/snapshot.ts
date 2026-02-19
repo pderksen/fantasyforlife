@@ -249,18 +249,6 @@ export function getOutputPath(season: string, snapshotType: SnapshotType): strin
   return join(DATA_DIR, "..", "output", season, `rosters-${snapshotType}.html`);
 }
 
-export function getPlayerDataPath(season: string, date: string): string {
-  return join(DATA_DIR, season, `players-${date}.json`);
-}
-
-export async function savePlayerData(playerDb: PlayerDatabase, season: string): Promise<string> {
-  const seasonDir = join(DATA_DIR, season);
-  await mkdir(seasonDir, { recursive: true });
-  const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  const filePath = getPlayerDataPath(season, date);
-  await writeFile(filePath, JSON.stringify(playerDb), "utf-8");
-  return filePath;
-}
 
 export async function saveSnapshot(snapshot: Snapshot): Promise<string> {
   const seasonDir = join(DATA_DIR, snapshot.season);
