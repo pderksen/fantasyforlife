@@ -126,12 +126,21 @@ interface ResolvedTradedPick {
 - **Post-draft snapshots**: JSON by draft slot; players in draft pick order with `round` number.
 - **End-of-season tiered**: Players grouped by original draft round (tier follows player, not owner). Sort by draft round within tier. Undrafted go in last tier. In last tier: DEF second-to-last, K last. Round lookup via `loadDraftRounds()`.
 
+## League Rules
+
+**Throwback Years**: Every 5 years (2025, 2030, 2035, ...), no players are kept from the previous season — everyone drafts fresh. This affects:
+- End-of-season tier labels are descriptive (e.g., "TIER 1 — Drafted Rounds 1–5") because players represent only what was drafted that year
+- Pre-draft snapshot is skipped (no keepers = no interesting pre-draft state to record); throwback seasons show no pre-draft chip on the index page
+- Non-throwback years (2026, 2027, ...) have keeper rules that affect tier boundaries and labels — to be determined when those seasons arrive
+
+**Non-throwback tier rules** (2026 and beyond): TBD — will depend on how many keepers, which rounds they count as, etc. Add to `TIER_CONFIGS` in `src/tiers.ts` when known.
+
 ## Tiers
 Full-width colored separator rows dividing the table by draft value. Configured per `"season:snapshotType"` in `src/tiers.ts`.
 
 - **Config**: `TIER_CONFIGS` map; each entry is `{ label, beforeRound }[]`
 - **Colors**: T1 dark green `#1a6b2a`, T2 dark gold `#8b6914`, T3 dark red `#8b1a1a`
-- **2025 boundaries**: T1 = rounds 1–5, T2 = 6–10, T3 = 11+ and undrafted
+- **2025 boundaries** (throwback): T1 = rounds 1–5, T2 = 6–10, T3 = 11+ and undrafted. End-of-season labels are descriptive (see League Rules above).
 - **Adding a season**: Add entry to `TIER_CONFIGS`. No config = no tier rows.
 - **Rendering**: Post-draft: `buildPostDraftRows()`. End-of-season: `buildTieredRows()` (buckets by tier, sorts within, max-players determines row count).
 

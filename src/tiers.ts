@@ -12,9 +12,9 @@ const TIER_CONFIGS: Record<string, TierConfig> = {
     { label: "TIER 3", beforeRound: 11 },
   ],
   "2025:end-of-season": [
-    { label: "TIER 1", beforeRound: 1 },
-    { label: "TIER 2", beforeRound: 6 },
-    { label: "TIER 3", beforeRound: 11 },
+    { label: "TIER 1 — Drafted Rounds 1–5", beforeRound: 1 },
+    { label: "TIER 2 — Drafted Rounds 6–10", beforeRound: 6 },
+    { label: "TIER 3 — Drafted Rounds 11+ / Free Agency", beforeRound: 11 },
   ],
 };
 
