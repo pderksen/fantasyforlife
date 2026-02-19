@@ -41,7 +41,7 @@ const TH = `${CELL} bg-gray-800 text-white sticky top-0`;
 const PILL = "inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg";
 const PILL_LINK = `${PILL} text-gray-700 bg-gray-100 transition-colors hover:bg-gray-200 no-underline`;
 const PILL_ACTIVE = `${PILL} text-gray-900 bg-gray-200`;
-const SECTION_H2 = "text-sm font-semibold uppercase tracking-wide text-gray-500 mb-5";
+const SECTION_H2 = "text-base font-semibold text-gray-700 mb-5 mt-0";
 const TP_TH = "text-left text-xs font-semibold uppercase tracking-wide text-gray-400 px-3 pb-2.5 border-b-2 border-gray-200";
 const TP_TD = "px-3 py-2.5 border-b border-gray-100 text-gray-900";
 
@@ -210,7 +210,7 @@ function tradedPicksTable(picks: ResolvedTradedPick[]): string {
       return `      <tr>${cells}</tr>`;
     })
     .join("\n");
-  return `  <table class="w-full text-sm">
+  return `  <table class="text-sm">
     <thead><tr>${headers}</tr></thead>
     <tbody>
 ${rows}
@@ -219,11 +219,11 @@ ${rows}
 }
 
 function tradedPicksSection(tradedPicks?: ResolvedTradedPick[]): string {
-  const heading = `  <h3 class="mt-6 text-lg font-semibold text-gray-900">Traded Picks</h3>`;
+  const heading = `  <h2 class="mt-8 mb-4 text-base font-semibold text-gray-700">Traded Picks</h2>`;
   if (!tradedPicks || tradedPicks.length === 0) {
     return `${heading}\n  <p class="text-sm text-gray-500">None</p>`;
   }
-  return `${heading}\n${tradedPicksTable(tradedPicks)}`;
+  return `${heading}\n  <div class="inline-block">\n${tradedPicksTable(tradedPicks)}\n  </div>`;
 }
 
 // ── Roster page styles ──
@@ -343,7 +343,15 @@ export function generateIndexHtml(
         .join("\n          ");
 
       const throwback = !hasPreDraft && links.length > 0
-        ? `\n        <span class="text-xs text-amber-700 mr-auto pl-1">Throwback Year</span>`
+        ? `\n        <span class="text-xs font-medium bg-green-800 text-white rounded px-1.5 py-0.5 mr-auto ml-3">Throwback</span>`
+        : "";
+
+      const archiveLink = sortedSeasons.indexOf(season) === sortedSeasons.length - 1
+        ? `\n      <div class="pb-4 border-b border-gray-100">
+        <a href="https://docs.google.com/spreadsheets/d/16rS1aBhJR0xg7xzCQGEzE2_-8_wO9F1MFlMVSGpS4g8/pubhtml" target="_blank" rel="noopener noreferrer" class="text-xl font-medium text-blue-600 no-underline transition-colors hover:text-blue-800 hover:underline">
+          Seasons 2006&ndash;2024 &#x2197;
+        </a>
+      </div>`
         : "";
 
       return `      <div class="flex items-center py-4 border-b border-gray-100 first:border-t">
@@ -351,7 +359,7 @@ export function generateIndexHtml(
         <div class="flex gap-2 flex-wrap ml-auto">
           ${pills}
         </div>
-      </div>`;
+      </div>${archiveLink}`;
     })
     .join("\n");
 
@@ -395,16 +403,11 @@ ${htmlHead(leagueName)}
     </header>
 
     <section class="mb-12">
-      <h2 class="${SECTION_H2}">Current Tiers by Season</h2>
+      <h2 class="${SECTION_H2}">Current Tiers</h2>
 ${seasonRows}
     </section>
 ${draftOrderHtml}
 ${tradedPicksHtml}
-    <div class="pt-2">
-      <a href="https://docs.google.com/spreadsheets/d/16rS1aBhJR0xg7xzCQGEzE2_-8_wO9F1MFlMVSGpS4g8/pubhtml" target="_blank" rel="noopener noreferrer" class="text-lg font-medium text-blue-600 no-underline transition-colors hover:text-blue-800 hover:underline">
-        Seasons 2006&ndash;2024 &#x2197;
-      </a>
-    </div>
   </div>
 </body>
 </html>`;
