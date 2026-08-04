@@ -355,7 +355,7 @@ export function generateIndexHtml(
       const archiveLink = sortedSeasons.indexOf(season) === sortedSeasons.length - 1
         ? `\n      <div class="pb-4 border-b border-gray-100">
         <a href="https://docs.google.com/spreadsheets/d/16rS1aBhJR0xg7xzCQGEzE2_-8_wO9F1MFlMVSGpS4g8/pubhtml" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-600 no-underline transition-colors hover:text-blue-800 hover:underline">
-          Tiers 2006&ndash;2024
+          Tiers 2006&ndash;2024 &#x2197;
         </a>
       </div>`
         : "";
