@@ -23,17 +23,20 @@ Fantasy football roster viewer for a long-running league. Pulls roster data from
 
 **Draft Data**: Immutable. Saved as `draft-picks.json` and `draft-traded-picks.json` — no date suffix needed.
 
-**Player Data**: Sleeper `/players/nfl` (~5MB) fetched during `--snapshot` runs, used in-memory to resolve player IDs — not saved to disk. Not fetched during `--snapshot-draft` (draft picks already contain metadata).
+**Player Data**: Sleeper `/players/nfl` (~15MB as of Aug 2026; their docs still say 5MB) fetched during `--snapshot` runs, used in-memory to resolve player IDs — not saved to disk. Not fetched during `--snapshot-draft` (draft picks already contain metadata).
 
-**Traded Picks**: Fetched from `/league/{id}/traded_picks`, filtered to future seasons only. Re-fetched with each snapshot command. Saved with both resolved (human-readable) and raw API data.
+**Traded Picks**: Fetched from `/league/{id}/traded_picks` and saved **unfiltered** (every pick, every draft season) with both resolved (human-readable) and raw API data. Re-fetched with each snapshot command until the season seals. Pages narrow the list at render time.
 
-**HTML Output**: `output/<season>/` (one per snapshot type) + `output/index.html` home page. Roster pages include chip-style nav bar. End-of-season pages show a "Traded Picks" section. Table cells color-coded by position. Footer shows capture timestamp in Pacific time.
+**HTML Output**: `output/<season>/` (one per snapshot type) + `output/index.html` home page. Roster pages include chip-style nav bar. Every roster page and the home page show a "Traded Picks" section. Table cells color-coded by position. Footer shows capture timestamp in Pacific time.
 
 ## Sleeper API
 - Docs: https://docs.sleeper.com/ — Base URL: `https://api.sleeper.app/v1` — No auth required
 - Key endpoints: `/league/{id}`, `/league/{id}/rosters`, `/league/{id}/users`, `/league/{id}/drafts`, `/draft/{draft_id}/picks`, `/league/{id}/traded_picks`, `/players/nfl`
 - `/league/{id}/traded_picks`: `roster_id` = original owner, `owner_id` = current owner (both numeric despite the name)
 - Rate limit: 1000 calls/min
+- **Consumed picks persist**: a completed league still returns its own season's traded picks, so pre-draft pick state stays recoverable after the draft
+- `roster_id` → `owner_id` is stable across the season rollover (verified 2025→2026), so raw pick data isn't ambiguous between leagues
+- `/players/nfl?position=X` filters, but repeated `position` params are **last-wins, not OR** — multi-position needs one call per position, so the single 15MB fetch (~0.5s) is usually better
 
 ## Commands
 - `npm run build` — compile TypeScript
@@ -46,13 +49,22 @@ Fantasy football roster viewer for a long-running league. Pulls roster data from
 - All commands auto-regenerate `output/index.html`
 
 ## League
-- Primary league ID: `1220634180434526208`
-- Draft ID for 2025 season: `1220634181302767616`
-- Find drafts: `/league/{id}/drafts` returns array of draft objects
+Sleeper mints a **new league ID every season**; `previous_league_id` chains them backward.
+`DEFAULT_LEAGUE_ID` in `src/index.ts` is per-season and must be updated each year.
+
+| Season | League ID | Draft ID |
+|--------|-----------|----------|
+| 2025 | `1220634180434526208` | `1220634181302767616` |
+| 2026 | `1331127568820109312` | `1331127568832667648` (Aug 29, 2026) |
+
+- Find next season's league: `/user/{user_id}/leagues/nfl/{season}` — grab any `user_id` from the current league's `/users`
+- Find drafts: `/league/{id}/drafts`
+- `draft.draft_order` maps `user_id` → slot; use it to verify `DRAFT_ORDERS` in `tiers.ts`
 
 ## Season Checklist
 
 **Draft day** (typically late August):
+0. Update `DEFAULT_LEAGUE_ID` in `src/index.ts` to the new season's league (see League section)
 1. Before draft: `npm run dev -- --snapshot pre-draft`
 2. After draft: `npm run dev -- --snapshot-draft <season>`
 
@@ -64,14 +76,14 @@ All three steps auto-fetch traded picks. Post-draft snapshots can be created ret
 ## Project Structure
 - `src/types.ts` — TypeScript interfaces, `SNAPSHOT_TYPE_LABELS` map
 - `src/sleeper-api.ts` — Sleeper API fetch wrappers
-- `src/snapshot.ts` — Snapshot capture/save/load, path helpers, draft round lookup, traded picks resolution. `OWNER_NAME_OVERRIDES`: `ClovisJets` → `Clovis Jets`
+- `src/snapshot.ts` — Snapshot capture/save/load, path helpers, draft round lookup, traded picks resolution + display filters (`picksForDraft()`, `picksAwaitingDraft()`, `newestDataSeason()`). `OWNER_NAME_OVERRIDES`: `ClovisJets` → `Clovis Jets`
 - `src/html.ts` — HTML generation (sequential, post-draft, tiered layouts), index page. Shared constants: `CELL`, `TH`, `PILL_LINK`, `PILL_ACTIVE`, `SECTION_H2`, `TP_TH`, `TP_TD`. Helpers: `htmlHead()`, `tradedPicksTable()`, `esc()`
 - `src/tiers.ts` — `TIER_CONFIGS` (season:snapshotType → tier boundaries), `DRAFT_ORDERS` (season → owner pick order)
 - `src/index.ts` — CLI entry point
 - `data/<season>/rosters-<type>.json` — Snapshots
 - `data/<season>/draft-picks.json` — Immutable draft picks
 - `data/<season>/draft-traded-picks.json` — Immutable traded pick data for specific draft
-- `data/<season>/traded-picks.json` — League-level traded picks (re-fetched per command)
+- `data/<season>/traded-picks.json` — League-level traded picks, unfiltered; re-fetched per command until sealed
 - `output/index.html` — Home page
 - `output/<season>/rosters-<type>.html` — Roster pages
 
@@ -94,16 +106,29 @@ interface SnapshotPlayer {
 ```
 
 ## Traded Picks
-Fetched from `/league/{id}/traded_picks`, filtered to `season > currentSeason` (current-season picks consumed during draft).
+One file per season: `data/<season>/traded-picks.json`, holding **every** pick the league reports across all draft seasons. Storage bakes in no display decision; filtering happens at render time via `picksForDraft()` / `picksAwaitingDraft()` in `snapshot.ts`.
 
-**Display**: End-of-season pages: table (Season, Round, Original Owner, Current Owner). Pre/post-draft: "None". Index page: table if any exist.
+The `season` field on a pick means **which draft the pick belongs to**, never when it was traded. The API carries no trade timestamp (only `round`, `season`, `roster_id`, `owner_id`, `previous_owner_id`), and pick trades carry forward into the league they apply to, so a 2026 league's list is mostly trades made during 2025. Trade dates live in `/league/{id}/transactions/{week}` instead, which this project does not use.
+
+**Display rules** (columns always Season, Round, Original Owner, Current Owner; heading always "Traded Picks"; "None" when empty):
+
+| Page | Shows |
+|------|-------|
+| Home | `season > lastDraftedSeason` — picks whose draft hasn't happened yet |
+| Season N pre-draft | `season === N` — only the draft about to happen |
+| Season N post-draft | `season > N` |
+| Season N end-of-season | `season > N` |
+
+The home page derives `lastDraftedSeason` from the latest season's snapshots: it has drafted once any non-pre-draft snapshot exists, otherwise the previous season is used. Reads the latest saved capture, never a live fetch, so `--generate` stays offline and deterministic.
+
+**Sealing**: A season's file stops being rewritten once a newer season has a data directory. Its league is complete so the picks can't change, and re-fetching would re-resolve owner names against current team names, quietly rewriting history. `saveTradedPicks()` returns `undefined` when it skips.
 
 **JSON Shape** (`data/<season>/traded-picks.json`):
 ```typescript
 interface TradedPicksData {
   leagueId: string; season: string; fetchedAt: string;
-  picks: ResolvedTradedPick[]; // future seasons only
-  raw: LeagueTradedPick[];     // full unfiltered API response
+  picks: ResolvedTradedPick[]; // all seasons, unfiltered
+  raw: LeagueTradedPick[];     // full API response
 }
 interface ResolvedTradedPick {
   round: number; season: string; // e.g., "2026"
@@ -116,7 +141,7 @@ interface ResolvedTradedPick {
 |-----------|---------|-------|
 | Rosters | Yes | Snapshot at 3 key moments per season |
 | Draft picks | No | Immutable; always available from API |
-| League traded picks | Yes | Re-fetched per command |
+| League traded picks | Until sealed | Re-fetched per command while the season is current; frozen once a newer season has data |
 | Player data | N/A | Fetched in-memory only; not persisted |
 
 ## Roster & Player Ordering
@@ -134,6 +159,7 @@ interface ResolvedTradedPick {
 - Non-throwback years (2026, 2027, ...) have keeper rules that affect tier boundaries and labels — to be determined when those seasons arrive
 
 **Non-throwback tier rules** (2026 and beyond): TBD — will depend on how many keepers, which rounds they count as, etc. Add to `TIER_CONFIGS` in `src/tiers.ts` when known.
+Observed in the 2026 league (Aug 2026): rosters carry a `keepers` array (one team had 3 set, rest still `null`) and league `settings.draft_rounds` is `3`. Selection appears to be in progress, so confirm before writing tier config.
 
 ## Tiers
 Full-width colored separator rows dividing the table by draft value. Configured per `"season:snapshotType"` in `src/tiers.ts`.
@@ -153,7 +179,7 @@ Generated by `generateIndexHtml` in `src/html.ts`. Light mode, Tailwind CDN + In
 **Sections**:
 1. **"Tiers"** — Season rows (year left, chip links right), most-recent first. Archive link ("Tiers 2006–2024", `text-sm text-blue-600`) appears below the oldest season row, inside this section.
 2. **"20XX Draft Order"** — Numbered 1–10 list; only latest season shown.
-3. **Traded Picks** — Table if future picks exist. Uses shared `tradedPicksTable()`.
+3. **Traded Picks** — Always shown; table of picks whose draft hasn't happened yet, or "None". Uses shared `tradedPicksTable()`.
 4. **"Past Seasons"** — Two rows: (1) "Seasons 2025+ on Sleeper ↗" link to `https://sleeper.com/leagues`, with navigation instructions (inline cog SVG icon) on the line below it; (2) link to MyFantasyLeague for seasons 2006–2024.
 
 **Throwback Year badge**: Seasons with snapshots but no pre-draft page show `bg-green-800 text-white rounded px-1.5 py-0.5 text-xs font-medium` badge, positioned `mr-auto ml-3`. Rare (once every 5–10 years).
@@ -170,7 +196,7 @@ Generated by `generateHtml` in `src/html.ts`. Light mode, `bg-gray-50` body. Con
 - **Gotcha**: `SECTION_H2` is used for index page headings; `tradedPicksSection()` on roster pages has its own inline heading style — keep both in sync when changing heading styles
 - Inline `<style>` via `ROSTER_STYLES` / `ROUND_COL_STYLE`: position colors (`.pos-qb` etc.), tier colors (`.tier-1` etc.), round label column
 
-**Traded Picks**: `<h2>` heading + `overflow-x-auto` scroll wrapper at end-of-season, or "None" for pre/post-draft. Table uses `w-auto` (not full-width) so it only spans its content.
+**Traded Picks**: `<h2>` heading + `overflow-x-auto` scroll wrapper on every snapshot type (contents differ per the Traded Picks display rules), or "None" when empty. Table uses `w-auto` (not full-width) so it only spans its content.
 
 **Footer**: "Data retrieved" timestamp in Pacific time via `formatPacificTime()` (`America/Los_Angeles`).
 
@@ -183,3 +209,8 @@ Hosted on **Cloudflare Pages**, serving the `output/` directory directly from th
 
 ## Manual Editing
 Snapshot JSON files are human-readable and editable. Regenerate HTML after edits: `npm run dev -- --generate <season> [type]`
+
+## Verifying Changes
+- No test framework. Exercise logic with `node --input-type=module -e '...'` importing from `./dist/` after `npm run build`.
+- `output/` is committed, so regenerate then `git diff -- output/`: an empty diff proves no visual regression, a non-empty one shows exactly what changed.
+- Before assuming API drift, diff live response keys against `src/types.ts` rather than trusting the docs (their `/players/nfl` size is 3x stale).

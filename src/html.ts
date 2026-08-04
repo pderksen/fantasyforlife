@@ -388,15 +388,15 @@ ${rows}
     </section>`;
   }
 
-  // Traded picks section
-  let tradedPicksHtml = "";
-  if (futureTradedPicks && futureTradedPicks.length > 0) {
-    tradedPicksHtml = `
+  // Traded picks section — always rendered, "None" when nothing is outstanding
+  const tradedPicksBody = futureTradedPicks && futureTradedPicks.length > 0
+    ? tradedPicksTable(futureTradedPicks)
+    : `      <p class="text-sm text-gray-500">None</p>`;
+  const tradedPicksHtml = `
     <section class="mb-12">
       <h2 class="${SECTION_H2}">Traded Picks</h2>
-${tradedPicksTable(futureTradedPicks)}
+${tradedPicksBody}
     </section>`;
-  }
 
   const pastSeasonsHtml = `
     <section class="mb-12">

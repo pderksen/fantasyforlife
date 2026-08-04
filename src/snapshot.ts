@@ -186,16 +186,16 @@ export async function takePostDraftSnapshot(
 
 // ── Traded Picks ──
 
+/**
+ * Resolve raw traded picks to owner names. Saved unfiltered — every pick the league
+ * reports, across every draft season. Pages narrow this at render time via
+ * picksForDraft() / picksAwaitingDraft(), so storage never bakes in a display decision.
+ */
 export function resolveTradedPicks(
   tradedPicks: LeagueTradedPick[],
   rosterOwnerMap: Map<number, string>,
-  futureOnlySeason?: string,
 ): ResolvedTradedPick[] {
-  const filtered = futureOnlySeason
-    ? tradedPicks.filter((p) => p.season > futureOnlySeason)
-    : tradedPicks;
-
-  return filtered
+  return tradedPicks
     .map((p) => ({
       round: p.round,
       season: p.season,
@@ -205,16 +205,57 @@ export function resolveTradedPicks(
     .sort((a, b) => a.season.localeCompare(b.season) || a.round - b.round || a.originalOwner.localeCompare(b.originalOwner));
 }
 
+// Pick seasons are 4-digit year strings, so `<` / `>` compare them chronologically.
+
+/** Picks belonging to one specific draft. Used on pre-draft pages. */
+export function picksForDraft(picks: ResolvedTradedPick[], season: string): ResolvedTradedPick[] {
+  return picks.filter((p) => p.season === season);
+}
+
+/**
+ * Picks whose draft hasn't happened yet, relative to the most recently completed draft.
+ * Used on the home page and on post-draft / end-of-season pages.
+ */
+export function picksAwaitingDraft(
+  picks: ResolvedTradedPick[],
+  lastDraftedSeason: string,
+): ResolvedTradedPick[] {
+  return picks.filter((p) => p.season > lastDraftedSeason);
+}
+
 export function getTradedPicksPath(season: string): string {
   return join(DATA_DIR, season, "traded-picks.json");
 }
 
+/** Newest season with a data directory, or undefined if there is no data yet. */
+export function newestDataSeason(): string | undefined {
+  if (!existsSync(DATA_DIR)) return undefined;
+  const seasons = readdirSync(DATA_DIR, { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => d.name)
+    .sort();
+  return seasons[seasons.length - 1];
+}
+
+/**
+ * Write a season's traded picks. Returns the path written, or undefined if the season
+ * is sealed.
+ *
+ * A season seals once a newer season has data: its league is complete, so its picks can
+ * no longer change. Re-fetching one would re-resolve owner names against whatever teams
+ * are called today, quietly rewriting history, so leave the archived capture alone.
+ */
 export async function saveTradedPicks(
   leagueId: string,
   season: string,
   picks: ResolvedTradedPick[],
   raw: LeagueTradedPick[],
-): Promise<string> {
+): Promise<string | undefined> {
+  const newest = newestDataSeason();
+  if (newest && season < newest && existsSync(getTradedPicksPath(season))) {
+    return undefined;
+  }
+
   const seasonDir = join(DATA_DIR, season);
   await mkdir(seasonDir, { recursive: true });
   const filePath = getTradedPicksPath(season);

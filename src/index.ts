@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
-import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRounds, buildRosterOwnerMap, resolveTradedPicks, saveTradedPicks, loadTradedPicks } from "./snapshot.js";
+import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRounds, buildRosterOwnerMap, resolveTradedPicks, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft } from "./snapshot.js";
 import { generateHtml, generateIndexHtml, writeHtml } from "./html.js";
 import { getDraftPicks, fetchAllPlayers, getLeagueTradedPicks, getLeague } from "./sleeper-api.js";
 import { getTierConfig, getLatestDraftOrder } from "./tiers.js";
@@ -22,8 +22,14 @@ async function fetchAndSaveTradedPicks(leagueId: string, season: string): Promis
     buildRosterOwnerMap(leagueId),
   ]);
 
-  const tradedPicks = resolveTradedPicks(rawPicks, rosterOwnerMap, season);
+  const tradedPicks = resolveTradedPicks(rawPicks, rosterOwnerMap);
   const tradedPicksPath = await saveTradedPicks(leagueId, season, tradedPicks, rawPicks);
+
+  // Sealed seasons keep their archived capture; render from that, not the fresh fetch.
+  if (!tradedPicksPath) {
+    console.log(`Traded picks for ${season} are sealed (a newer season has data) — left unchanged.`);
+    return (await loadTradedPicks(season)) ?? [];
+  }
   console.log(`Traded picks saved: ${tradedPicksPath} (${tradedPicks.length} traded picks)`);
 
   if (tradedPicks.length > 0) {
@@ -36,18 +42,24 @@ async function fetchAndSaveTradedPicks(leagueId: string, season: string): Promis
   return tradedPicks;
 }
 
-async function regenerateIndex(futureTradedPicks?: ResolvedTradedPick[]): Promise<void> {
+async function regenerateIndex(): Promise<void> {
   const navLinks = buildIndexNavLinks();
   if (navLinks.length === 0) return;
 
-  // If not provided, try to load from the most recent season
-  if (!futureTradedPicks) {
-    const latestSeason = navLinks[navLinks.length - 1].season;
-    futureTradedPicks = await loadTradedPicks(latestSeason);
-  }
+  // Latest saved capture wins — no live fetch here, so --generate stays offline.
+  const latestSeason = navLinks[navLinks.length - 1].season;
+  const allPicks = (await loadTradedPicks(latestSeason)) ?? [];
+
+  // The latest season has drafted once it has any snapshot beyond pre-draft. Until then
+  // its own picks are still upcoming and belong on the home page alongside future years.
+  const latestHasDrafted = navLinks.some(
+    (l) => l.season === latestSeason && l.snapshotType !== "pre-draft",
+  );
+  const lastDraftedSeason = latestHasDrafted ? latestSeason : String(Number(latestSeason) - 1);
+  const upcomingPicks = picksAwaitingDraft(allPicks, lastDraftedSeason);
 
   const draftOrder = getLatestDraftOrder();
-  const html = generateIndexHtml(LEAGUE_NAME, navLinks, futureTradedPicks, draftOrder);
+  const html = generateIndexHtml(LEAGUE_NAME, navLinks, upcomingPicks, draftOrder);
   const outputPath = getIndexOutputPath();
   await writeHtml(html, outputPath);
   console.log(`Index written: ${outputPath}`);
@@ -108,8 +120,11 @@ async function snapshotAndGenerate(snapshotType: SnapshotType, leagueId: string)
   const navLinks = buildNavLinks(snapshot.season, snapshotType);
   const tiers = getTierConfig(snapshot.season, snapshotType);
   const draftRounds = await loadDraftRounds(snapshot.season);
-  // Only show traded picks on end-of-season snapshots
-  const picksForType = snapshotType === "end-of-season" ? tradedPicks : undefined;
+  // Pre-draft shows the picks in the draft about to happen; post-draft and end-of-season
+  // show what's still outstanding for future drafts.
+  const picksForType = snapshotType === "pre-draft"
+    ? picksForDraft(tradedPicks, snapshot.season)
+    : picksAwaitingDraft(tradedPicks, snapshot.season);
   const html = generateHtml(snapshot, navLinks, ownerOrder, tiers, draftRounds, picksForType);
   const outputPath = getOutputPath(snapshot.season, snapshotType);
   await writeHtml(html, outputPath);
@@ -149,7 +164,7 @@ async function draftSnapshotAndGenerate(season: string, leagueId: string): Promi
   const ownerOrder = snapshot.rosters.map((r) => r.ownerName);
   const navLinks = buildNavLinks(season, "post-draft");
   const tiers = getTierConfig(season, "post-draft");
-  const html = generateHtml(snapshot, navLinks, ownerOrder, tiers);
+  const html = generateHtml(snapshot, navLinks, ownerOrder, tiers, undefined, picksAwaitingDraft(tradedPicks, season));
   const outputPath = getOutputPath(season, "post-draft");
   await writeHtml(html, outputPath);
   console.log(`HTML written: ${outputPath}`);
@@ -159,7 +174,7 @@ async function generateFromExisting(season: string, snapshotType?: SnapshotType)
   const types = snapshotType ? [snapshotType] : SNAPSHOT_TYPES;
   const ownerOrder = await loadDraftOrder(season);
   const draftRounds = await loadDraftRounds(season);
-  const tradedPicks = await loadTradedPicks(season);
+  const tradedPicks = (await loadTradedPicks(season)) ?? [];
 
   for (const type of types) {
     const snapshotPath = getSnapshotPath(season, type);
@@ -167,8 +182,9 @@ async function generateFromExisting(season: string, snapshotType?: SnapshotType)
       const snapshot = await loadSnapshot(snapshotPath);
       const navLinks = buildNavLinks(season, type);
       const tiers = getTierConfig(season, type);
-      // Only show traded picks on end-of-season snapshots (trades happen during the season)
-      const picksForType = type === "end-of-season" ? tradedPicks : undefined;
+      const picksForType = type === "pre-draft"
+        ? picksForDraft(tradedPicks, season)
+        : picksAwaitingDraft(tradedPicks, season);
       const html = generateHtml(snapshot, navLinks, ownerOrder, tiers, draftRounds, picksForType);
       const outputPath = getOutputPath(season, type);
       await writeHtml(html, outputPath);
