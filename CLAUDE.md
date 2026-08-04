@@ -37,7 +37,8 @@ Fantasy football roster viewer for a long-running league. Pulls roster data from
 
 ## Commands
 - `npm run build` — compile TypeScript
-- `npm run dev` — build + run
+- `npm run dev` — regenerate `output/index.html` and open it in the OS default browser (local preview; no server, pages load over `file://`)
+- `npm run dev -- --help` — usage
 - `npm run dev -- --snapshot <pre-draft|post-draft|end-of-season> [league_id]`
 - `npm run dev -- --snapshot-draft <season> [league_id]` — post-draft from draft-picks.json; works retroactively
 - `npm run dev -- --generate <season> [type]` — regenerate HTML (omit type for all)

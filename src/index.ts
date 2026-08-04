@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { spawn } from "node:child_process";
 import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRounds, buildRosterOwnerMap, resolveTradedPicks, saveTradedPicks, loadTradedPicks } from "./snapshot.js";
 import { generateHtml, generateIndexHtml, writeHtml } from "./html.js";
 import { getDraftPicks, fetchAllPlayers, getLeagueTradedPicks, getLeague } from "./sleeper-api.js";
@@ -52,8 +53,24 @@ async function regenerateIndex(futureTradedPicks?: ResolvedTradedPick[]): Promis
   console.log(`Index written: ${outputPath}`);
 }
 
+/**
+ * Open a local file in the OS default browser (detached, so npm exits immediately).
+ * Hand-rolled rather than pulling in an `open` package — this project has zero runtime deps.
+ */
+function openInDefaultBrowser(filePath: string): void {
+  const [cmd, args] =
+    process.platform === "win32" ? ["cmd", ["/c", "start", "", filePath]] :
+    process.platform === "darwin" ? ["open", [filePath]] :
+    ["xdg-open", [filePath]];
+
+  spawn(cmd, args as string[], { detached: true, stdio: "ignore" }).unref();
+}
+
 function printUsage(): void {
   console.log(`Usage:
+  npm run dev
+    Regenerate the home page and open it in your default browser.
+
   npm run dev -- --snapshot <type> [league_id]
     Take a new roster snapshot and generate HTML.
     type: pre-draft | post-draft | end-of-season
@@ -169,7 +186,17 @@ async function generateFromExisting(season: string, snapshotType?: SnapshotType)
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
 
-  if (args[0] === "--snapshot") {
+  // Bare `npm run dev` — regenerate the index below, then open it locally.
+  const openHomePage = args.length === 0;
+
+  if (openHomePage) {
+    // Nothing to do here; falls through to regenerateIndex() + open.
+
+  } else if (args[0] === "--help" || args[0] === "-h") {
+    printUsage();
+    return;
+
+  } else if (args[0] === "--snapshot") {
     const type = args[1];
     if (!type || !isSnapshotType(type)) {
       printUsage();
@@ -212,6 +239,12 @@ async function main(): Promise<void> {
 
   // Always regenerate the index page to pick up any new snapshots
   await regenerateIndex();
+
+  if (openHomePage) {
+    const indexPath = getIndexOutputPath();
+    console.log(`Opening ${indexPath} in your default browser...`);
+    openInDefaultBrowser(indexPath);
+  }
 }
 
 main().catch((err) => {
