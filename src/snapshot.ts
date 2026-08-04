@@ -266,11 +266,12 @@ export async function loadSnapshot(filePath: string): Promise<Snapshot> {
   return JSON.parse(raw) as Snapshot;
 }
 
-const SNAPSHOT_TYPE_ORDER: SnapshotType[] = ["pre-draft", "post-draft", "end-of-season"];
+/** Nav/chip display order within a season: most recent snapshot first. */
+const SNAPSHOT_TYPE_ORDER: SnapshotType[] = ["end-of-season", "post-draft", "pre-draft"];
 
 /**
  * Discover all existing snapshot types across all seasons.
- * Returns { season, type }[] in chronological + type order.
+ * Returns { season, type }[] in chronological season order, newest snapshot type first within each season.
  */
 function discoverSnapshots(): Array<{ season: string; snapshotType: SnapshotType }> {
   const results: Array<{ season: string; snapshotType: SnapshotType }> = [];
