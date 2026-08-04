@@ -1,9 +1,9 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
-import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRounds, buildRosterOwnerMap, resolveTradedPicks, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft } from "./snapshot.js";
-import { generateHtml, generateIndexHtml, writeHtml } from "./html.js";
-import { getDraftPicks, fetchAllPlayers, getLeagueTradedPicks, getLeague } from "./sleeper-api.js";
+import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRounds, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft } from "./snapshot.js";
+import { generateHtml, generateIndexHtml, writeHtml, formatPacificDate } from "./html.js";
+import { getDraftPicks, fetchAllPlayers, getLeagueTradedPicks, getPickTrades, getLeague } from "./sleeper-api.js";
 import { getTierConfig, getLatestDraftOrder } from "./tiers.js";
 import type { SnapshotType, DraftPick, ResolvedTradedPick } from "./types.js";
 
@@ -17,12 +17,13 @@ function isSnapshotType(value: string): value is SnapshotType {
 
 async function fetchAndSaveTradedPicks(leagueId: string, season: string): Promise<ResolvedTradedPick[]> {
   console.log("Fetching traded picks...");
-  const [rawPicks, rosterOwnerMap] = await Promise.all([
+  const [rawPicks, rosterOwnerMap, pickTrades] = await Promise.all([
     getLeagueTradedPicks(leagueId),
     buildRosterOwnerMap(leagueId),
+    getPickTrades(leagueId),
   ]);
 
-  const tradedPicks = resolveTradedPicks(rawPicks, rosterOwnerMap);
+  const tradedPicks = resolveTradedPicks(rawPicks, rosterOwnerMap, buildTradeDateMap(pickTrades));
   const tradedPicksPath = await saveTradedPicks(leagueId, season, tradedPicks, rawPicks);
 
   // Sealed seasons keep their archived capture; render from that, not the fresh fetch.
@@ -35,7 +36,8 @@ async function fetchAndSaveTradedPicks(leagueId: string, season: string): Promis
   if (tradedPicks.length > 0) {
     console.log("\nTraded picks:");
     for (const pick of tradedPicks) {
-      console.log(`  ${pick.season} Rd ${pick.round}: ${pick.originalOwner}'s pick → ${pick.currentOwner}`);
+      const when = pick.tradedOn ? ` (traded ${formatPacificDate(pick.tradedOn)})` : "";
+      console.log(`  ${pick.season} Rd ${pick.round}: ${pick.originalOwner}'s pick → ${pick.currentOwner}${when}`);
     }
   }
 

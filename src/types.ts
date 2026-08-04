@@ -119,12 +119,32 @@ export interface LeagueTradedPick {
   previous_owner_id: number;
 }
 
+/** Draft pick moved by a trade, as reported inside a transaction. */
+export interface TransactionDraftPick {
+  round: number;
+  season: string;
+  roster_id: number;           // original owner
+  owner_id: number;            // roster receiving the pick
+  previous_owner_id: number;
+}
+
+/** Transaction from /league/{id}/transactions/{week}. Trades carry `draft_picks`. */
+export interface LeagueTransaction {
+  type: string;                // "trade", "waiver", "free_agent", ...
+  status: string;              // "complete", "failed", ...
+  created: number;             // epoch ms — proposed
+  status_updated: number;      // epoch ms — accepted/completed
+  draft_picks: TransactionDraftPick[] | null;
+  [key: string]: unknown;
+}
+
 /** Traded pick resolved with human-readable owner names. */
 export interface ResolvedTradedPick {
   round: number;
   season: string;
   originalOwner: string;
   currentOwner: string;
+  tradedOn?: string;  // ISO timestamp; absent when no transaction records the trade (e.g. in-draft trades)
 }
 
 /** Saved traded picks file shape. */

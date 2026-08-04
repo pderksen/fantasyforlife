@@ -1,37 +1,72 @@
 {
   "leagueId": "1220634180434526208",
   "season": "2025",
-  "fetchedAt": "2026-02-16T06:42:09.402Z",
+  "fetchedAt": "2026-08-04T22:09:27.504Z",
   "picks": [
+    {
+      "round": 4,
+      "season": "2025",
+      "originalOwner": "Vancouver Moose Drool",
+      "currentOwner": "Clovis Jets"
+    },
+    {
+      "round": 7,
+      "season": "2025",
+      "originalOwner": "Vancouver Moose Drool",
+      "currentOwner": "South Town FF"
+    },
+    {
+      "round": 17,
+      "season": "2025",
+      "originalOwner": "Clovis Jets",
+      "currentOwner": "Vancouver Moose Drool"
+    },
+    {
+      "round": 17,
+      "season": "2025",
+      "originalOwner": "Kingsburg Killaz",
+      "currentOwner": "Vancouver Moose Drool"
+    },
+    {
+      "round": 17,
+      "season": "2025",
+      "originalOwner": "South Town FF",
+      "currentOwner": "Kingsburg Killaz"
+    },
     {
       "round": 3,
       "season": "2026",
       "originalOwner": "Dinkey Creek Dirt Clods",
-      "currentOwner": "Easton Evil Empire"
+      "currentOwner": "Easton Evil Empire",
+      "tradedOn": "2025-11-12T17:18:50.550Z"
     },
     {
       "round": 3,
       "season": "2026",
       "originalOwner": "Lemoore Liberators",
-      "currentOwner": "Easton Evil Empire"
+      "currentOwner": "Easton Evil Empire",
+      "tradedOn": "2025-10-22T22:46:25.335Z"
     },
     {
       "round": 5,
       "season": "2026",
       "originalOwner": "Kingsburg Killaz",
-      "currentOwner": "Clovis Jets"
+      "currentOwner": "Clovis Jets",
+      "tradedOn": "2025-10-02T04:20:53.286Z"
     },
     {
       "round": 5,
       "season": "2026",
       "originalOwner": "Visalia Viagra Vipers",
-      "currentOwner": "Easton Evil Empire"
+      "currentOwner": "Easton Evil Empire",
+      "tradedOn": "2025-11-13T01:06:34.941Z"
     },
     {
       "round": 6,
       "season": "2026",
       "originalOwner": "Vancouver Moose Drool",
-      "currentOwner": "Sanger Squatty Pottys"
+      "currentOwner": "Sanger Squatty Pottys",
+      "tradedOn": "2025-11-13T01:30:13.077Z"
     }
   ],
   "raw": [

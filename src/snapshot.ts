@@ -11,6 +11,7 @@ import type {
   DraftPick,
   NavLink,
   LeagueTradedPick,
+  LeagueTransaction,
   ResolvedTradedPick,
   TradedPicksData,
 } from "./types.js";
@@ -186,22 +187,60 @@ export async function takePostDraftSnapshot(
 
 // ── Traded Picks ──
 
+/** Identifies one pick landing with one roster: draft season, round, original owner, receiver. */
+function pickTradeKey(season: string, round: number, rosterId: number, ownerId: number): string {
+  return `${season}|${round}|${rosterId}|${ownerId}`;
+}
+
 /**
- * Resolve raw traded picks to owner names. Saved unfiltered — every pick the league
- * reports, across every draft season. Pages narrow this at render time via
- * picksForDraft() / picksAwaitingDraft(), so storage never bakes in a display decision.
+ * Map each pick-and-receiver to when that trade completed.
+ *
+ * A pick can change hands more than once, and /traded_picks only reports where it ended
+ * up — so key on the receiving roster too and keep the latest completed trade. That way a
+ * pick that bounced A → B → C is dated when C got it, not when B did.
+ *
+ * `status_updated` is when the trade was accepted; `created` is when it was proposed.
+ * Those can straddle midnight, so prefer the acceptance.
+ */
+export function buildTradeDateMap(trades: LeagueTransaction[]): Map<string, string> {
+  const latest = new Map<string, number>();
+  for (const t of trades) {
+    const at = t.status_updated || t.created;
+    if (!at) continue;
+    for (const p of t.draft_picks ?? []) {
+      const key = pickTradeKey(p.season, p.round, p.roster_id, p.owner_id);
+      const seen = latest.get(key);
+      if (seen == null || at > seen) latest.set(key, at);
+    }
+  }
+  return new Map([...latest].map(([key, ms]) => [key, new Date(ms).toISOString()]));
+}
+
+/**
+ * Resolve raw traded picks to owner names, dating each one from the trade that moved it.
+ * Saved unfiltered — every pick the league reports, across every draft season. Pages
+ * narrow this at render time via picksForDraft() / picksAwaitingDraft(), so storage never
+ * bakes in a display decision.
+ *
+ * Picks with no matching transaction (traded during the draft itself, or before this
+ * league existed on Sleeper) keep their owners and simply carry no date.
  */
 export function resolveTradedPicks(
   tradedPicks: LeagueTradedPick[],
   rosterOwnerMap: Map<number, string>,
+  tradeDates?: Map<string, string>,
 ): ResolvedTradedPick[] {
   return tradedPicks
-    .map((p) => ({
-      round: p.round,
-      season: p.season,
-      originalOwner: rosterOwnerMap.get(p.roster_id) ?? `Roster ${p.roster_id}`,
-      currentOwner: rosterOwnerMap.get(p.owner_id) ?? `Roster ${p.owner_id}`,
-    }))
+    .map((p) => {
+      const tradedOn = tradeDates?.get(pickTradeKey(p.season, p.round, p.roster_id, p.owner_id));
+      return {
+        round: p.round,
+        season: p.season,
+        originalOwner: rosterOwnerMap.get(p.roster_id) ?? `Roster ${p.roster_id}`,
+        currentOwner: rosterOwnerMap.get(p.owner_id) ?? `Roster ${p.owner_id}`,
+        ...(tradedOn ? { tradedOn } : {}),
+      };
+    })
     .sort((a, b) => a.season.localeCompare(b.season) || a.round - b.round || a.originalOwner.localeCompare(b.originalOwner));
 }
 

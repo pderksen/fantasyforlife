@@ -22,6 +22,16 @@ function formatPacificTime(isoString: string): string {
   }) + " PT";
 }
 
+/** Trade dates are day-level facts; the time of day adds noise to a compact table. */
+export function formatPacificDate(isoString: string): string {
+  return new Date(isoString).toLocaleDateString("en-US", {
+    timeZone: "America/Los_Angeles",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 function esc(text: string): string {
   return text
     .replace(/&/g, "&amp;")
@@ -199,15 +209,23 @@ function buildPostDraftRows(rosters: SnapshotRoster[], tiers?: TierConfig): stri
 // ── Traded picks table (shared by roster pages and index page) ──
 
 function tradedPicksTable(picks: ResolvedTradedPick[]): string {
-  const headers = ["Season", "Round", "Original Owner", "Current Owner"]
+  // Captures taken before trade dates were tracked have none at all — drop the column
+  // rather than print one full of placeholders.
+  const showTradedOn = picks.some((p) => p.tradedOn);
+
+  const headers = ["Season", "Round", "Original Owner", "Current Owner", ...(showTradedOn ? ["Traded On"] : [])]
     .map((h) => `<th class="${TP_TH}">${h}</th>`)
     .join("");
   const rows = picks
     .map((p) => {
       const cells = [p.season, `Round ${p.round}`, p.originalOwner, p.currentOwner]
-        .map((v) => `<td class="${TP_TD}">${esc(v)}</td>`)
-        .join("");
-      return `      <tr>${cells}</tr>`;
+        .map((v) => `<td class="${TP_TD}">${esc(v)}</td>`);
+      if (showTradedOn) {
+        cells.push(p.tradedOn
+          ? `<td class="${TP_TD} whitespace-nowrap">${esc(formatPacificDate(p.tradedOn))}</td>`
+          : `<td class="${TP_TD} text-gray-400">&mdash;</td>`);
+      }
+      return `      <tr>${cells.join("")}</tr>`;
     })
     .join("\n");
   return `  <div class="overflow-x-auto -mx-1">
