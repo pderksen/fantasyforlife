@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
-import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft, resolveTrades, saveTrades, loadTrades, preDraftWindowClosed, SnapshotGuardError } from "./snapshot.js";
-import { generateHtml, generateIndexHtml, generateTradesHtml, writeHtml, formatPacificDate } from "./html.js";
+import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft, resolveTrades, saveTrades, preDraftWindowClosed, SnapshotGuardError } from "./snapshot.js";
+import { generateHtml, generateIndexHtml, writeHtml, formatPacificDate } from "./html.js";
 import { getLeagueDrafts, getDraftPicks, getDraftTradedPicksRaw, fetchAllPlayers, getLeagueTradedPicks, getPickTrades, getTrades, getLeague } from "./sleeper-api.js";
 import { getTierConfig, getLatestDraftOrder } from "./tiers.js";
 import type { SnapshotType, DraftPick, ResolvedTradedPick, PlayerDatabase } from "./types.js";
@@ -48,7 +48,8 @@ async function fetchAndSaveTradedPicks(leagueId: string, season: string): Promis
 }
 
 /**
- * Fetch, save, and render a season's trade log.
+ * Fetch and save a season's trade log. Nothing renders it today; it is captured so the
+ * history exists to render later, and because it can only be read out of the live league.
  *
  * The player database is only needed to name the players in a trade, so it is fetched
  * lazily — a season with no trades yet (every run before September) never pays the 15MB.
@@ -62,7 +63,7 @@ async function fetchAndSaveTrades(leagueId: string, season: string, playerDb?: P
   ]);
 
   if (rawTrades.length === 0) {
-    // No file, so no empty page and no dead nav chip. Any earlier capture stands.
+    // Write nothing rather than an empty log; any earlier capture stands.
     console.log(`No completed trades recorded in the ${season} league.`);
   } else {
     const trades = resolveTrades(rawTrades, rosterOwnerMap, playerDb ?? await fetchAllPlayers());
@@ -73,18 +74,6 @@ async function fetchAndSaveTrades(leagueId: string, season: string, playerDb?: P
       console.log(`Trades for ${season} are sealed (a newer season has data) — left unchanged.`);
     }
   }
-
-  await generateTradesPage(season);
-}
-
-/** Render output/<season>/trades.html from the saved log. No-op when the season has none. */
-async function generateTradesPage(season: string): Promise<void> {
-  const data = await loadTrades(season);
-  if (!data) return;
-  const html = generateTradesHtml(LEAGUE_NAME, data, buildNavLinks(season, "trades"));
-  const outputPath = getOutputPath(season, "trades");
-  await writeHtml(html, outputPath);
-  console.log(`HTML written: ${outputPath}`);
 }
 
 async function regenerateIndex(): Promise<void> {
@@ -148,8 +137,8 @@ function printUsage(): void {
     Fetch and save traded picks for upcoming seasons.
 
   npm run dev -- --trades [league_id]
-    Fetch and save that league's completed trades, and generate its trade log page.
-    Also runs as part of every --snapshot.
+    Fetch and save that league's completed trades to data/<season>/trades.json.
+    Archive only — no page is generated. Also runs as part of every --snapshot.
 `);
 }
 
@@ -284,9 +273,6 @@ async function generateFromExisting(season: string, snapshotType?: SnapshotType)
     await writeHtml(html, outputPath);
     console.log(`HTML written: ${outputPath}`);
   }
-
-  // Only when regenerating the whole season — `--generate <season> <type>` names one page.
-  if (!snapshotType) await generateTradesPage(season);
 }
 
 async function main(): Promise<void> {

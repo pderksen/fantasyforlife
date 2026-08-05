@@ -100,12 +100,11 @@ npm run dev -- --generate <season>
 lineage), saves `data/<season>/traded-picks.json`, and regenerates **only the home page**. The
 roster pages keep their stale tables until `--generate` runs. Weekly during the season is plenty.
 
-`--trades` sweeps the same 18 weeks for *this* league only, saves `data/<season>/trades.json`,
-and writes `output/<season>/trades.html`. It defaults to `DEFAULT_LEAGUE_ID`; pass an explicit
-league id to backfill an older season, since trades live in the league that recorded them. A
-season with no trades yet writes nothing at all, which is why the trade log chip only appears
-once there is something to show — and why the first trade of a season needs `--generate` after
-it, to put that chip into the roster pages' nav.
+`--trades` sweeps the same 18 weeks for *this* league only and saves `data/<season>/trades.json`.
+It generates no page: the per-season trade log page was removed in Aug 2026, and the file is now
+an archive kept because the data is only readable while the league is live. It defaults to
+`DEFAULT_LEAGUE_ID`; pass an explicit league id to backfill an older season, since trades live in
+the league that recorded them. A season with no trades yet writes nothing at all.
 
 Capture during the season, not years later: player names resolve against the live database, so
 a late backfill still gets names and positions right but has no way to know a player's NFL team
@@ -162,8 +161,8 @@ Both `data/` and `output/` are committed on purpose; only `dist/` and `node_modu
   `... are sealed (a newer season has data) — left unchanged.` That's correct behavior, not a
   failure: re-fetching would re-resolve owner names against current team names and quietly
   rewrite history.
-- **`--trades` and `--generate` both skip a season with no trades.** No file, no page, no chip.
-  Nothing is wrong; there just haven't been any trades yet.
+- **`--trades` writes no HTML.** It only refreshes `data/<season>/trades.json`. A season with no
+  trades yet writes nothing at all; nothing is wrong, there just haven't been any trades.
 - **Pre-draft is the only unrecoverable capture.** Post-draft and traded picks can be rebuilt
   from the API later; keepers cannot. The guard in step 1 is the backstop; `--force` is the
   only way past it, so never put `--force` in a scheduled prompt.

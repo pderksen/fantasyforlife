@@ -14,7 +14,6 @@ import type {
   LeagueTransaction,
   ResolvedTradedPick,
   TradedPicksData,
-  PageKey,
   ResolvedTrade,
   TradeParty,
   TradesData,
@@ -415,11 +414,6 @@ export function getTradesPath(season: string): string {
   return join(DATA_DIR, season, "trades.json");
 }
 
-/** Whether a season has a saved trade log to link to. */
-export function hasTrades(season: string): boolean {
-  return existsSync(getTradesPath(season));
-}
-
 /**
  * Write a season's trade log. Returns the path written, or undefined if the season is
  * sealed.
@@ -427,7 +421,9 @@ export function hasTrades(season: string): boolean {
  * Sealed on the same rule as traded picks: once a newer season has data this league is
  * complete, its trades can't change, and re-fetching would re-resolve owner names against
  * whatever the teams are called today. Callers handle an empty trade list themselves —
- * a season with no trades yet gets no file, and so no empty page and no dead nav chip.
+ * a season with no trades yet simply gets no file.
+ *
+ * Nothing renders this log today; it is captured so the history exists to render later.
  */
 export async function saveTrades(
   leagueId: string,
@@ -497,11 +493,11 @@ export function saveDraftTradedPicks(season: string, raw: string): Promise<strin
 }
 
 /** File name a season's page is written to, within output/<season>/. */
-function pageFile(page: PageKey): string {
-  return page === "trades" ? "trades.html" : `rosters-${page}.html`;
+function pageFile(page: SnapshotType): string {
+  return `rosters-${page}.html`;
 }
 
-export function getOutputPath(season: string, page: PageKey): string {
+export function getOutputPath(season: string, page: SnapshotType): string {
   return join(DATA_DIR, "..", "output", season, pageFile(page));
 }
 
@@ -584,30 +580,28 @@ const SNAPSHOT_TYPE_ORDER: SnapshotType[] = ["end-of-season", "post-draft", "pre
 
 /**
  * Every page that exists for every season, in chronological season order and newest-first
- * within each. The trade log sits last in a season's run because it isn't a point-in-time
- * capture, so it has no place in that recency ordering.
+ * within each.
  */
-function discoverPages(): Array<{ season: string; page: PageKey }> {
-  const results: Array<{ season: string; page: PageKey }> = [];
+function discoverPages(): Array<{ season: string; page: SnapshotType }> {
+  const results: Array<{ season: string; page: SnapshotType }> = [];
   for (const season of listSeasons()) {
     for (const type of SNAPSHOT_TYPE_ORDER) {
       if (existsSync(getSnapshotPath(season, type))) results.push({ season, page: type });
     }
-    if (hasTrades(season)) results.push({ season, page: "trades" });
   }
   return results;
 }
 
 /** Full page name ("2026 Pre-Draft Rosters") and its short chip form ("Pre-Draft"). */
-function pageLabels(season: string, page: PageKey): { label: string; chip: string } {
-  const name = page === "trades" ? "Trades" : SNAPSHOT_TYPE_LABELS[page];
+function pageLabels(season: string, page: SnapshotType): { label: string; chip: string } {
+  const name = SNAPSHOT_TYPE_LABELS[page];
   return { label: `${season} ${name}`, chip: name.replace(" Rosters", "") };
 }
 
 /**
  * Build nav links relative to a page at output/<currentSeason>/.
  */
-export function buildNavLinks(currentSeason: string, currentPage: PageKey): NavLink[] {
+export function buildNavLinks(currentSeason: string, currentPage: SnapshotType): NavLink[] {
   return discoverPages().map(({ season, page }) => ({
     season,
     page,

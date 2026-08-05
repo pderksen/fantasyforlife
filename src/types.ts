@@ -112,15 +112,9 @@ export interface Snapshot {
   rosters: SnapshotRoster[];
 }
 
-/**
- * One generated page within a season. The roster snapshots plus the trade log, which is
- * season-level rather than a point-in-time capture and so is not a SnapshotType.
- */
-export type PageKey = SnapshotType | "trades";
-
 export interface NavLink {
   season: string;
-  page: PageKey;
+  page: SnapshotType;
   label: string;      // full, e.g. "2026 Pre-Draft Rosters"
   chip: string;       // short, for nav pills and index chips, e.g. "Pre-Draft"
   href: string;       // relative path from current HTML file
