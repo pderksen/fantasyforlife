@@ -42,6 +42,7 @@ Fantasy football roster viewer for a long-running league. Pulls roster data from
 - Key endpoints: `/league/{id}`, `/league/{id}/rosters`, `/league/{id}/users`, `/league/{id}/drafts`, `/draft/{draft_id}/picks`, `/league/{id}/traded_picks`, `/league/{id}/transactions/{week}`, `/players/nfl`
 - `/league/{id}/traded_picks`: `roster_id` = original owner, `owner_id` = current owner (both numeric despite the name). Carries **no date** — trade dates come from transactions.
 - `/league/{id}/transactions/{week}`: one week per call, no all-weeks endpoint. Both callers go through `sweepTrades()`, which keeps `type: "trade"` + `status: "complete"`. `getPickTrades()` sweeps the **whole league lineage** (`getLeagueLineage()` walks `previous_league_id`) and then keeps only trades with a non-empty `draft_picks` array, because next year's picks are traded in this year's league. `getTrades()` sweeps **one league** for the trade log. `status_updated` = accepted, `created` = proposed.
+- Preseason and offseason trades are filed under `leg: 1`, so the weeks 1–18 sweep does catch August activity (verified 2026-08-05 against a live pre-draft trade). `league.settings.leg` also reads `1` while status is `pre_draft`.
 - A trade names what each roster *gained*: `adds` maps player_id → receiving roster, `draft_picks[].owner_id` is the receiving roster, `waiver_budget` moves FAAB. `drops` is the mirror image of `adds` and carries nothing extra.
 - `users[].is_owner` is `null` for non-commissioners, not `false` (verified 2026-08-04 against the 2025 league: 9 of 10 users `null`).
 - Rate limit: 1000 calls/min
@@ -297,5 +298,7 @@ Snapshot JSON files are human-readable and editable. Regenerate HTML after edits
 
 ## Verifying Changes
 - No test framework. Exercise logic with `node --input-type=module -e '...'` importing from `./dist/` after `npm run build`.
-- `output/` is committed, so regenerate then `git diff -- output/`: an empty diff proves no visual regression, a non-empty one shows exactly what changed.
+- `output/` is committed, so regenerate then `git diff -- output/`: an empty diff proves no visual regression, a non-empty one shows exactly what changed. Only `--generate` is deterministic this way; anything that re-fetches rewrites `capturedAt`/`fetchedAt`, so its diff is never empty.
+- `gh` is installed and authenticated: `gh run watch <id> --exit-status` follows a workflow run, `gh run view <id> --log` reads one, `gh api repos/<owner>/<repo>/releases/latest --jq .tag_name` gets an action's current major.
+- No YAML parser is installed (Python has no `yaml` module either). Validate workflow edits with `npx --yes js-yaml <file>`, which leaves `package.json` untouched.
 - Before assuming API drift, diff live response keys against `src/types.ts` rather than trusting the docs (their `/players/nfl` size is 3x stale).
