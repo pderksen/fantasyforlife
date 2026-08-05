@@ -88,6 +88,26 @@ both files landed and commit them.
 
 This one **is** safe to redo later. Draft picks are immutable and always retrievable.
 
+### Open after the 2026 draft: keepers on the post-draft page
+
+Post-draft rosters carry no `keeper: true`, so the yellow highlight and its "Keeper" legend
+(`keeperLegend()` in [src/html.ts](src/html.ts), which keys off the data, not the snapshot type)
+render on pre-draft pages only. 2025 hid this: it was a throwback year with no keepers at all, so
+the page looked correct by accident. 2026 is the first year the gap is visible.
+
+Decide once the draft has run, in this order:
+
+1. **Check `is_keeper` on the fresh picks.** `takeSnapshot()` never sets the flag for post-draft
+   ([src/snapshot.ts:119](src/snapshot.ts#L119)), but Sleeper's own draft picks have an
+   `is_keeper` field. It is `null` on all 170 of 2025's, which proves nothing in a throwback year.
+   If 2026 populates it, `snapshotFromDraft()` can read it straight through:
+   `node -e "const p=require('./data/2026/draft-picks.json'); console.log([...new Set(p.map(x=>String(x.is_keeper)))])"`
+2. **Otherwise carry the flag over from the pre-draft capture.** Match `data/2026/rosters-pre-draft.json`
+   players marked `keeper: true` by name against the post-draft roster. Degrades cleanly: no
+   pre-draft file means no flags, which is right for throwback years.
+
+Either way, re-run `--snapshot-draft 2026` afterward and confirm the legend appears.
+
 ---
 
 ## 3. In-season: traded picks and trade log refresh
@@ -268,7 +288,7 @@ all three are worth eyeballing before they ship.
 |---|---|
 | Early Aug | Update `DEFAULT_LEAGUE_ID`, `DRAFT_ORDERS`, `TIER_CONFIGS`. Re-enable the workflow in the Actions tab if the dead season disabled it. |
 | Mid–late Aug | Automated daily. Nothing to do (skip in throwback years: turn the workflow off, or let the keeper-less capture be overwritten). |
-| Draft day (late Aug) | Run `--snapshot pre-draft` by hand right before the draft starts, then `--snapshot-draft <season>` after it ends. Commit and push both. |
+| Draft day (late Aug) | Run `--snapshot pre-draft` by hand right before the draft starts, then `--snapshot-draft <season>` after it ends. Commit and push both. In 2026, also settle the post-draft keeper flag (step 2). |
 | Sep–Dec | Automated Tue + Fri. Nothing to do. |
 | Early Jan | `--snapshot end-of-season` by hand. Commit and push. |
 | Feb–Jul | Nothing to run. Expect GitHub to disable the schedule. |

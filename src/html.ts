@@ -280,6 +280,26 @@ ${rows}
   </div>`;
 }
 
+/**
+ * Legend for the yellow keeper highlight, shown under the roster table.
+ *
+ * Rendered only when a cell actually carries the class. `.keeper` ships in `ROSTER_STYLES`
+ * on every roster page but only pre-draft snapshots set the flag (`snapshot.ts` clears the
+ * keeper id set for other types), so keying off the data keeps the legend off pages with
+ * nothing highlighted, and picks it up automatically if another type ever flags keepers.
+ * The swatch reuses the `.keeper` class rather than repeating the hex. Carries its own leading
+ * newline so pages without keepers emit nothing at all, not a blank line.
+ */
+function keeperLegend(rosters: SnapshotRoster[]): string {
+  const hasKeepers = rosters.some((r) => r.players.some((p) => p.keeper));
+  if (!hasKeepers) return "";
+  return `
+  <p class="mt-3 flex items-center gap-2 text-xs text-gray-600">
+    <span class="keeper inline-block w-3.5 h-3.5 rounded-sm border border-gray-400"></span>
+    Keeper
+  </p>`;
+}
+
 function tradedPicksSection(tradedPicks?: ResolvedTradedPick[]): string {
   const heading = `  <h2 class="mt-8 mb-4 text-base font-semibold text-gray-700">Traded Picks</h2>`;
   if (!tradedPicks || tradedPicks.length === 0) {
@@ -390,7 +410,7 @@ ${roundTh}${headerCells}
     </tr>
 ${dataRows.join("\n")}
   </table>
-  </div>
+  </div>${keeperLegend(rosters)}
 ${tradedPicksSection(tradedPicks)}
   <footer class="mt-8 text-xs text-gray-400">Data retrieved ${esc(formatPacificTime(snapshot.capturedAt))}</footer>
   </div>
