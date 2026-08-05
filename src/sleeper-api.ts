@@ -3,6 +3,7 @@ import type {
   Roster,
   LeagueUser,
   PlayerDatabase,
+  LeagueDraft,
   DraftPick,
   LeagueTradedPick,
   LeagueTransaction,
@@ -10,7 +11,7 @@ import type {
 
 const BASE_URL = "https://api.sleeper.app/v1";
 
-async function fetchJson<T>(path: string): Promise<T> {
+async function fetchOk(path: string): Promise<Response> {
   const url = `${BASE_URL}${path}`;
   const response = await fetch(url);
   if (!response.ok) {
@@ -18,7 +19,11 @@ async function fetchJson<T>(path: string): Promise<T> {
       `Sleeper API error: ${response.status} ${response.statusText} for ${url}`
     );
   }
-  return response.json() as Promise<T>;
+  return response;
+}
+
+async function fetchJson<T>(path: string): Promise<T> {
+  return (await fetchOk(path)).json() as Promise<T>;
 }
 
 export async function getLeague(leagueId: string): Promise<League> {
@@ -37,8 +42,22 @@ export async function fetchAllPlayers(): Promise<PlayerDatabase> {
   return fetchJson<PlayerDatabase>("/players/nfl");
 }
 
+export async function getLeagueDrafts(leagueId: string): Promise<LeagueDraft[]> {
+  return fetchJson<LeagueDraft[]>(`/league/${leagueId}/drafts`);
+}
+
 export async function getDraftPicks(draftId: string): Promise<DraftPick[]> {
   return fetchJson<DraftPick[]>(`/draft/${draftId}/picks`);
+}
+
+/**
+ * A draft's own traded picks, as the exact response body rather than parsed JSON.
+ * This one is archived verbatim: Sleeper returns `draft_id` here as a bare integer past
+ * 2^53 (`...767616` comes back from a parse/stringify round trip as `...767600`), and
+ * nothing in the app reads the file, so keeping the original bytes costs nothing.
+ */
+export async function getDraftTradedPicksRaw(draftId: string): Promise<string> {
+  return (await fetchOk(`/draft/${draftId}/traded_picks`)).text();
 }
 
 export async function getLeagueTradedPicks(leagueId: string): Promise<LeagueTradedPick[]> {

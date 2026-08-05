@@ -14,9 +14,13 @@ reasoning about it.
 applied. #9, #10, and #11 are now done and verified in the working tree; #15 is done as a
 side effect. The stack table has nothing outstanding.
 
+**Revised again 2026-08-04 (fourth pass)** after #2 was implemented. The draft record now
+writes itself on draft day, so the highest-priority open item is closed. Two draft-day items
+remain: the `2026:post-draft` tier config (#3) and the pre-draft overwrite guard (#4).
+
 **Overall verdict:** unchanged. The architecture is right for what this is (a 10-reader
 archival site regenerated ~3x a year). Pre-generated HTML committed to `main` with Cloudflare
-Pages serving `output/` is the correct setup: keep it. What remains is three draft-day fixes,
+Pages serving `output/` is the correct setup: keep it. What remains is two draft-day fixes,
 a handful of small improvements, and one optional feature.
 
 ---
@@ -55,6 +59,7 @@ side, below.
 | Item | Outcome |
 |---|---|
 | #1 `DEFAULT_LEAGUE_ID` | ✅ **Closed.** Now the 2026 league (`src/index.ts:13`). |
+| #2 draft record never saved | ✅ **Closed.** `--snapshot-draft` now writes `draft-picks.json` and `draft-traded-picks.json`, and refuses to overwrite either. Verified byte-identical against the committed 2025 capture. |
 | #5 2025 traded-picks backfill | ⛔ **Closed, expired.** `data/2026/` now exists, so the file is sealed. No loss; skipping was the standing recommendation. |
 | #6 Tailwind CDN | 🟡 **Partly done.** v4 upgrade landed, so the deprecation is resolved. Inlining the CSS is still open, now as archival durability rather than stack currency. |
 | #3 2026 season prep | 🟡 **Mostly done.** Pre-draft ran in production against the right league; `2026:post-draft` tier config still missing. |
@@ -83,24 +88,49 @@ Confirmed downstream: the 2026 pre-draft snapshot on disk carries
 
 This recurs every season, so the Season Checklist in CLAUDE.md carries it as step 0.
 
-### 2. `--snapshot-draft` never saves `draft-picks.json` when fetching from the API
+### 2. ✅ DONE — `--snapshot-draft` never saved `draft-picks.json` when fetching from the API
 
-**Type:** Functional (bug) · **Time-sensitive: fix before draft day** · Effort: small
+**Type:** Functional (bug) · **Status: landed 2026-08-04 (fourth pass)** · Effort: small
 
-**Status: still open. Re-confirmed 2026-08-04.** This is now the highest-priority open item.
+`draftSnapshotAndGenerate()` fetched picks from the API when the local file was absent but
+never wrote them to disk, and nothing wrote `draft-traded-picks.json` at all. CLAUDE.md said
+both were "saved," but the code only read them (the 2025 files came from an older version or
+by hand). Draft day 2026 would have left no immutable draft record, which the whole data
+model is built around.
 
-In `draftSnapshotAndGenerate()` (`src/index.ts:157`), when the local file
-doesn't exist it fetches picks from the API but never writes them to disk. CLAUDE.md says
-draft picks are "saved as draft-picks.json," but the code only reads that file; it never
-creates it (the 2025 file was written by an older version or by hand). Nothing writes
-`draft-traded-picks.json` either. On draft day 2026 this would leave no immutable draft
-record, which the whole data model is built around.
+**What landed:**
 
-**Fix:** After fetching from the API, write `draftPicks` to `getDraftPicksPath(season)`
-before proceeding. Decide whether `draft-traded-picks.json` should also be captured here.
+- `saveDraftPicks()` / `saveDraftTradedPicks()` in `src/snapshot.ts`, both on a shared
+  `saveDraftCapture()` that **refuses to overwrite an existing file** and returns `undefined`
+  instead, following the `saveTradedPicks()` precedent. Draft data can't change once the
+  draft runs, so the file on disk is the record and a rewrite could only degrade it.
+- `getDraftTradedPicksPath(season)` alongside the existing `getDraftPicksPath()`.
+- On the fetch path, picks are saved before anything else runs.
+- `draft-traded-picks.json` is captured **whenever it's missing**, not only on the fetch
+  path, so a run that loads picks off disk still backfills it. The draft id comes from
+  `draftPicks[0].draft_id` in that case.
+- The endpoint decision: capture it. It is per-draft, immutable, and unobtainable from
+  `/league/{id}/traded_picks` (which reports only the current owner, so in-draft trades are
+  invisible there).
 
-Mitigating factor: draft picks stay available from the API indefinitely, so a missed write is
-recoverable later. Unlike #1, this is not a one-shot capture.
+**One subtlety worth keeping:** `draft-traded-picks.json` is stored as the **raw response
+text**, not re-serialized JSON. Sleeper returns `draft_id` there as a bare integer past 2^53,
+so `JSON.parse` → `JSON.stringify` turns `1220634181302767616` into `...767600`. Verified
+against the live endpoint. Nothing in the app reads the file, so keeping the original bytes
+costs nothing. `draft-picks.json` has no such field (`draft_id` is a string there) and is
+written as normal serialized JSON.
+
+Also folded in: the inline `fetch("https://api.sleeper.app/v1/league/.../drafts")` in
+`index.ts` became `getLeagueDrafts()` in `sleeper-api.ts` with a `LeagueDraft` type, so the
+one endpoint call that bypassed the API layer no longer does. `fetchJson()` was split over a
+shared `fetchOk()` so the raw-text fetch reuses the same error handling.
+
+**Verified:** temporarily removed `data/2025/draft-traded-picks.json`, ran
+`--snapshot-draft 2025 1220634180434526208`, and the regenerated file came back
+**byte-identical to the committed original** — which also confirms the raw-text choice, since
+a round trip would not have. Re-save calls return `undefined` and leave contents untouched.
+The only other diffs across `data/` and `output/` were the two capture timestamps; everything
+was restored with `git checkout`.
 
 ### 3. 2026 season prep: mostly landed, two gaps left
 
@@ -145,8 +175,10 @@ expected. Design for that: the guard should refuse an accidental overwrite while
 intentional one.
 
 **Fix:** Refuse to overwrite an existing pre-draft snapshot unless a `--force` flag is passed.
-`saveTradedPicks()` does something similar (returns `undefined` rather than rewriting a
-sealed season) and can serve as the reference pattern.
+Two reference patterns now exist: `saveTradedPicks()` (returns `undefined` rather than
+rewriting a sealed season) and, from #2, `saveDraftCapture()` (returns `undefined` rather
+than touching an existing immutable file). Neither has a `--force` escape, because neither
+needs one — this item is the case that does, so the flag is the new part.
 
 ### 5. ⛔ WINDOW CLOSED — re-fetch the 2025 traded picks
 
@@ -371,17 +403,18 @@ if Pages ever gets a formal sunset date.
 
 | Batch | Items | When |
 |---|---|---|
-| **Draft-day blockers** | #2, #3 (post-draft tier config), #4 | **Before Aug 29, 2026. 25 days out as of this revision.** |
+| **Draft-day blockers** | #3 (post-draft tier config), #4 | **Before Aug 29, 2026. 25 days out as of this revision.** |
 | Pre-draft re-capture | #3 (keepers) | Once keeper selection completes; needs #4 to allow a deliberate overwrite |
 | Quick mechanical pass | #12 + #7, #8, #13 | Any time; one sitting. Tooling half (#9, #10, #11, #15) is done. |
 | CSS inlining | #6 remainder (then #14 alongside) | Any time; archival durability only, no longer stack-currency |
 | Optional feature | #16 | Only if you want trade history |
 | Calendar item | #10 revisit | Oct 2026, when Node 26 goes LTS |
-| Closed | #1, #9, #10, #11, #15 (✅ done) · #5 (⛔ expired) | — |
+| Closed | #1, #2, #9, #10, #11, #15 (✅ done) · #5 (⛔ expired) | — |
 | No action | #17 | Awareness only |
 
-**Recommended order:** the draft-day batch first. It has a real deadline; nothing else does.
-#2 and #4 are both small and independent of each other.
+**Recommended order:** finish the draft-day batch first. It has a real deadline; nothing else
+does. #4 is small and independent; #3's tier config is the piece that can't be backfilled
+without regenerating the page after the fact.
 
 **The stack table now has nothing outstanding:** Node, Tailwind, TypeScript, `@types/node`,
 tsconfig, and Cloudflare are all current or deliberate, and the caret ranges mean minor/patch

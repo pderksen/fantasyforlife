@@ -1,9 +1,9 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
-import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft } from "./snapshot.js";
+import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft } from "./snapshot.js";
 import { generateHtml, generateIndexHtml, writeHtml, formatPacificDate } from "./html.js";
-import { getDraftPicks, fetchAllPlayers, getLeagueTradedPicks, getPickTrades, getLeague } from "./sleeper-api.js";
+import { getLeagueDrafts, getDraftPicks, getDraftTradedPicksRaw, fetchAllPlayers, getLeagueTradedPicks, getPickTrades, getLeague } from "./sleeper-api.js";
 import { getTierConfig, getLatestDraftOrder } from "./tiers.js";
 import type { SnapshotType, DraftPick, ResolvedTradedPick } from "./types.js";
 
@@ -140,21 +140,36 @@ async function draftSnapshotAndGenerate(season: string, leagueId: string): Promi
   // Load draft picks from disk or fetch from API
   const draftPicksPath = getDraftPicksPath(season);
   let draftPicks: DraftPick[];
+  let draftId: string | undefined;
 
   if (existsSync(draftPicksPath)) {
     console.log(`Loading draft picks from ${draftPicksPath}`);
     const raw = await readFile(draftPicksPath, "utf-8");
     draftPicks = JSON.parse(raw) as DraftPick[];
+    draftId = draftPicks[0]?.draft_id;
   } else {
     console.log("No local draft picks found, fetching from API...");
     // Need draft ID — fetch drafts for the league to find it
-    const resp = await fetch(`https://api.sleeper.app/v1/league/${leagueId}/drafts`);
-    const drafts = await resp.json() as Array<{ draft_id: string; season: string }>;
+    const drafts = await getLeagueDrafts(leagueId);
     const draft = drafts.find((d) => d.season === season);
     if (!draft) {
       throw new Error(`No draft found for season ${season}`);
     }
-    draftPicks = await getDraftPicks(draft.draft_id);
+    draftId = draft.draft_id;
+    draftPicks = await getDraftPicks(draftId);
+
+    // Persist before generating anything. The data model treats these picks as the
+    // immutable draft record, and every post-draft rebuild reads them back from here.
+    const savedPath = await saveDraftPicks(season, draftPicks);
+    if (savedPath) console.log(`Draft picks saved: ${savedPath} (${draftPicks.length} picks)`);
+  }
+
+  // Picks traded inside the draft are part of that same immutable record and are only
+  // reachable per draft id, so capture them whenever they're missing — including runs
+  // that loaded the picks off disk.
+  if (draftId && !existsSync(getDraftTradedPicksPath(season))) {
+    const savedPath = await saveDraftTradedPicks(season, await getDraftTradedPicksRaw(draftId));
+    if (savedPath) console.log(`Draft traded picks saved: ${savedPath}`);
   }
 
   console.log(`\nGenerating post-draft snapshot from ${draftPicks.length} draft picks\n`);

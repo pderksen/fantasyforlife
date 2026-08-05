@@ -344,6 +344,34 @@ export function getDraftPicksPath(season: string): string {
   return join(DATA_DIR, season, "draft-picks.json");
 }
 
+export function getDraftTradedPicksPath(season: string): string {
+  return join(DATA_DIR, season, "draft-traded-picks.json");
+}
+
+/**
+ * Write an immutable draft capture, leaving any existing file untouched.
+ *
+ * Draft data can't change once the draft runs, so the file already on disk *is* the
+ * record — a rewrite could only degrade it (a hand-corrected value lost, or an id
+ * rounded off by a round trip). Returns the path written, or undefined if it was
+ * already there.
+ */
+async function saveDraftCapture(filePath: string, season: string, contents: string): Promise<string | undefined> {
+  if (existsSync(filePath)) return undefined;
+  await mkdir(join(DATA_DIR, season), { recursive: true });
+  await writeFile(filePath, contents, "utf-8");
+  return filePath;
+}
+
+export function saveDraftPicks(season: string, picks: DraftPick[]): Promise<string | undefined> {
+  return saveDraftCapture(getDraftPicksPath(season), season, JSON.stringify(picks));
+}
+
+/** `raw` is the response body verbatim — see `getDraftTradedPicksRaw()`. */
+export function saveDraftTradedPicks(season: string, raw: string): Promise<string | undefined> {
+  return saveDraftCapture(getDraftTradedPicksPath(season), season, raw);
+}
+
 export function getOutputPath(season: string, snapshotType: SnapshotType): string {
   return join(DATA_DIR, "..", "output", season, `rosters-${snapshotType}.html`);
 }

@@ -62,9 +62,14 @@ Then, after the draft finishes:
 npm run dev -- --snapshot-draft <season>
 ```
 
-Builds the post-draft rosters from draft picks (falls back to fetching `/draft/{id}/picks` if
-`data/<season>/draft-picks.json` isn't there yet), refreshes traded picks, writes
+Builds the post-draft rosters from draft picks, refreshes traded picks, writes
 `output/<season>/rosters-post-draft.html`.
+
+It also lays down the season's immutable draft record on the first run: if
+`data/<season>/draft-picks.json` is missing it fetches `/draft/{id}/picks` and saves it, and
+if `data/<season>/draft-traded-picks.json` is missing it fetches that too. Both writes skip a
+file that already exists, so neither can be clobbered by a re-run. After the draft, confirm
+both files landed and commit them.
 
 This one **is** safe to redo later. Draft picks are immutable and always retrievable.
 

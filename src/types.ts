@@ -51,6 +51,15 @@ export type PlayerDatabase = Record<string, SleeperPlayer>;
 
 // ── Draft Types ──
 
+/** Draft as listed by /league/{id}/drafts. One per season in this league. */
+export interface LeagueDraft {
+  draft_id: string;
+  league_id: string;
+  season: string;
+  status: string;              // "pre_draft", "drafting", "complete"
+  [key: string]: unknown;
+}
+
 export interface DraftPick {
   draft_id: string;
   draft_slot: number;

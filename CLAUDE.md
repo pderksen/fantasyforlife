@@ -27,7 +27,7 @@ Fantasy football roster viewer for a long-running league. Pulls roster data from
 
 **Post-Draft Snapshots**: Built from `draft-picks.json` (not live API). Rosters ordered by draft slot; players in draft pick order.
 
-**Draft Data**: Immutable. Saved as `draft-picks.json` and `draft-traded-picks.json` — no date suffix needed.
+**Draft Data**: Immutable. Saved as `draft-picks.json` and `draft-traded-picks.json` — no date suffix needed. Both are written by `--snapshot-draft` on the first run that finds them missing, via `saveDraftPicks()` / `saveDraftTradedPicks()` in `snapshot.ts`, which **never overwrite an existing file** — the copy on disk is the record. `draft-traded-picks.json` is stored as the raw response text, not re-serialized JSON: Sleeper returns its `draft_id` as a bare integer past 2^53, so a parse/stringify round trip silently rounds it off.
 
 **Player Data**: Sleeper `/players/nfl` (~15MB as of Aug 2026; their docs still say 5MB) fetched during `--snapshot` runs, used in-memory to resolve player IDs — not saved to disk. Not fetched during `--snapshot-draft` (draft picks already contain metadata).
 
