@@ -117,7 +117,7 @@ side, below.
 | #14 Google Fonts CDN | ✅ **Closed, declined.** CDN kept by decision. Degrades to fallback fonts, so no durability case; inlining would add the build step #6 declined. |
 | #12 `is_owner` type | ✅ **Closed.** `boolean \| null`. The API really does return `null` — 9 of 10 users in the 2025 league. |
 | #13 `generateFromExisting` catch | ✅ **Closed.** Missing-file check replaces the bare catch; parse and write errors now propagate. |
-| #16 Trade log | ✅ **Closed, built.** Half the item had already expired (dates landed with `tradedOn`); the season trade log shipped as `data/<season>/trades.json` + `output/<season>/trades.html`. |
+| #16 Trade log | ✅ **Closed, built, then half reverted.** Half the item had already expired (dates landed with `tradedOn`); the season trade log shipped as `data/<season>/trades.json` + `output/<season>/trades.html`, and the page was pulled the next day (`45ce303`). The capture stays, the page is gone. |
 
 ---
 
@@ -602,7 +602,21 @@ and now record that v4 has no JS config so a future session doesn't reintroduce
 
 ### 16. ✅ DONE — Trade log from the transactions endpoint
 
-**Type:** Feature · **Status: landed 2026-08-04 (eleventh pass)** · Effort: medium
+**Type:** Feature · **Status: landed 2026-08-04 (eleventh pass), page reverted 2026-08-04** · Effort: medium
+
+> **The page described below no longer exists.** `45ce303` removed `output/<season>/trades.html`
+> and its nav chip a day after this shipped: a per-season trade log was not wanted. Gone with it:
+> `generateTradesHtml()`, `generateTradesPage()`, `hasTrades()`, and the `PageKey` widening noted
+> under "What landed" (`NavLink.page` is a plain `SnapshotType` again, so the fourth chip and its
+> throwback-badge guard are both gone). The "Known limits" note about a season's first trade
+> needing a `--generate` to place its chip is moot for the same reason.
+>
+> **The capture stayed, deliberately.** Transactions are only readable out of the live league and
+> a season seals, so an un-captured year is lost for good. `--trades` and every `--snapshot` still
+> write `data/<season>/trades.json`; `loadTrades()` is kept, caller-less, as the read half of that
+> archive. Everything below about *what the data holds and why* (no NFL team on players, gains
+> only, the one-league sweep) still governs. Reviving a page means writing the renderer again, and
+> `git show f4f3914` has the original.
 
 **Half of this item had already been done.** It opens with "the site can show *what* was
 traded but never *when*" — but the `tradedOn` work closed that: `getPickTrades()` already

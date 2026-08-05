@@ -100,6 +100,8 @@ Both throw `SnapshotGuardError`, which `index.ts` prints without a stack trace. 
 - `src/html.ts` — HTML generation (sequential, post-draft, tiered layouts), index page. Shared constants: `CELL`, `TH`, `TABLE_WRAP`, `PILL_LINK`, `PILL_ACTIVE`, `SECTION_H2`, `TP_TH`, `TP_TD`. Helpers: `htmlHead()`, `navBar()`, `tradedPicksTable()`, `esc()`
 - `src/tiers.ts` — `TIER_CONFIGS` (season:snapshotType → tier boundaries), `DRAFT_ORDERS` (season → owner pick order)
 - `src/index.ts` — CLI entry point
+- `RUNBOOK.md` — operational cadence: what to run when, verification steps, gotchas, yearly calendar
+- `RECOMMENDATIONS.md` — numbered improvement backlog; commit messages cite its item numbers ("Close #14"). Read it for the reasoning behind decisions, not as a description of current state: it is a dated audit with revision passes, and a closed item can be reverted afterward without the item being updated. #16 is the live example, still describing a per-season trade log page that was removed a day later.
 - `data/<season>/rosters-<type>.json` — Snapshots
 - `data/<season>/draft-picks.json` — Immutable draft picks
 - `data/<season>/draft-traded-picks.json` — Immutable traded pick data for specific draft
@@ -229,6 +231,7 @@ Full-width colored separator rows dividing the table by draft value. Configured 
 - **2026 pre-draft**: same 1–5 / 6–10 / 11+ boundaries, but the rounds are **2025's**. `loadDraftRoundsFor()` sends pre-draft snapshots to the *previous* season's post-draft file, since nobody on a carryover roster has been drafted in the upcoming draft yet. Labels name the year ("Drafted Rounds 1–5 (2025)") so they don't read as 2026 rounds on a page headed 2026.
 - **Adding a season**: Add entry to `TIER_CONFIGS`. No config = no tier rows.
 - **Rendering**: Post-draft: `buildPostDraftRows()`. Pre-draft and end-of-season: `buildTieredRows()` (buckets by tier, sorts within — keepers first — max-players determines row count).
+- **`beforeRound` is not one thing.** `buildPostDraftRows()` and `buildTieredRows()` read it as a **draft round**; `buildSequentialRows()` reads it as a **1-based row index**. Sequential is the fallback when a tier config exists but `draftRounds` comes back empty, so the same config puts the bars in different places depending on which path runs, silently and with no error. The `TIER_CONFIGS` JSDoc in `tiers.ts` states this backwards (it credits the row-index reading to pre-draft/end-of-season, which actually go through `buildTieredRows()`). Trust the call sites.
 
 ## Draft Order
 Upcoming season's draft order on index page. Configured in `DRAFT_ORDERS` in `src/tiers.ts` (key: season, value: owner names in pick order). `getLatestDraftOrder()` returns most recent. Add new entry each year; previous entries can remain.
