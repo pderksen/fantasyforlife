@@ -66,6 +66,8 @@ Sleeper mints a **new league ID every season**; `previous_league_id` chains them
 
 ## Season Checklist
 
+Operational cadence, verification steps, and automation notes live in `RUNBOOK.md`.
+
 **Draft day** (typically late August):
 0. Update `DEFAULT_LEAGUE_ID` in `src/index.ts` to the new season's league (see League section)
 1. Before draft: `npm run dev -- --snapshot pre-draft`
