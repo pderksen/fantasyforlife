@@ -3,7 +3,7 @@
   "leagueName": "Fantasy For Life (FFL)",
   "season": "2026",
   "snapshotType": "pre-draft",
-  "capturedAt": "2026-08-04T23:51:22.892Z",
+  "capturedAt": "2026-08-05T17:05:47.717Z",
   "rosters": [
     {
       "ownerName": "Clovis Jets",
@@ -301,7 +301,8 @@
         {
           "name": "Williams, Caleb",
           "position": "QB",
-          "team": "CHI"
+          "team": "CHI",
+          "keeper": true
         },
         {
           "name": "Barkley, Saquon",
@@ -321,17 +322,8 @@
         {
           "name": "Gibbs, Jahmyr",
           "position": "RB",
-          "team": "DET"
-        },
-        {
-          "name": "Skattebo, Cam",
-          "position": "RB",
-          "team": "NYG"
-        },
-        {
-          "name": "Tracy, Tyrone",
-          "position": "RB",
-          "team": "NYG"
+          "team": "DET",
+          "keeper": true
         },
         {
           "name": "Burden, Luther",
@@ -367,6 +359,12 @@
           "name": "TeSlaa, Isaac",
           "position": "WR",
           "team": "DET"
+        },
+        {
+          "name": "Loveland, Colston",
+          "position": "TE",
+          "team": "CHI",
+          "keeper": true
         },
         {
           "name": "Warren, Tyler",
@@ -704,6 +702,11 @@
           "team": "FA"
         },
         {
+          "name": "Skattebo, Cam",
+          "position": "RB",
+          "team": "NYG"
+        },
+        {
           "name": "Aiyuk, Brandon",
           "position": "WR",
           "team": "SF"
@@ -737,11 +740,6 @@
           "name": "Kelce, Travis",
           "position": "TE",
           "team": "KC"
-        },
-        {
-          "name": "Loveland, Colston",
-          "position": "TE",
-          "team": "CHI"
         },
         {
           "name": "Lutz, Wil",

@@ -1,0 +1,64 @@
+{
+  "leagueId": "1331127568820109312",
+  "season": "2026",
+  "fetchedAt": "2026-08-05T17:05:48.701Z",
+  "trades": [
+    {
+      "tradedOn": "2026-08-05T15:20:27.698Z",
+      "week": 1,
+      "parties": [
+        {
+          "owner": "South Town FF",
+          "players": [
+            {
+              "name": "Skattebo, Cam",
+              "position": "RB"
+            }
+          ],
+          "picks": []
+        },
+        {
+          "owner": "Kingsburg Killaz",
+          "players": [
+            {
+              "name": "Loveland, Colston",
+              "position": "TE"
+            }
+          ],
+          "picks": []
+        }
+      ]
+    }
+  ],
+  "raw": [
+    {
+      "status": "complete",
+      "type": "trade",
+      "metadata": null,
+      "created": 1785939547305,
+      "settings": null,
+      "leg": 1,
+      "draft_picks": [],
+      "creator": "470726556075945984",
+      "transaction_id": "1390734896808361984",
+      "adds": {
+        "12481": 2,
+        "12517": 6
+      },
+      "consenter_ids": [
+        2,
+        6
+      ],
+      "drops": {
+        "12481": 6,
+        "12517": 2
+      },
+      "roster_ids": [
+        2,
+        6
+      ],
+      "status_updated": 1785943227698,
+      "waiver_budget": []
+    }
+  ]
+}
