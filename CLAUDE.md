@@ -100,6 +100,11 @@ Both throw `SnapshotGuardError`, which `index.ts` prints without a stack trace. 
 - `src/html.ts` — HTML generation (sequential, post-draft, tiered layouts), index page. Shared constants: `CELL`, `TH`, `TABLE_WRAP`, `PILL_LINK`, `PILL_ACTIVE`, `SECTION_H2`, `TP_TH`, `TP_TD`. Helpers: `htmlHead()`, `navBar()`, `tradedPicksTable()`, `esc()`
 - `src/tiers.ts` — `TIER_CONFIGS` (season:snapshotType → tier boundaries), `DRAFT_ORDERS` (season → owner pick order)
 - `src/index.ts` — CLI entry point
+- `.github/workflows/refresh.yml` — scheduled Sleeper refresh (see Deployment). The August step runs
+  `--snapshot pre-draft` with `continue-on-error`, then repeats `--traded-picks` / `--trades` as
+  their own steps: the keeper guard throws inside `snapshotAndGenerate()` *before* those run
+  ([index.ts](src/index.ts) `saveSnapshot` precedes them), so without the repeat a refused capture
+  would also cost that day's trade refresh
 - `RUNBOOK.md` — operational cadence: what to run when, verification steps, gotchas, yearly calendar
 - `RECOMMENDATIONS.md` — numbered improvement backlog; commit messages cite its item numbers ("Close #14"). Read it for the reasoning behind decisions, not as a description of current state: it is a dated audit with revision passes, and a closed item can be reverted afterward without the item being updated. #16 is the live example, still describing a per-season trade log page that was removed a day later.
 - `data/<season>/rosters-<type>.json` — Snapshots
@@ -280,6 +285,12 @@ Hosted on **Cloudflare Pages**, serving the `output/` directory directly from th
 - `output/` is **committed to the repo** (not gitignored) so Cloudflare Pages can serve it
 - Cloudflare Pages config: build command = *(empty)*, output directory = `output`
 - Deploy workflow: generate HTML locally → commit `output/` → push to `main` → Cloudflare auto-deploys
+- **Scheduled refresh**: `.github/workflows/refresh.yml` runs the CLI on GitHub's runners
+  (daily in Aug, Tue + Fri Sep–Jan), commits `data/` and `output/`, and pushes to `main`, which
+  Cloudflare then deploys. Free (public repo) and secret-free (Sleeper needs no auth). Git stays
+  the archive of record, which is why the scheduler lives at GitHub rather than on Cloudflare:
+  Pages build containers are ephemeral and Workers have no filesystem, so neither can persist a
+  capture. Operational detail in `RUNBOOK.md`.
 
 ## Manual Editing
 Snapshot JSON files are human-readable and editable. Regenerate HTML after edits: `npm run dev -- --generate <season> [type]`

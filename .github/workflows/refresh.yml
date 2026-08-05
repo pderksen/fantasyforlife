@@ -1,0 +1,118 @@
+name: Refresh Sleeper data
+
+# Fetches the latest data from Sleeper, regenerates the HTML, and pushes to main.
+# Cloudflare Pages deploys the push automatically, so a green run means the site is live.
+#
+# Nothing here needs a secret: Sleeper requires no auth, and GITHUB_TOKEN is issued
+# per-run by GitHub. See RUNBOOK.md for the operational side of this.
+
+on:
+  schedule:
+    # Cron is UTC and fixed, so a single expression drifts an hour across DST.
+    # 11:17 UTC lands at 4:17am PDT (summer) and 3:17am PST (winter): overnight Pacific
+    # year-round. The odd minute dodges the top-of-hour queue on GitHub's schedulers.
+    - cron: '17 11 * 8 *'         # Daily through August: keeper watch (also refreshes trades)
+    - cron: '17 11 * 9-12,1 2,5'  # Tue + Fri, Sep-Jan: in-season trade and pick refresh
+  workflow_dispatch:
+    inputs:
+      pre_draft:
+        description: 'Attempt a pre-draft keeper snapshot (August runs always do)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+# One refresh at a time. Two runs pushing to main concurrently would collide.
+concurrency:
+  group: refresh-sleeper-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history: the push step rebases onto main in case a local commit
+          # landed while this run was in flight, and rebase wants real history.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Resolve newest data season
+        id: season
+        run: |
+          SEASON=$(ls data | grep -E '^[0-9]{4}$' | sort -n | tail -1)
+          echo "Newest data season: $SEASON"
+          echo "season=$SEASON" >> "$GITHUB_OUTPUT"
+
+      # Keepers can only be read while the league is still pre_draft, which in practice
+      # means August. Off-season runs skip the attempt so their logs stay clean; the
+      # CLI's own guard is the real backstop if one slips through.
+      - name: Decide whether to attempt a keeper snapshot
+        id: window
+        run: |
+          if [ "${{ inputs.pre_draft }}" = "true" ] || [ "$(date -u +%m)" = "08" ]; then
+            echo "try=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "try=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # continue-on-error because a refusal here is expected behaviour, not a broken run,
+      # and it must not stop the traded-picks and trades refresh below. The guard throws
+      # before those run inside --snapshot, so they are repeated as their own steps.
+      # Never add --force: it exists to override the guard that protects the keeper record.
+      - name: Pre-draft keeper snapshot
+        id: predraft
+        if: steps.window.outputs.try == 'true'
+        continue-on-error: true
+        run: node dist/index.js --snapshot pre-draft
+
+      - name: Traded picks
+        run: node dist/index.js --traded-picks
+
+      - name: Trade log
+        run: node dist/index.js --trades
+
+      - name: Regenerate HTML
+        run: node dist/index.js --generate ${{ steps.season.outputs.season }}
+
+      # A refused keeper snapshot leaves the run green, because the rest of the refresh
+      # succeeded. Surface it in the run summary so it is visible without opening logs.
+      - name: Flag a refused keeper snapshot
+        if: steps.predraft.outcome == 'failure'
+        run: |
+          echo "### :warning: Pre-draft keeper snapshot did not write" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Expected once the draft has run. Otherwise open the *Pre-draft keeper snapshot* step above." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "### No changes" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Sleeper returned the same data as the last run. Nothing to deploy." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git commit -m "Refresh Sleeper data ($(date -u +%Y-%m-%d))"
+          git pull --rebase
+          git push
+          {
+            echo "### Pushed to main"
+            echo ""
+            echo '```'
+            git show --stat --format='%h %s' HEAD
+            echo '```'
+            echo ""
+            echo "Cloudflare Pages deploys this automatically."
+          } >> "$GITHUB_STEP_SUMMARY"

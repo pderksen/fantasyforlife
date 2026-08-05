@@ -9,15 +9,20 @@ so **nothing is live until you commit and push**. Running a command locally is o
 
 ## The short version
 
-| When | Command | Frequency |
-|---|---|---|
-| Aug, up to draft day (non-throwback years) | `npm run dev -- --snapshot pre-draft` | Daily while keepers trickle in |
-| Right after the draft | `npm run dev -- --snapshot-draft <season>` | Once |
-| During the NFL season | `npm run dev -- --traded-picks`, `npm run dev -- --trades`, then `npm run dev -- --generate <season>` | Weekly |
-| After NFL Week 18 (~early Jan) | `npm run dev -- --snapshot end-of-season` | Once |
-| After any of the above | `git add -A && git commit && git push` | Every time |
+| When | Command | Frequency | Who |
+|---|---|---|---|
+| Aug, up to draft day (non-throwback years) | `npm run dev -- --snapshot pre-draft` | Daily while keepers trickle in | **Automated** |
+| Right after the draft | `npm run dev -- --snapshot-draft <season>` | Once | You |
+| During the NFL season | `npm run dev -- --traded-picks`, `npm run dev -- --trades`, then `npm run dev -- --generate <season>` | Tue + Fri | **Automated** |
+| After NFL Week 18 (~early Jan) | `npm run dev -- --snapshot end-of-season` | Once | You |
+| After anything you ran by hand | `git add -A && git commit && git push` | Every time | You |
 
 Season = the NFL season year, e.g. `2026` for Sep 2026 – Feb 2027.
+
+**Automated** means [`.github/workflows/refresh.yml`](.github/workflows/refresh.yml) already runs
+it overnight and pushes the result. See [Automation](#automation-the-github-actions-refresh) below.
+The commands stay listed because running one by hand is always valid, and draft day still wants a
+manual final capture.
 
 ---
 
@@ -175,47 +180,79 @@ Both `data/` and `output/` are committed on purpose; only `dist/` and `node_modu
 
 ---
 
-## Automating with Claude scheduled tasks
+## Automation: the GitHub Actions refresh
 
-Safe to run unattended (idempotent, read-only against Sleeper, overwrite their own outputs):
-`--snapshot pre-draft`, `--traded-picks` + `--generate`, `--snapshot end-of-season`.
+[`.github/workflows/refresh.yml`](.github/workflows/refresh.yml) does steps 3 and 5 on a
+schedule, and takes a run at step 1 while the keeper window is open. GitHub lends a throwaway
+Ubuntu VM with the repo checked out, runs the CLI on Node 24, commits `data/` and `output/`,
+and pushes to `main`. Cloudflare Pages deploys that push like any other, so **a green run means
+the site is already live** — no local step, no machine of yours involved.
 
-Keep human-driven: the annual config edits in step 2, and the post-draft snapshot (it needs the
-draft to have actually finished).
+It costs nothing. Actions minutes are unlimited on public repos, and there are no secrets to
+manage: Sleeper needs no auth, and `GITHUB_TOKEN` is minted per run.
 
-Whether the schedule should also commit and push is your call. Auto-pushing means the site
-updates itself; it also means an unreviewed diff goes live. My recommendation: let the
-in-season traded-picks job commit and push on its own (low-stakes, small diffs), and have the
-preseason and end-of-season jobs stop after generating and report what changed, since those are
-the runs where a bad capture is worth catching before it ships.
+### What it runs
 
-Suggested schedules, seasonal so remember to turn them off:
+Every run: `--traded-picks`, `--trades`, `--generate <newest data season>`, then commit and push
+if anything changed. In August it first attempts `--snapshot pre-draft`.
 
-**A. Keeper watch** — daily ~7am Pacific, mid-Aug through draft day, non-throwback years only:
+The season argument is derived from the newest four-digit directory under `data/`, so it needs
+no annual edit. `--traded-picks` and `--trades` take the league from `DEFAULT_LEAGUE_ID`, which
+does (see step 2).
 
-> In c:\Dev\fantasyforlife, run `npm run dev -- --snapshot pre-draft`. Report which teams have
-> not set keepers yet and whether the snapshot changed from the previous run (`git diff --stat`).
-> Do not commit. Never pass --force. If the run fails, say so with the error output.
+### The two schedules
 
-Forgetting to disable A on draft day used to be the one way this job could do real damage. It
-no longer can: the run now refuses the moment the league leaves `pre_draft` and exits non-zero
-without fetching anything, so a stale schedule reports a failure instead of overwriting the
-keeper record with a keeper-less roster. Still turn it off — a daily failure email is noise.
+Both crons are UTC. `17 11` lands at 4:17am PDT in summer and 3:17am PST in winter, overnight
+Pacific year-round; the odd minute dodges the top-of-hour queue on GitHub's schedulers.
 
-**B. Traded picks and trade log refresh** — weekly, Tuesday ~6am Pacific, Sep through early Jan:
+| Cron | When | Why |
+|---|---|---|
+| `17 11 * 8 *` | Daily, all August | Keeper watch. `--snapshot pre-draft` also refreshes picks and trades, so this covers everything. |
+| `17 11 * 9-12,1 2,5` | Tue + Fri, Sep–Jan | In-season pick and trade refresh. |
 
-> In c:\Dev\fantasyforlife, run `npm run dev -- --traded-picks`, then `npm run dev -- --trades`,
-> then `npm run dev -- --generate <season>`. If `git status` shows changes, commit them with a
-> message describing which picks and players moved, and push. If nothing changed, report that
-> and stop.
+**The draft-day handover is automatic.** The daily cron stops firing on Sep 1 by month, and any
+August run after the draft hits the guard, which refuses and exits without writing. Nothing to
+remember to switch off. That was the one way schedule A could previously do damage.
 
-**C. End-of-season capture** — once, early January after Week 18:
+`--force` appears nowhere in the workflow and must not be added. It exists to override the guard
+that protects the keeper record.
 
-> In c:\Dev\fantasyforlife, run `npm run dev -- --snapshot end-of-season`. Report the diff summary.
-> Do not commit until I confirm.
+### Why the trade refresh is repeated outside `--snapshot`
 
-Replace `<season>` with the literal year in the scheduled prompt. The scripts take it as an
-argument and won't infer it.
+`--snapshot pre-draft` refreshes traded picks and trades internally, but only *after*
+`saveSnapshot()`. When the keeper guard throws, those never run. Since August is also when
+trades are heaviest, the workflow marks the snapshot step `continue-on-error` and then runs
+`--traded-picks` and `--trades` as their own steps, so a refused capture costs you the keeper
+read and nothing else.
+
+A refusal leaves the run green, because the rest of the refresh did succeed. The workflow writes
+a warning into the run summary so it is visible without opening the logs.
+
+### Watching and being told
+
+- **Live**: `github.com/pderksen/fantasyforlife` → **Actions** tab → the running entry → click the
+  `refresh` job. Logs stream as they happen. The GitHub mobile app shows the same.
+- **After the fact**: the run's summary page carries what changed, or "No changes".
+- **Manual run**: Actions → **Refresh Sleeper data** → **Run workflow**. It has a `pre_draft`
+  checkbox for forcing a keeper attempt outside August.
+- **Notifications**: github.com → Settings → Notifications → **Actions**. Pick email and/or
+  web+mobile, and either failures only (the default) or every run. GitHub sends scheduled-workflow
+  failure mail to whoever last committed to the cron, which is you.
+
+### Known quirks
+
+- **Fires are queued, not exact.** A few minutes late is normal, more at busy times. Irrelevant here.
+- **No catch-up.** A fire missed during a GitHub outage is skipped, not replayed. The next run
+  self-heals, since every command re-fetches complete state.
+- **60-day auto-disable.** GitHub switches off schedules in a repo with no activity for 60 days.
+  In season the workflow's own pushes keep it alive; over the Feb–Jul dead months it will be
+  disabled, and GitHub emails first. Re-enable it in the Actions tab each August (see step 2).
+
+### What stays manual
+
+The annual config edits in step 2, `--snapshot-draft` on draft night (it needs the draft to have
+actually finished), and `--snapshot end-of-season` in January. All three are judgment calls, and
+all three are worth eyeballing before they ship.
 
 ---
 
@@ -223,9 +260,9 @@ argument and won't infer it.
 
 | Month | Action |
 |---|---|
-| Early Aug | Update `DEFAULT_LEAGUE_ID`, `DRAFT_ORDERS`, `TIER_CONFIGS`. Enable schedule A. |
-| Mid–late Aug | Daily pre-draft snapshots (skip in throwback years) |
-| Draft day (late Aug) | Final pre-draft snapshot, then `--snapshot-draft` after. Disable A, enable B. |
-| Sep–Dec | Weekly traded picks + trade log refresh |
-| Early Jan | `--snapshot end-of-season`. Disable B. |
-| Jan–Jul | Nothing to run |
+| Early Aug | Update `DEFAULT_LEAGUE_ID`, `DRAFT_ORDERS`, `TIER_CONFIGS`. Re-enable the workflow in the Actions tab if the dead season disabled it. |
+| Mid–late Aug | Automated daily. Nothing to do (skip in throwback years: turn the workflow off, or let the keeper-less capture be overwritten). |
+| Draft day (late Aug) | Run `--snapshot pre-draft` by hand right before the draft starts, then `--snapshot-draft <season>` after it ends. Commit and push both. |
+| Sep–Dec | Automated Tue + Fri. Nothing to do. |
+| Early Jan | `--snapshot end-of-season` by hand. Commit and push. |
+| Feb–Jul | Nothing to run. Expect GitHub to disable the schedule. |
