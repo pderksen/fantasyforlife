@@ -63,12 +63,12 @@ function htmlHead(title: string, extraStyles = ""): string {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: { extend: { fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] } } }
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    @theme {
+      --font-sans: Inter, system-ui, -apple-system, sans-serif;
     }
-  </script>${extraStyles ? `\n  <style>\n${extraStyles}  </style>` : ""}
+  </style>${extraStyles ? `\n  <style>\n${extraStyles}  </style>` : ""}
 </head>`;
 }
 

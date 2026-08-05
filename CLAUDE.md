@@ -7,7 +7,9 @@ Fantasy football roster viewer for a long-running league. Pulls roster data from
 - TypeScript / Node.js (ES modules)
 - Native `fetch` (Node 18+, no HTTP library)
 - Zero npm runtime dependencies
-- Tailwind CSS via CDN (loaded in generated HTML, not installed)
+- Tailwind CSS v4 via browser CDN (loaded in generated HTML, not installed): `https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4`. The `@4` auto-tracks the latest 4.x, so no repo change is needed to pick up updates.
+  - **v4 has no JS config.** Theme customization goes in `<style type="text/tailwindcss">` with an `@theme { --font-sans: ... }` block in `htmlHead()`. Do not reintroduce `tailwind.config = {...}`; the v4 browser build ignores it.
+  - Requires Safari 16.4+ / Chrome 111+ / Firefox 128+.
 - Inter font via Google Fonts CDN
 - All styling: Tailwind utility classes + ~10 lines of inline `<style>` for custom colors (position, tier, round). Each HTML file is self-contained.
 
