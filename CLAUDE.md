@@ -49,7 +49,7 @@ Fantasy football roster viewer for a long-running league. Pulls roster data from
 - `npm run build` — compile TypeScript
 - `npm run dev` — regenerate `output/index.html` and open it in the OS default browser (local preview; no server, pages load over `file://`)
 - `npm run dev -- --help` — usage
-- `npm run dev -- --snapshot <pre-draft|post-draft|end-of-season> [league_id]`
+- `npm run dev -- --snapshot <pre-draft|post-draft|end-of-season> [league_id] [--force]`
 - `npm run dev -- --snapshot-draft <season> [league_id]` — post-draft from draft-picks.json; works retroactively
 - `npm run dev -- --generate <season> [type]` — regenerate HTML (omit type for all)
 - `npm run dev -- --traded-picks [league_id]` — fetch traded picks standalone
@@ -82,10 +82,16 @@ Operational cadence, verification steps, and automation notes live in `RUNBOOK.m
 
 All three steps auto-fetch traded picks. Post-draft snapshots can be created retroactively; pre-draft cannot — the draft consumes the keeper selections, so they must be captured while `status` is still `pre_draft`. Re-run step 1 as keepers trickle in; the last run before the draft is the one that counts.
 
+**Pre-draft overwrite guard**: re-capturing pre-draft is the expected workflow, so plain existence never blocks a write. Two things do, both bypassable with `--force`:
+- **League past `pre_draft`** (`preDraftWindowClosed()` in `snapshot.ts`, checked in `snapshotAndGenerate()` before the 15MB player fetch). Sleeper has already consumed `roster.keepers`, so the capture could only be worse than the file it replaces. This is what stops a daily keeper-watch job left running past draft day from erasing the record.
+- **Fewer keepers than the saved capture** (`saveSnapshot()`). Nothing legitimately un-picks a keeper, so this is a bad read, not an update. Equal or greater counts write normally.
+
+Both throw `SnapshotGuardError`, which `index.ts` prints without a stack trace. The catch handler sets `process.exitCode` rather than calling `process.exit()`: on Windows, exiting outright while a just-completed `fetch` is still tearing down trips a libuv assertion and returns a crash status instead of 1.
+
 ## Project Structure
 - `src/types.ts` — TypeScript interfaces, `SNAPSHOT_TYPE_LABELS` map
 - `src/sleeper-api.ts` — Sleeper API fetch wrappers
-- `src/snapshot.ts` — Snapshot capture/save/load, path helpers, draft round lookup, traded picks resolution + display filters (`picksForDraft()`, `picksAwaitingDraft()`, `newestDataSeason()`). `OWNER_NAME_OVERRIDES`: `ClovisJets` → `Clovis Jets`
+- `src/snapshot.ts` — Snapshot capture/save/load, path helpers, draft round lookup, traded picks resolution + display filters (`picksForDraft()`, `picksAwaitingDraft()`, `newestDataSeason()`), pre-draft overwrite guard (`preDraftWindowClosed()`, `SnapshotGuardError`). `OWNER_NAME_OVERRIDES`: `ClovisJets` → `Clovis Jets`
 - `src/html.ts` — HTML generation (sequential, post-draft, tiered layouts), index page. Shared constants: `CELL`, `TH`, `PILL_LINK`, `PILL_ACTIVE`, `SECTION_H2`, `TP_TH`, `TP_TD`. Helpers: `htmlHead()`, `tradedPicksTable()`, `esc()`
 - `src/tiers.ts` — `TIER_CONFIGS` (season:snapshotType → tier boundaries), `DRAFT_ORDERS` (season → owner pick order)
 - `src/index.ts` — CLI entry point

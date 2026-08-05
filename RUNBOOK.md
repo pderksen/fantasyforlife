@@ -38,6 +38,16 @@ overwrites the previous capture, and the console names the teams still missing. 
 before the draft starts is the one that counts.** This step cannot be redone retroactively; the
 draft consumes the keeper selections and the data is gone.
 
+Because of that, the command refuses two writes that would destroy the record, and only those:
+
+| Refusal | Means | What to do |
+|---|---|---|
+| `reports status "complete", not "pre_draft"` | The draft has already run, so there are no keepers left to read. Nothing is fetched or written. | Nothing. You wanted `--snapshot-draft <season>`. |
+| `The saved capture has N keeper(s); this one has M` | The new read came back with fewer keepers than the file on disk. Nothing is written. | Check you're on the right league and re-run. If Sleeper really did clear a keeper, `--force`. |
+
+Everything else writes as normal: a re-run with the same keepers, or with more, is the whole
+point of running daily. Append `--force` (anywhere in the command) to override either refusal.
+
 ---
 
 ## 2. Draft day: annual config first
@@ -140,7 +150,8 @@ Both `data/` and `output/` are committed on purpose; only `dist/` and `node_modu
   season has data) — left unchanged.` That's correct behavior, not a failure: re-fetching would
   re-resolve owner names against current team names and quietly rewrite history.
 - **Pre-draft is the only unrecoverable capture.** Post-draft and traded picks can be rebuilt
-  from the API later; keepers cannot.
+  from the API later; keepers cannot. The guard in step 1 is the backstop; `--force` is the
+  only way past it, so never put `--force` in a scheduled prompt.
 - **Every command auto-regenerates `output/index.html`**, so the home page never drifts.
 - **Node 24 LTS** is the supported runtime (`engines: >=24`); native `fetch` needs no HTTP
   library. `npm run dev` runs `tsc` first, so a TypeScript error blocks the run before any
@@ -170,7 +181,12 @@ Suggested schedules, seasonal so remember to turn them off:
 
 > In c:\Dev\fantasyforlife, run `npm run dev -- --snapshot pre-draft`. Report which teams have
 > not set keepers yet and whether the snapshot changed from the previous run (`git diff --stat`).
-> Do not commit. If the run fails, say so with the error output.
+> Do not commit. Never pass --force. If the run fails, say so with the error output.
+
+Forgetting to disable A on draft day used to be the one way this job could do real damage. It
+no longer can: the run now refuses the moment the league leaves `pre_draft` and exits non-zero
+without fetching anything, so a stale schedule reports a failure instead of overwriting the
+keeper record with a keeper-less roster. Still turn it off — a daily failure email is noise.
 
 **B. Traded picks refresh** — weekly, Tuesday ~6am Pacific, Sep through early Jan:
 

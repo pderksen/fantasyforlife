@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
-import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft } from "./snapshot.js";
+import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft, preDraftWindowClosed, SnapshotGuardError } from "./snapshot.js";
 import { generateHtml, generateIndexHtml, writeHtml, formatPacificDate } from "./html.js";
 import { getLeagueDrafts, getDraftPicks, getDraftTradedPicksRaw, fetchAllPlayers, getLeagueTradedPicks, getPickTrades, getLeague } from "./sleeper-api.js";
 import { getTierConfig, getLatestDraftOrder } from "./tiers.js";
@@ -88,9 +88,12 @@ function printUsage(): void {
   npm run dev
     Regenerate the home page and open it in your default browser.
 
-  npm run dev -- --snapshot <type> [league_id]
+  npm run dev -- --snapshot <type> [league_id] [--force]
     Take a new roster snapshot and generate HTML.
     type: pre-draft | post-draft | end-of-season
+    Re-running pre-draft is expected while keepers trickle in. --force is only
+    needed to overwrite a saved capture with one holding fewer keepers, or to
+    capture pre-draft after the draft has already run.
 
   npm run dev -- --snapshot-draft <season> [league_id]
     Generate post-draft roster snapshot from draft picks data.
@@ -106,8 +109,23 @@ function printUsage(): void {
 `);
 }
 
-async function snapshotAndGenerate(snapshotType: SnapshotType, leagueId: string): Promise<void> {
+async function snapshotAndGenerate(snapshotType: SnapshotType, leagueId: string, force: boolean): Promise<void> {
   console.log(`Taking ${snapshotType} snapshot for league: ${leagueId}\n`);
+
+  // Checked here, before the 15MB player fetch, because it is one cheap call and the answer
+  // is definitive: past `pre_draft` there are no keepers left to read, so the capture could
+  // only be worse than the file it would replace.
+  if (snapshotType === "pre-draft" && !force) {
+    const league = await getLeague(leagueId);
+    if (preDraftWindowClosed(league.status)) {
+      throw new SnapshotGuardError(
+        `League ${leagueId} reports status "${league.status}", not "pre_draft".\n` +
+        `  The draft has already run, so Sleeper has consumed the keeper selections and\n` +
+        `  there are none left to capture. Nothing was fetched or written. Any saved\n` +
+        `  pre-draft snapshot is the record. Re-run with --force to capture anyway.`,
+      );
+    }
+  }
 
   // Fetch player DB to resolve player IDs to names/positions/teams
   console.log("Fetching player database...");
@@ -115,7 +133,7 @@ async function snapshotAndGenerate(snapshotType: SnapshotType, leagueId: string)
 
   const snapshot = await takeSnapshot(leagueId, snapshotType, playerDb);
 
-  const snapshotPath = await saveSnapshot(snapshot);
+  const snapshotPath = await saveSnapshot(snapshot, force);
   console.log(`\nSnapshot saved: ${snapshotPath}`);
 
   // Fetch and save traded picks
@@ -220,7 +238,10 @@ async function generateFromExisting(season: string, snapshotType?: SnapshotType)
 }
 
 async function main(): Promise<void> {
-  const args = process.argv.slice(2);
+  // --force is positional-agnostic, so pull it out before anything reads args by index.
+  const rawArgs = process.argv.slice(2);
+  const force = rawArgs.includes("--force");
+  const args = rawArgs.filter((a) => a !== "--force");
 
   // Bare `npm run dev` — regenerate the index below, then open it locally.
   const openHomePage = args.length === 0;
@@ -239,7 +260,7 @@ async function main(): Promise<void> {
       process.exit(1);
     }
     const leagueId = args[2] || DEFAULT_LEAGUE_ID;
-    await snapshotAndGenerate(type, leagueId);
+    await snapshotAndGenerate(type, leagueId, force);
 
   } else if (args[0] === "--snapshot-draft") {
     const season = args[1];
@@ -284,6 +305,15 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
-  console.error("Fatal error:", err);
-  process.exit(1);
+  // A tripped guard is a decision the run made on purpose, so print the message it wrote
+  // rather than a stack trace. Everything else is a genuine failure and keeps its stack.
+  if (err instanceof SnapshotGuardError) {
+    console.error(`\n${err.message}`);
+  } else {
+    console.error("Fatal error:", err);
+  }
+  // Set the code and let Node unwind rather than calling process.exit(): on Windows,
+  // exiting outright while a just-completed fetch is still tearing down trips a libuv
+  // assertion, and the shell sees a crash status instead of 1.
+  process.exitCode = 1;
 });

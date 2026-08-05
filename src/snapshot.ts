@@ -377,10 +377,67 @@ export function getOutputPath(season: string, snapshotType: SnapshotType): strin
 }
 
 
-export async function saveSnapshot(snapshot: Snapshot): Promise<string> {
+/**
+ * A refused write, as opposed to an unexpected failure. Carries a message written for the
+ * person at the terminal, so the CLI prints it plainly instead of as a crash.
+ */
+export class SnapshotGuardError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SnapshotGuardError";
+  }
+}
+
+/**
+ * Whether the window for capturing keepers has closed.
+ *
+ * Sleeper reports a league as `pre_draft` until the draft starts, then `drafting` and later
+ * `in_season` / `complete`. Keepers live in `roster.keepers` only until the draft consumes
+ * them, so a "pre-draft" capture taken afterward is a post-draft roster with zero keepers —
+ * and, unguarded, it lands on top of the only copy of the real one. A daily keeper-watch job
+ * left running past draft day walks straight into this.
+ */
+export function preDraftWindowClosed(leagueStatus: string): boolean {
+  return leagueStatus !== "pre_draft";
+}
+
+/** Players flagged as kept for the upcoming draft. */
+function countKeepers(snapshot: Snapshot): number {
+  return snapshot.rosters.reduce(
+    (total, roster) => total + roster.players.filter((p) => p.keeper).length,
+    0,
+  );
+}
+
+/**
+ * Write a roster snapshot. Returns the path written.
+ *
+ * Overwriting is normal here and deliberately stays that way: keepers trickle in for weeks,
+ * so the runbook has you re-capture pre-draft daily and the newest run is the one that counts.
+ * Plain existence is therefore no reason to refuse. Losing keepers is: nothing legitimately
+ * un-picks one, so a capture holding fewer than the file on disk is a bad read (the draft
+ * already ran, an API hiccup, the wrong league id) rather than an update, and it would
+ * destroy the one record that cannot be rebuilt from the API. That case refuses unless
+ * `force` is set.
+ */
+export async function saveSnapshot(snapshot: Snapshot, force = false): Promise<string> {
   const seasonDir = join(DATA_DIR, snapshot.season);
-  await mkdir(seasonDir, { recursive: true });
   const filePath = join(seasonDir, `rosters-${snapshot.snapshotType}.json`);
+
+  if (snapshot.snapshotType === "pre-draft" && !force && existsSync(filePath)) {
+    const saved = countKeepers(await loadSnapshot(filePath));
+    const incoming = countKeepers(snapshot);
+    if (incoming < saved) {
+      throw new SnapshotGuardError(
+        `Refusing to overwrite ${filePath}\n` +
+        `  The saved capture has ${saved} keeper(s); this one has ${incoming}.\n` +
+        `  Keepers only exist until the draft consumes them, so the saved file may be the\n` +
+        `  only record. Nothing was written. Re-run with --force to replace it anyway.`,
+      );
+    }
+  }
+
+  await mkdir(seasonDir, { recursive: true });
   if (existsSync(filePath)) {
     console.warn(`Warning: overwriting existing snapshot at ${filePath}`);
   }

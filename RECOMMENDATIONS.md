@@ -22,10 +22,17 @@ remain: the `2026:post-draft` tier config (#3) and the pre-draft overwrite guard
 Tailwind v4 upgrade already resolved the deprecation; inlining the compiled CSS was weighed
 and declined as an archival hedge that doesn't earn a build step. #14 was judged the same way.
 
+**Revised again 2026-08-04 (sixth pass)** after #4 was implemented — **not as this report
+specified it.** The guard as written (refuse any overwrite of an existing pre-draft snapshot
+without `--force`) would have tripped on every routine daily re-capture, which is the
+documented workflow in both #3 above and RUNBOOK step 1. A guard that fires daily trains you
+to pass `--force` daily, and then it protects nothing. What landed instead refuses the two
+writes that actually destroy data and lets routine re-captures through untouched. See #4.
+
 **Overall verdict:** unchanged. The architecture is right for what this is (a 10-reader
 archival site regenerated ~3x a year). Pre-generated HTML committed to `main` with Cloudflare
-Pages serving `output/` is the correct setup: keep it. What remains is two draft-day fixes,
-a handful of small improvements, and two optional items.
+Pages serving `output/` is the correct setup: keep it. What remains is one draft-day config
+entry, a handful of small improvements, and two optional items.
 
 ---
 
@@ -67,7 +74,7 @@ side, below.
 | #5 2025 traded-picks backfill | ⛔ **Closed, expired.** `data/2026/` now exists, so the file is sealed. No loss; skipping was the standing recommendation. |
 | #6 Tailwind CDN | ✅ **Closed.** v4 upgrade landed, resolving the deprecation. CSS inlining declined: the archival hedge doesn't justify adding a build step, and it stays recoverable later. |
 | #3 2026 season prep | 🟡 **Mostly done.** Pre-draft ran in production against the right league; `2026:post-draft` tier config still missing. |
-| #4 Overwrite guard | 🔄 **Risk reshaped.** Snapshot is now committed, so git backstops it, but a deliberate re-capture is expected before the draft. |
+| #4 Overwrite guard | ✅ **Closed, reshaped.** Landed as a keeper-loss guard plus `--force`, not the existence guard specified — that one would have fired on every routine daily re-capture. |
 | #9 TypeScript 7 | ✅ **Closed.** Landed at `^7.0.2` with `"types": ["node"]`. Emit byte-identical, `output/` diff empty. |
 | #10 `@types/node` / `engines` | ✅ **Closed.** `^24.13.3` + `"engines": { "node": ">=24" }`. |
 | #11 tsconfig | ✅ **Closed.** `nodenext`, `ES2024`, `types: ["node"]`, `forceConsistentCasingInFileNames` dropped. |
@@ -156,33 +163,76 @@ Two gaps remain:
 - ⚠️ **Keeper selection is still in progress**, so the snapshot on disk is a partial picture.
   As of 2026-08-04 only 1 of 10 teams (Vancouver Moose Drool, 3 keepers) has any keeper set;
   the other 9 are at zero. Expect to **re-capture pre-draft closer to Aug 29** once selections
-  are in. That intent interacts with #4: the guard there should permit a deliberate re-capture,
-  not just block writes.
+  are in. #4 is now built around this: a re-capture that holds the same or more keepers writes
+  with no ceremony, so the daily runs stay friction-free right up to draft day.
 
 Gotcha still worth carrying: in the sequential layout (`buildSequentialRows()` in
 `src/html.ts`), `beforeRound` means *row index*, not draft round. A tier config written with
 round semantics will render wrong.
 
-### 4. Overwrite guard for the pre-draft snapshot
+### 4. ✅ DONE — Overwrite guard for the pre-draft snapshot
 
-**Type:** Functional (data safety) · Effort: small
+**Type:** Functional (data safety) · **Status: landed 2026-08-04 (sixth pass), with a
+corrected design** · Effort: small
 
-**Status: still open, and the risk shape changed.** `saveSnapshot()` (`src/snapshot.ts:357`)
-warns but overwrites anyway.
+**The original prescription was wrong and was not implemented.** It said: refuse to overwrite
+an existing pre-draft snapshot unless `--force` is passed. But RUNBOOK step 1 and automation
+schedule A both call for running `--snapshot pre-draft` **daily** while keepers trickle in,
+and #3 above records that a re-capture before Aug 29 is expected. An existence guard fires on
+every one of those runs. You would type `--force` daily out of habit, and on the one run where
+the guard mattered you would type it too. It would have converted a real protection into a
+ritual.
 
-What changed: the 2026 pre-draft snapshot now exists *and is committed* (`7f01617`), so git is
-a real backstop rather than a hypothetical one. That lowers the severity from "could lose the
-irreplaceable capture" to "could lose uncommitted work."
+The mistake in the original was treating *overwriting* as the hazard. Overwriting is the
+intended behavior here. The hazard is overwriting **with something worse**.
 
-But per #3, keeper selection is incomplete, so a **deliberate** re-capture before Aug 29 is
-expected. Design for that: the guard should refuse an accidental overwrite while allowing an
-intentional one.
+**What landed — two guards, both bypassable with `--force`:**
 
-**Fix:** Refuse to overwrite an existing pre-draft snapshot unless a `--force` flag is passed.
-Two reference patterns now exist: `saveTradedPicks()` (returns `undefined` rather than
-rewriting a sealed season) and, from #2, `saveDraftCapture()` (returns `undefined` rather
-than touching an existing immutable file). Neither has a `--force` escape, because neither
-needs one — this item is the case that does, so the flag is the new part.
+- **The draft has already run.** `preDraftWindowClosed()` in `src/snapshot.ts` checks
+  `league.status !== "pre_draft"`; `snapshotAndGenerate()` calls it *before* the 15MB player
+  fetch, so the refusal costs one cheap API call and touches nothing. Once the draft consumes
+  the keeper selections, `roster.keepers` is empty and a "pre-draft" capture is just a
+  post-draft roster with no keepers — strictly worse than whatever it would replace. **This is
+  the accident the item exists for**, and the daily keeper-watch job left running past draft
+  day is exactly how it happens.
+- **The capture holds fewer keepers than the file on disk.** Checked in `saveSnapshot()`,
+  which now takes a `force` parameter. Nothing legitimately un-picks a keeper, so a shrinking
+  count is a bad read (API hiccup, wrong league id, the case above slipping through) rather
+  than an update. Equal or greater counts write normally, which is the routine daily path.
+
+Both throw `SnapshotGuardError`, a named subclass so `index.ts` can print the message plainly
+instead of a stack trace — a tripped guard is a decision, not a crash. `--force` is parsed
+positionally-agnostic and stripped from `argv` before anything reads args by index, so it
+composes with an explicit league id.
+
+**Found while testing, and fixed:** the catch handler's `process.exit(1)` aborts the process
+on Windows when it runs right after a completed `fetch` — libuv asserts
+(`!(handle->flags & UV_HANDLE_CLOSING)`) and the shell gets a crash status (`0xC0000409`)
+instead of 1. Reproduced in a three-line script, so it is a Node-on-Windows behavior rather
+than anything about this guard; the guard is simply the first code path that fetches and then
+exits immediately. Now sets `process.exitCode` and lets Node unwind. Refusal returns a clean
+exit 1 in 0.3s.
+
+**Verified** against the real 2026 data:
+
+| Case | Result |
+|---|---|
+| 2025 league (`status: complete`), no force | Refused before any fetch, exit 1, nothing written |
+| Saved 3 keepers → capture with 0, no force | `SnapshotGuardError`, file byte-identical after |
+| Saved 3 keepers → capture with 3 | Wrote normally (the daily re-run path) |
+| Saved 3 keepers → capture with 5 | Wrote normally (keepers trickling in) |
+| Fewer keepers, `--force` | Wrote, guard bypassed as intended |
+| Live `--snapshot pre-draft` end-to-end | Succeeded; only `capturedAt` moved in `git diff` |
+
+All test mutations were reverted with `git checkout -- data/ output/`; the change is
+source-and-docs only. CLAUDE.md and RUNBOOK.md both document the two refusals, and the runbook
+now says never to put `--force` in a scheduled prompt.
+
+**Left deliberately unguarded:** `end-of-season` and `post-draft`. Post-draft rebuilds
+deterministically from the immutable `draft-picks.json`, so overwriting it loses nothing.
+End-of-season is a live capture and *could* take an analogous guard, but there is no cheap
+signal equivalent to `pre_draft` status that says "the window has closed," and no comparable
+history of a scheduled job running past its window. Not worth inventing one speculatively.
 
 ### 5. ⛔ WINDOW CLOSED — re-fetch the 2025 traded picks
 
@@ -417,17 +467,17 @@ if Pages ever gets a formal sunset date.
 
 | Batch | Items | When |
 |---|---|---|
-| **Draft-day blockers** | #3 (post-draft tier config), #4 | **Before Aug 29, 2026. 25 days out as of this revision.** |
-| Pre-draft re-capture | #3 (keepers) | Once keeper selection completes; needs #4 to allow a deliberate overwrite |
+| **Draft-day blocker** | #3 (post-draft tier config) | **Before Aug 29, 2026. 25 days out as of this revision.** |
+| Pre-draft re-capture | #3 (keepers) | Keep running it daily; #4's guard now stays out of the way |
 | Quick mechanical pass | #12 + #7, #8, #13 | Any time; one sitting. Tooling half (#9, #10, #11, #15) is done. |
 | Optional feature | #16 · #14 (system-font swap) | Only if you want trade history / dislike the font CDN |
 | Calendar item | #10 revisit | Oct 2026, when Node 26 goes LTS |
-| Closed | #1, #2, #6, #9, #10, #11, #15 (✅ done) · #5 (⛔ expired) | — |
+| Closed | #1, #2, #4, #6, #9, #10, #11, #15 (✅ done) · #5 (⛔ expired) | — |
 | No action | #17 | Awareness only |
 
-**Recommended order:** finish the draft-day batch first. It has a real deadline; nothing else
-does. #4 is small and independent; #3's tier config is the piece that can't be backfilled
-without regenerating the page after the fact.
+**Recommended order:** `2026:post-draft` in `TIER_CONFIGS` is now the only thing with a
+deadline, and it is the one piece that can't be backfilled without regenerating the page after
+the fact. Everything else can wait.
 
 **The stack table now has nothing outstanding:** Node, Tailwind, TypeScript, `@types/node`,
 tsconfig, and Cloudflare are all current or deliberate, and the caret ranges mean minor/patch
