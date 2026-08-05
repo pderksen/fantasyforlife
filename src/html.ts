@@ -1,6 +1,6 @@
 import { writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
-import type { Snapshot, SnapshotRoster, SnapshotPlayer, NavLink, TierConfig, ResolvedTradedPick } from "./types.js";
+import type { Snapshot, SnapshotType, SnapshotRoster, SnapshotPlayer, NavLink, TierConfig, ResolvedTradedPick } from "./types.js";
 import { SNAPSHOT_TYPE_LABELS } from "./types.js";
 import type { DraftOrder } from "./tiers.js";
 
@@ -63,11 +63,46 @@ const SECTION_H2 = "text-base font-semibold text-gray-700 mb-5 mt-0";
 const TP_TH = "text-left text-xs font-semibold uppercase tracking-wide text-gray-400 px-3 pb-2.5 border-b-2 border-gray-200";
 const TP_TD = "px-3 py-2.5 border-b border-gray-100 text-gray-900";
 
-function htmlHead(title: string, extraStyles = ""): string {
+/** Link-preview copy per snapshot type. Kept next to the labels it mirrors. */
+const OG_DESCRIPTIONS: Record<SnapshotType, (season: string) => string> = {
+  "pre-draft": (s) => `Carryover rosters with keepers flagged, captured before the ${s} draft.`,
+  "post-draft": (s) => `Every roster as drafted in ${s}, by round.`,
+  "end-of-season": (s) => `Final ${s} rosters after NFL Week 18.`,
+};
+
+interface HeadOptions {
+  /** Browser tab / search result title. */
+  title: string;
+  /** og:title. Defaults to `title`; set it when the tab title carries the league name and the preview card shouldn't repeat it. */
+  ogTitle?: string;
+  description: string;
+  siteName: string;
+  extraStyles?: string;
+}
+
+/**
+ * `noindex` is deliberate — the pages are public URLs but the league's rosters
+ * shouldn't be Googleable. It is a meta tag rather than a robots.txt `Disallow`
+ * on purpose: disallowing only blocks the fetch, and a URL someone links to can
+ * still be listed with no snippet because the crawler never saw a directive.
+ * Staying crawlable is what lets `noindex` actually be read and obeyed. The
+ * Open Graph tags are unaffected — chat and social unfurlers don't honor robots
+ * rules, so previews still render.
+ *
+ * No favicon by choice; browsers 404 on `/favicon.ico` and move on.
+ */
+function htmlHead({ title, ogTitle, description, siteName, extraStyles = "" }: HeadOptions): string {
   return `<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${esc(title)}</title>
+  <meta name="description" content="${esc(description)}">
+  <meta name="robots" content="noindex, nofollow">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="${esc(siteName)}">
+  <meta property="og:title" content="${esc(ogTitle ?? title)}">
+  <meta property="og:description" content="${esc(description)}">
+  <meta name="twitter:card" content="summary">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -339,7 +374,13 @@ export function generateHtml(
 
   return `<!DOCTYPE html>
 <html lang="en">
-${htmlHead(`${snapshot.leagueName} - ${snapshot.season} ${typeLabel}`, styles)}
+${htmlHead({
+    title: `${snapshot.leagueName} - ${snapshot.season} ${typeLabel}`,
+    ogTitle: `${snapshot.season} ${typeLabel}`,
+    description: (OG_DESCRIPTIONS[snapshot.snapshotType] ?? (() => `${snapshot.season} rosters.`))(snapshot.season),
+    siteName: snapshot.leagueName,
+    extraStyles: styles,
+  })}
 <body class="bg-gray-50 text-gray-900 font-sans antialiased">
   <div class="px-3 sm:px-5 pt-4 sm:pt-5 pb-10">
   <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 mb-1">${esc(snapshot.season)} ${esc(typeLabel)}</h1>
@@ -448,7 +489,11 @@ ${tradedPicksBody}
 
   return `<!DOCTYPE html>
 <html lang="en">
-${htmlHead(leagueName)}
+${htmlHead({
+    title: leagueName,
+    description: "Season-by-season roster tiers, draft order, and traded picks. Est. 2006.",
+    siteName: leagueName,
+  })}
 <body class="bg-white text-gray-900 font-sans antialiased">
   <div class="max-w-2xl mx-auto px-4 sm:px-6 py-10 sm:py-20">
     <header class="text-center mb-10 sm:mb-16">

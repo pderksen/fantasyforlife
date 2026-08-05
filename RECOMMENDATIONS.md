@@ -37,6 +37,12 @@ A headless-Chrome render afterward turned up a third: the fix is real but fires 
 viewports, and is invisible on a 1080p-or-larger monitor because the whole table already fits
 there. Kept on that basis rather than dropped. All three are recorded in #7.
 
+**Revised again 2026-08-04 (eighth pass)** after #8 was implemented, with the favicon half
+declined by decision. Open Graph tags plus a `noindex` directive landed; no icon was added.
+The `noindex` mechanism was a real choice rather than a formality (meta tag, not a robots.txt
+`Disallow`) and the reason is recorded in #8 and in a code comment, because the two look
+interchangeable and only one of them actually de-indexes.
+
 **Overall verdict:** unchanged. The architecture is right for what this is (a 10-reader
 archival site regenerated ~3x a year). Pre-generated HTML committed to `main` with Cloudflare
 Pages serving `output/` is the correct setup: keep it. What remains is one draft-day config
@@ -83,6 +89,7 @@ side, below.
 | #6 Tailwind CDN | ✅ **Closed.** v4 upgrade landed, resolving the deprecation. CSS inlining declined: the archival hedge doesn't justify adding a build step, and it stays recoverable later. |
 | #3 2026 season prep | 🟡 **Mostly done.** Pre-draft ran in production against the right league; `2026:post-draft` tier config still missing. |
 | #4 Overwrite guard | ✅ **Closed, reshaped.** Landed as a keeper-loss guard plus `--force`, not the existence guard specified — that one would have fired on every routine daily re-capture. |
+| #8 Favicon + OG tags | ✅ **Closed, half declined.** OG tags shipped on all four pages; `noindex, nofollow` added by request. No favicon by request. |
 | #7 Sticky header | ✅ **Closed.** Wrapper now caps at viewport height, so the header has something to pin to; the header markup was never the problem. Narrower payoff than the item claimed — measured inert at 1080p and up, where the table already fits. |
 | #9 TypeScript 7 | ✅ **Closed.** Landed at `^7.0.2` with `"types": ["node"]`. Emit byte-identical, `output/` diff empty. |
 | #10 `@types/node` / `engines` | ✅ **Closed.** `^24.13.3` + `"engines": { "node": ">=24" }`. |
@@ -378,16 +385,54 @@ which is a worse trade on a phone than the narrow win it buys.
 handful of rows and have no sticky header, so a height cap would do nothing but add a
 scrollbar.
 
-### 8. Favicon + Open Graph tags
+### 8. ✅ DONE — Open Graph tags + `noindex` (favicon declined)
 
-**Type:** UI / Visual · Effort: small
+**Type:** UI / Visual · **Status: landed 2026-08-04 (eighth pass)** · Effort: small
 
-No favicon and no `og:title`/`og:description` meta in `htmlHead()`. League links get pasted
-into group chats, and previews are currently bare. Ten minutes of work for a
-disproportionate polish win.
+`htmlHead()` emitted no `og:*` meta, so links pasted into group chats unfurled bare. It also
+had no crawler directive, leaving the league's rosters Googleable on a public URL.
 
-**Related decision:** Add `noindex` if you'd rather the league's rosters not be Googleable;
-it's a public URL today.
+**What landed:**
+
+- `htmlHead()` now takes a `HeadOptions` object (`title`, optional `ogTitle`, `description`,
+  `siteName`, optional `extraStyles`) instead of two positional strings. Four strings in a row
+  is exactly where positional args start getting swapped silently, and the head block is not
+  something a compile error would catch.
+- `og:type`, `og:site_name`, `og:title`, `og:description`, `twitter:card` (`summary`, correct
+  with no image), and a plain `<meta name="description">` for unfurlers that read it as a
+  fallback.
+- `og:title` on roster pages is `2026 Pre-Draft Rosters`, not the full `<title>`. The league
+  name already renders as `og:site_name` in the preview card, so repeating it inside the bold
+  line just eats width.
+- `OG_DESCRIPTIONS`, a per-snapshot-type description map next to `SNAPSHOT_TYPE_LABELS`'s
+  usage, so each page says something specific ("Carryover rosters with keepers flagged,
+  captured before the 2026 draft") rather than one generic line on all four.
+
+**`noindex`, and why it is a meta tag rather than `robots.txt`.** Requested; implemented as
+`<meta name="robots" content="noindex, nofollow">` on every page. A `Disallow: /` in
+robots.txt would have been the obvious-looking alternative and is the weaker of the two: it
+blocks the *fetch*, so a URL someone links to can still appear in results as a bare listing
+with no snippet, precisely because the crawler never fetched the page and never saw a
+directive telling it not to index. Staying crawlable is what lets `noindex` be read and
+obeyed. The two are also mutually defeating if combined — disallowing the page hides the
+`noindex` from the crawler that needs to see it. Chat and social unfurlers ignore robots
+rules entirely, so previews are unaffected either way. The reasoning is duplicated as a
+comment above `htmlHead()`, since "add a robots.txt too, for good measure" is a natural and
+counterproductive follow-up edit.
+
+**No `og:url`, deliberately.** Nothing in the repo records the deployed Cloudflare Pages
+hostname, and a wrong canonical URL in a preview card is worse than an absent one. Add it if
+the domain ever gets written down.
+
+**No `og:image`.** There is no artwork, and a generated one would be scope creep. Previews
+render as text cards, which is the improvement the item asked for.
+
+**Favicon: declined by request.** Browsers will request `/favicon.ico`, get a 404, and move
+on. No console error worth caring about, no layout effect.
+
+**Verified:** clean build, both seasons regenerated. `git diff -- output/` is exactly
++7 lines × 4 files, all inside `<head>`, with per-page descriptions and titles interpolating
+correctly. No other byte changed.
 
 ### 9. ✅ DONE — Bump TypeScript to 7.x
 
@@ -545,10 +590,10 @@ if Pages ever gets a formal sunset date.
 |---|---|---|
 | **Draft-day blocker** | #3 (post-draft tier config) | **Before Aug 29, 2026. 25 days out as of this revision.** |
 | Pre-draft re-capture | #3 (keepers) | Keep running it daily; #4's guard now stays out of the way |
-| Quick mechanical pass | #12 + #8, #13 | Any time; one sitting. Tooling half (#9, #10, #11, #15) and #7 are done. |
+| Quick mechanical pass | #12, #13 | Any time; one sitting. Tooling half (#9, #10, #11, #15) plus #7 and #8 are done. |
 | Optional feature | #16 · #14 (system-font swap) | Only if you want trade history / dislike the font CDN |
 | Calendar item | #10 revisit | Oct 2026, when Node 26 goes LTS |
-| Closed | #1, #2, #4, #6, #7, #9, #10, #11, #15 (✅ done) · #5 (⛔ expired) | — |
+| Closed | #1, #2, #4, #6, #7, #8, #9, #10, #11, #15 (✅ done) · #5 (⛔ expired) | — |
 | No action | #17 | Awareness only |
 
 **Recommended order:** `2026:post-draft` in `TIER_CONFIGS` is now the only thing with a
