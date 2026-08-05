@@ -241,6 +241,12 @@ a warning into the run summary so it is visible without opening the logs.
 
 ### Known quirks
 
+- **Expect a commit on every run, even a quiet one.** `capturedAt` and `fetchedAt` are rewritten
+  each time, which moves the "Data retrieved" footer, so the diff is never empty in practice. That
+  is the freshness signal working: the page truthfully says it was checked today. The workflow's
+  "No changes" path is therefore mostly reserved for runs where the keeper step is skipped and
+  nothing was traded. If the commit noise ever outweighs the signal, the fix is to compare diffs
+  ignoring those two fields, not to stop stamping them.
 - **Fires are queued, not exact.** A few minutes late is normal, more at busy times. Irrelevant here.
 - **No catch-up.** A fire missed during a GitHub outage is skipped, not replayed. The next run
   self-heals, since every command re-fetches complete state.
