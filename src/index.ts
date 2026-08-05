@@ -1,13 +1,16 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
-import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRounds, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft } from "./snapshot.js";
+import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft } from "./snapshot.js";
 import { generateHtml, generateIndexHtml, writeHtml, formatPacificDate } from "./html.js";
 import { getDraftPicks, fetchAllPlayers, getLeagueTradedPicks, getPickTrades, getLeague } from "./sleeper-api.js";
 import { getTierConfig, getLatestDraftOrder } from "./tiers.js";
 import type { SnapshotType, DraftPick, ResolvedTradedPick } from "./types.js";
 
-const DEFAULT_LEAGUE_ID = "1220634180434526208";
+// Sleeper mints a new league id each season and links back via `previous_league_id`.
+// Point this at the current season's league; earlier ones are reachable by walking that
+// chain (see getLeagueLineage). 2025: 1220634180434526208.
+const DEFAULT_LEAGUE_ID = "1331127568820109312";  // 2026
 const LEAGUE_NAME = "Fantasy For Life (FFL)";
 const SNAPSHOT_TYPES: SnapshotType[] = ["pre-draft", "post-draft", "end-of-season"];
 
@@ -121,7 +124,7 @@ async function snapshotAndGenerate(snapshotType: SnapshotType, leagueId: string)
   const ownerOrder = await loadDraftOrder(snapshot.season);
   const navLinks = buildNavLinks(snapshot.season, snapshotType);
   const tiers = getTierConfig(snapshot.season, snapshotType);
-  const draftRounds = await loadDraftRounds(snapshot.season);
+  const draftRounds = await loadDraftRoundsFor(snapshot.season, snapshotType);
   // Pre-draft shows the picks in the draft about to happen; post-draft and end-of-season
   // show what's still outstanding for future drafts.
   const picksForType = snapshotType === "pre-draft"
@@ -175,7 +178,6 @@ async function draftSnapshotAndGenerate(season: string, leagueId: string): Promi
 async function generateFromExisting(season: string, snapshotType?: SnapshotType): Promise<void> {
   const types = snapshotType ? [snapshotType] : SNAPSHOT_TYPES;
   const ownerOrder = await loadDraftOrder(season);
-  const draftRounds = await loadDraftRounds(season);
   const tradedPicks = (await loadTradedPicks(season)) ?? [];
 
   for (const type of types) {
@@ -184,6 +186,7 @@ async function generateFromExisting(season: string, snapshotType?: SnapshotType)
       const snapshot = await loadSnapshot(snapshotPath);
       const navLinks = buildNavLinks(season, type);
       const tiers = getTierConfig(season, type);
+      const draftRounds = await loadDraftRoundsFor(season, type);
       const picksForType = type === "pre-draft"
         ? picksForDraft(tradedPicks, season)
         : picksAwaitingDraft(tradedPicks, season);

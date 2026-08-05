@@ -76,7 +76,7 @@ function htmlHead(title: string, extraStyles = ""): string {
 
 function playerCell(p: SnapshotPlayer | undefined): string {
   if (!p) return `      <td class="${CELL}"></td>`;
-  const cls = `pos-${p.position.toLowerCase()}`;
+  const cls = `pos-${p.position.toLowerCase()}${p.keeper ? " keeper" : ""}`;
   return `      <td class="${CELL} ${cls}">${esc(p.name)} ${esc(p.team)} ${esc(p.position)}</td>`;
 }
 
@@ -139,8 +139,11 @@ function buildTieredRows(
   const rosterBuckets = rosters.map((r) => {
     const buckets: SnapshotPlayer[][] = tiers.map(() => []);
     for (const p of r.players) buckets[getTierIndex(p)].push(p);
+    // Keepers float to the top of whichever tier their draft round earned them — a team
+    // may keep several from one tier, and they simply stack there in round order.
     for (let t = 0; t < buckets.length; t++) {
-      buckets[t].sort((a, b) => playerSortKey(a, t) - playerSortKey(b, t));
+      buckets[t].sort((a, b) =>
+        Number(!!b.keeper) - Number(!!a.keeper) || playerSortKey(a, t) - playerSortKey(b, t));
     }
     return buckets;
   });
@@ -254,6 +257,9 @@ const ROSTER_STYLES = `    .pos-wr  { background: #d0e8ff; }
     .pos-te  { background: #ffe0b2; }
     .pos-def { background: #d2b48c; }
     .pos-k   { background: #e0d0f0; }
+    /* Keepers. Declared after the position tints so it wins — same specificity, later
+       rule. The position stays readable in the cell text. */
+    .keeper  { background: #ffff00; }
     .tier td { font-weight: bold; color: white; text-align: left; font-size: 12px; letter-spacing: 1px; padding: 3px 8px; }
     .tier-1 td { background: #1a6b2a; }
     .tier-2 td { background: #8b6914; }

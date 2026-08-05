@@ -20,6 +20,9 @@
     .pos-te  { background: #ffe0b2; }
     .pos-def { background: #d2b48c; }
     .pos-k   { background: #e0d0f0; }
+    /* Keepers. Declared after the position tints so it wins — same specificity, later
+       rule. The position stays readable in the cell text. */
+    .keeper  { background: #ffff00; }
     .tier td { font-weight: bold; color: white; text-align: left; font-size: 12px; letter-spacing: 1px; padding: 3px 8px; }
     .tier-1 td { background: #1a6b2a; }
     .tier-2 td { background: #8b6914; }

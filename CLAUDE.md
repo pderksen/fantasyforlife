@@ -14,10 +14,12 @@ Fantasy football roster viewer for a long-running league. Pulls roster data from
 ## Key Concepts
 
 **Roster Snapshots**: Three point-in-time JSON captures per season in `data/<season>/`:
-- `rosters-pre-draft.json` — before draft (keeper/offseason state)
+- `rosters-pre-draft.json` — full carryover roster with keepers flagged, captured before the draft
 - `rosters-post-draft.json` — generated from draft picks (can be created retroactively)
 - `rosters-end-of-season.json` — after NFL Week 18
 - Each snapshot is self-contained with resolved player names, positions, NFL teams. NFL seasons span calendar years (e.g., 2025 = Sep 2025 – Feb 2026).
+
+**Pre-Draft Snapshots**: The **entire** carryover roster (`roster.players` — Sleeper holds last season's roster in the new league until the draft runs), with players listed in `roster.keepers` marked `keeper: true`. Kept players appear in *both* arrays, so `keepers` is the only thing distinguishing them; it is `null` until the owner picks, max 3 per `settings.max_keepers`. Owners choose on their own schedule, sometimes right up to draft day, so `takeSnapshot()` names the teams still missing and the command is safe to re-run — each run overwrites the capture.
 
 **Post-Draft Snapshots**: Built from `draft-picks.json` (not live API). Rosters ordered by draft slot; players in draft pick order.
 
@@ -33,7 +35,7 @@ Fantasy football roster viewer for a long-running league. Pulls roster data from
 - Docs: https://docs.sleeper.com/ — Base URL: `https://api.sleeper.app/v1` — No auth required
 - Key endpoints: `/league/{id}`, `/league/{id}/rosters`, `/league/{id}/users`, `/league/{id}/drafts`, `/draft/{draft_id}/picks`, `/league/{id}/traded_picks`, `/league/{id}/transactions/{week}`, `/players/nfl`
 - `/league/{id}/traded_picks`: `roster_id` = original owner, `owner_id` = current owner (both numeric despite the name). Carries **no date** — trade dates come from transactions.
-- `/league/{id}/transactions/{week}`: one week per call, no all-weeks endpoint. `getPickTrades()` sweeps weeks 1–18 and keeps completed trades with a non-empty `draft_picks` array. `status_updated` = accepted, `created` = proposed.
+- `/league/{id}/transactions/{week}`: one week per call, no all-weeks endpoint. `getPickTrades()` sweeps weeks 1–18 across the **whole league lineage** (`getLeagueLineage()` walks `previous_league_id`) and keeps completed trades with a non-empty `draft_picks` array. `status_updated` = accepted, `created` = proposed.
 - Rate limit: 1000 calls/min
 - **Consumed picks persist**: a completed league still returns its own season's traded picks, so pre-draft pick state stays recoverable after the draft
 - `roster_id` → `owner_id` is stable across the season rollover (verified 2025→2026), so raw pick data isn't ambiguous between leagues
@@ -72,7 +74,7 @@ Sleeper mints a **new league ID every season**; `previous_league_id` chains them
 **After NFL Week 18** (~early January):
 3. Final rosters: `npm run dev -- --snapshot end-of-season`
 
-All three steps auto-fetch traded picks. Post-draft snapshots can be created retroactively; pre-draft cannot (requires live rosters before draft starts).
+All three steps auto-fetch traded picks. Post-draft snapshots can be created retroactively; pre-draft cannot — the draft consumes the keeper selections, so they must be captured while `status` is still `pre_draft`. Re-run step 1 as keepers trickle in; the last run before the draft is the one that counts.
 
 ## Project Structure
 - `src/types.ts` — TypeScript interfaces, `SNAPSHOT_TYPE_LABELS` map
@@ -103,6 +105,7 @@ interface SnapshotPlayer {
   position: string;  // "QB", "RB", etc.
   team: string;      // "KC", "SF", etc.
   round?: number;    // post-draft only
+  keeper?: boolean;  // pre-draft only; held for the upcoming draft
 }
 ```
 
@@ -111,7 +114,7 @@ One file per season: `data/<season>/traded-picks.json`, holding **every** pick t
 
 The `season` field on a pick means **which draft the pick belongs to**, never when it was traded. Pick trades carry forward into the league they apply to, so a 2026 league's list is mostly trades made during 2025.
 
-**Trade dates**: `/traded_picks` carries no timestamp (only `round`, `season`, `roster_id`, `owner_id`, `previous_owner_id`), so `getPickTrades()` sweeps `/league/{id}/transactions/{week}` for weeks 1–18 and `buildTradeDateMap()` keys each completed pick trade by `season|round|roster_id|owner_id`. Keying on the **receiving** roster matters: a pick that went A → B → C must be dated when C got it, and `/traded_picks` only reports the final destination. Where a key repeats, the latest trade wins. Picks with no matching transaction get no `tradedOn` — in-draft trades (see `draft-traded-picks.json`) and anything predating the league on Sleeper have no transaction record.
+**Trade dates**: `/traded_picks` carries no timestamp (only `round`, `season`, `roster_id`, `owner_id`, `previous_owner_id`), so `getPickTrades()` sweeps `/league/{id}/transactions/{week}` for weeks 1–18 and `buildTradeDateMap()` keys each completed pick trade by `season|round|roster_id|owner_id`. The sweep spans the **league lineage**, not just the current league: next year's picks are traded during this year's season, so a fresh league returns the picks but zero transactions — query it alone and every date silently vanishes. Stable `roster_id`s across the rollover are what let the keys match. Keying on the **receiving** roster matters: a pick that went A → B → C must be dated when C got it, and `/traded_picks` only reports the final destination. Where a key repeats, the latest trade wins. Picks with no matching transaction get no `tradedOn` — in-draft trades (see `draft-traded-picks.json`) and anything predating the league on Sleeper have no transaction record.
 
 **Display rules** (columns Season, Round, Original Owner, Current Owner, Traded On; heading always "Traded Picks"; "None" when empty):
 
@@ -149,11 +152,12 @@ interface ResolvedTradedPick {
 | Player data | N/A | Fetched in-memory only; not persisted |
 
 ## Roster & Player Ordering
-- **HTML column order**: Draft slot order (post-draft round 1 pick order) via `loadDraftOrder()`. Falls back to alphabetical if no post-draft snapshot exists.
+- **HTML column order**: Draft slot order (post-draft round 1 pick order) via `loadDraftOrder()`. With no post-draft snapshot yet it falls back to `DRAFT_ORDERS[season]` in `tiers.ts`, which keeps a pre-draft page's columns lined up with the post-draft page that will sit beside it; alphabetical only if neither exists.
 - **Post-draft tables**: "Round" column (1, 2, 3...). Multi-pick rounds: letter suffixes (4a, 4b). Empty cells for owners without a pick in that round.
 - **Live snapshots**: JSON alphabetical by owner; players sorted by position (QB, RB, WR, TE, K, DEF) then alphabetically.
 - **Post-draft snapshots**: JSON by draft slot; players in draft pick order with `round` number.
-- **End-of-season tiered**: Players grouped by original draft round (tier follows player, not owner). Sort by draft round within tier. Undrafted go in last tier. In last tier: DEF second-to-last, K last. Round lookup via `loadDraftRounds()`.
+- **End-of-season tiered**: Players grouped by original draft round (tier follows player, not owner). Sort by draft round within tier. Undrafted go in last tier. In last tier: DEF second-to-last, K last. Round lookup via `loadDraftRoundsFor()`.
+- **Pre-draft tiered**: Same tiered layout, but keepers float to the top of their own tier — keeping a player never moves them to a different tier, and several keepers in one tier just stack there in round order. Below the keepers the normal sort resumes, so DEF/K still land last in the final tier.
 
 ## League Rules
 
@@ -162,8 +166,8 @@ interface ResolvedTradedPick {
 - Pre-draft snapshot is skipped (no keepers = no interesting pre-draft state to record); throwback seasons show no pre-draft chip on the index page
 - Non-throwback years (2026, 2027, ...) have keeper rules that affect tier boundaries and labels — to be determined when those seasons arrive
 
-**Non-throwback tier rules** (2026 and beyond): TBD — will depend on how many keepers, which rounds they count as, etc. Add to `TIER_CONFIGS` in `src/tiers.ts` when known.
-Observed in the 2026 league (Aug 2026): rosters carry a `keepers` array (one team had 3 set, rest still `null`) and league `settings.draft_rounds` is `3`. Selection appears to be in progress, so confirm before writing tier config.
+**Non-throwback tier rules** (2026 and beyond): post-draft and end-of-season boundaries are still TBD — they depend on which rounds keepers count as. Add to `TIER_CONFIGS` when known. `2026:pre-draft` is already set (it tiers by the 2025 draft, so it needed no such rule).
+Confirmed in the 2026 league (Aug 4, 2026): `settings.max_keepers` is `3` and `roster.keepers` is the authoritative selection (kept players also remain in the carryover `players` array, so `keepers` is the only way to tell them apart). Keeper selection was still in progress — 1 of 10 teams had picked.
 
 ## Tiers
 Full-width colored separator rows dividing the table by draft value. Configured per `"season:snapshotType"` in `src/tiers.ts`.
@@ -171,8 +175,9 @@ Full-width colored separator rows dividing the table by draft value. Configured 
 - **Config**: `TIER_CONFIGS` map; each entry is `{ label, beforeRound }[]`
 - **Colors**: T1 dark green `#1a6b2a`, T2 dark gold `#8b6914`, T3 dark red `#8b1a1a`
 - **2025 boundaries** (throwback): T1 = rounds 1–5, T2 = 6–10, T3 = 11+ and undrafted. End-of-season labels are descriptive (see League Rules above).
+- **2026 pre-draft**: same 1–5 / 6–10 / 11+ boundaries, but the rounds are **2025's**. `loadDraftRoundsFor()` sends pre-draft snapshots to the *previous* season's post-draft file, since nobody on a carryover roster has been drafted in the upcoming draft yet. Labels name the year ("Drafted Rounds 1–5 (2025)") so they don't read as 2026 rounds on a page headed 2026.
 - **Adding a season**: Add entry to `TIER_CONFIGS`. No config = no tier rows.
-- **Rendering**: Post-draft: `buildPostDraftRows()`. End-of-season: `buildTieredRows()` (buckets by tier, sorts within, max-players determines row count).
+- **Rendering**: Post-draft: `buildPostDraftRows()`. Pre-draft and end-of-season: `buildTieredRows()` (buckets by tier, sorts within — keepers first — max-players determines row count).
 
 ## Draft Order
 Upcoming season's draft order on index page. Configured in `DRAFT_ORDERS` in `src/tiers.ts` (key: season, value: owner names in pick order). `getLatestDraftOrder()` returns most recent. Add new entry each year; previous entries can remain.
@@ -198,7 +203,8 @@ Generated by `generateHtml` in `src/html.ts`. Light mode, `bg-gray-50` body. Con
 **Styling**:
 - Class constants at top of `html.ts` keep markup DRY (`CELL`, `TH`, `PILL_LINK`, `PILL_ACTIVE`, `SECTION_H2`, `TP_TH`, `TP_TD`)
 - **Gotcha**: `SECTION_H2` is used for index page headings; `tradedPicksSection()` on roster pages has its own inline heading style — keep both in sync when changing heading styles
-- Inline `<style>` via `ROSTER_STYLES` / `ROUND_COL_STYLE`: position colors (`.pos-qb` etc.), tier colors (`.tier-1` etc.), round label column
+- Inline `<style>` via `ROSTER_STYLES` / `ROUND_COL_STYLE`: position colors (`.pos-qb` etc.), keeper highlight (`.keeper`), tier colors (`.tier-1` etc.), round label column
+- **Keeper highlight**: `.keeper { background: #ffff00 }` (fluorescent yellow) deliberately overrides the position tint — it is declared *after* the `.pos-*` rules and wins on source order, since both are single-class selectors. Keep it there. The position is still spelled out in the cell text, so nothing is lost. `ROSTER_STYLES` is shared, so this rule ships on every roster page; it is inert wherever no cell carries the class.
 
 **Traded Picks**: `<h2>` heading + `overflow-x-auto` scroll wrapper on every snapshot type (contents differ per the Traded Picks display rules), or "None" when empty. Table uses `w-auto` (not full-width) so it only spans its content. The "Traded On" column renders only when at least one pick in that table has a `tradedOn`, so captures predating the field drop it instead of showing a column of placeholders; individual undated picks inside a dated table show a gray em dash. Dates use `formatPacificDate()` (date only, no time).
 

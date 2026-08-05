@@ -8,6 +8,7 @@ export interface League {
   total_rosters: number;
   roster_positions: string[];
   status: string;
+  previous_league_id: string | null;  // Sleeper mints a new league each season
   [key: string]: unknown;
 }
 
@@ -18,6 +19,7 @@ export interface Roster {
   players: string[] | null;
   starters: string[] | null;
   reserve: string[] | null;
+  keepers: string[] | null;  // Kept for the upcoming draft; null until the owner picks
   [key: string]: unknown;
 }
 
@@ -84,6 +86,7 @@ export interface SnapshotPlayer {
   position: string;   // "QB", "RB", etc.
   team: string;       // "KC", "SF", "FA", etc.
   round?: number;     // Draft round (post-draft snapshots only)
+  keeper?: boolean;   // Held for the upcoming draft (pre-draft snapshots only)
 }
 
 export interface SnapshotRoster {

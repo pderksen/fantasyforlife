@@ -53,17 +53,40 @@ export async function getTransactions(leagueId: string, week: number): Promise<L
 }
 
 /**
- * Every completed trade in the league that moved a draft pick.
+ * This league and every earlier season's league it descends from, newest first.
+ *
+ * Sleeper mints a fresh league id each season and links back via `previous_league_id`.
+ * The guard against a repeated id stops a self-referential chain from looping forever.
+ */
+export async function getLeagueLineage(leagueId: string): Promise<string[]> {
+  const ids: string[] = [];
+  let id: string | null = leagueId;
+  while (id && !ids.includes(id)) {
+    ids.push(id);
+    id = (await getLeague(id)).previous_league_id;
+  }
+  return ids;
+}
+
+/**
+ * Every completed trade that moved a draft pick, across this league and its predecessors.
  *
  * The only place Sleeper dates a pick trade — /league/{id}/traded_picks reports where a
  * pick ended up but never when it moved. There is no all-weeks endpoint, so sweep them.
  * A week the league hasn't reached yet errors; treat that as "no trades" rather than
  * failing the whole snapshot.
+ *
+ * The lineage sweep is what makes those dates survive the offseason: next year's picks
+ * are traded during this year's season, so they are recorded against the league that has
+ * since been replaced. Querying only the current league would find the picks (they carry
+ * forward) but none of their dates.
  */
 export async function getPickTrades(leagueId: string): Promise<LeagueTransaction[]> {
+  const leagueIds = await getLeagueLineage(leagueId);
   const weeks = await Promise.all(
-    Array.from({ length: TRANSACTION_WEEKS }, (_, i) =>
-      getTransactions(leagueId, i + 1).catch(() => [] as LeagueTransaction[])),
+    leagueIds.flatMap((id) =>
+      Array.from({ length: TRANSACTION_WEEKS }, (_, i) =>
+        getTransactions(id, i + 1).catch(() => [] as LeagueTransaction[]))),
   );
   return weeks
     .flat()

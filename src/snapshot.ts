@@ -17,6 +17,7 @@ import type {
 } from "./types.js";
 import { SNAPSHOT_TYPE_LABELS } from "./types.js";
 import { getLeague, getRosters, getUsers, fetchAllPlayers } from "./sleeper-api.js";
+import { getDraftOrder } from "./tiers.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, "..", "data");
@@ -109,8 +110,15 @@ export async function takeSnapshot(leagueId: string, snapshotType: SnapshotType,
       ? (rosterOwnerMap.get(roster.roster_id) ?? `Owner ${roster.roster_id}`)
       : `Roster ${roster.roster_id} (unowned)`;
 
+    // A pre-draft capture is the whole carryover roster, with the few players held for
+    // the upcoming draft flagged. Sleeper leaves kept players in `players` as well, so
+    // the lists overlap and `keepers` is the only thing that tells them apart.
+    const keeperIds = new Set(snapshotType === "pre-draft" ? roster.keepers ?? [] : []);
     const playerIds = roster.players ?? [];
-    const players = playerIds.map((id) => resolvePlayer(id, playerDb));
+    const players = playerIds.map((id) => {
+      const player = resolvePlayer(id, playerDb);
+      return keeperIds.has(id) ? { ...player, keeper: true } : player;
+    });
     sortPlayers(players);
 
     snapshotRosters.push({ ownerName, players });
@@ -118,6 +126,17 @@ export async function takeSnapshot(leagueId: string, snapshotType: SnapshotType,
 
   // Sort rosters alphabetically by owner name
   snapshotRosters.sort((a, b) => a.ownerName.localeCompare(b.ownerName));
+
+  // Keepers trickle in right up to the draft, so say plainly who is still missing —
+  // an unhighlighted column is otherwise indistinguishable from a team that kept nobody.
+  if (snapshotType === "pre-draft") {
+    const pending = snapshotRosters.filter((r) => !r.players.some((p) => p.keeper));
+    if (pending.length > 0) {
+      console.warn(`\nWarning: ${pending.length} of ${snapshotRosters.length} teams have not set keepers yet:`);
+      for (const r of pending) console.warn(`  ${r.ownerName}`);
+      console.warn("Re-run this command any time before the draft to capture them.");
+    }
+  }
 
   return {
     leagueId,
@@ -406,14 +425,33 @@ export function getIndexOutputPath(): string {
 }
 
 /**
- * Load the draft order (owner names) for a season from the post-draft snapshot.
- * Returns undefined if no post-draft snapshot exists.
+ * Load the draft order (owner names) for a season, for column ordering.
+ *
+ * The post-draft snapshot is the record of what the slot order actually was, so prefer
+ * it. Before the draft that file does not exist yet, so fall back to the order configured
+ * in DRAFT_ORDERS — that keeps a pre-draft page's columns lined up with the post-draft
+ * page it will sit beside. Returns undefined (caller sorts alphabetically) if neither.
  */
 export async function loadDraftOrder(season: string): Promise<string[] | undefined> {
   const path = getSnapshotPath(season, "post-draft");
-  if (!existsSync(path)) return undefined;
+  if (!existsSync(path)) return getDraftOrder(season);
   const snapshot = await loadSnapshot(path);
   return snapshot.rosters.map((r) => r.ownerName);
+}
+
+/**
+ * Draft rounds to tier a snapshot's players by.
+ *
+ * A pre-draft roster is last season's carryover — nobody on it has been drafted in the
+ * draft that is about to happen — so its tiers come from the *previous* season's draft.
+ * Every other snapshot tiers by its own season's.
+ */
+export async function loadDraftRoundsFor(
+  season: string,
+  snapshotType: SnapshotType,
+): Promise<Map<string, number> | undefined> {
+  const draftedIn = snapshotType === "pre-draft" ? String(Number(season) - 1) : season;
+  return loadDraftRounds(draftedIn);
 }
 
 /**

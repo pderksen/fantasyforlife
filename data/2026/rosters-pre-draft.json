@@ -1,0 +1,942 @@
+{
+  "leagueId": "1331127568820109312",
+  "leagueName": "Fantasy For Life (FFL)",
+  "season": "2026",
+  "snapshotType": "pre-draft",
+  "capturedAt": "2026-08-04T23:51:22.892Z",
+  "rosters": [
+    {
+      "ownerName": "Clovis Jets",
+      "players": [
+        {
+          "name": "Dart, Jaxson",
+          "position": "QB",
+          "team": "NYG"
+        },
+        {
+          "name": "Rivers, Philip",
+          "position": "QB",
+          "team": "FA"
+        },
+        {
+          "name": "Tagovailoa, Tua",
+          "position": "QB",
+          "team": "ATL"
+        },
+        {
+          "name": "Hampton, Omarion",
+          "position": "RB",
+          "team": "LAC"
+        },
+        {
+          "name": "Jeanty, Ashton",
+          "position": "RB",
+          "team": "LV"
+        },
+        {
+          "name": "Judkins, Quinshon",
+          "position": "RB",
+          "team": "CLE"
+        },
+        {
+          "name": "Walker, Kenneth",
+          "position": "RB",
+          "team": "KC"
+        },
+        {
+          "name": "Brown, A.J.",
+          "position": "WR",
+          "team": "NE"
+        },
+        {
+          "name": "Doubs, Romeo",
+          "position": "WR",
+          "team": "NE"
+        },
+        {
+          "name": "Franklin, Troy",
+          "position": "WR",
+          "team": "DEN"
+        },
+        {
+          "name": "Jefferson, Justin",
+          "position": "WR",
+          "team": "MIN"
+        },
+        {
+          "name": "Johnston, Quentin",
+          "position": "WR",
+          "team": "LAC"
+        },
+        {
+          "name": "Rice, Rashee",
+          "position": "WR",
+          "team": "KC"
+        },
+        {
+          "name": "Worthy, Xavier",
+          "position": "WR",
+          "team": "KC"
+        },
+        {
+          "name": "Ertz, Zach",
+          "position": "TE",
+          "team": "FA"
+        },
+        {
+          "name": "Henry, Hunter",
+          "position": "TE",
+          "team": "NE"
+        },
+        {
+          "name": "Loop, Tyler",
+          "position": "K",
+          "team": "BAL"
+        },
+        {
+          "name": "Jaguars, Jacksonville",
+          "position": "DEF",
+          "team": "JAX"
+        }
+      ]
+    },
+    {
+      "ownerName": "Dinkey Creek Dirt Clods",
+      "players": [
+        {
+          "name": "Herbert, Justin",
+          "position": "QB",
+          "team": "LAC"
+        },
+        {
+          "name": "Nix, Bo",
+          "position": "QB",
+          "team": "DEN"
+        },
+        {
+          "name": "Shough, Tyler",
+          "position": "QB",
+          "team": "NO"
+        },
+        {
+          "name": "Allgeier, Tyler",
+          "position": "RB",
+          "team": "ARI"
+        },
+        {
+          "name": "Carter, Michael",
+          "position": "RB",
+          "team": "TEN"
+        },
+        {
+          "name": "Jacobs, Josh",
+          "position": "RB",
+          "team": "GB"
+        },
+        {
+          "name": "Kamara, Alvin",
+          "position": "RB",
+          "team": "NO"
+        },
+        {
+          "name": "Robinson, Bijan",
+          "position": "RB",
+          "team": "ATL"
+        },
+        {
+          "name": "Wilson, Emanuel",
+          "position": "RB",
+          "team": "SEA"
+        },
+        {
+          "name": "Collins, Nico",
+          "position": "WR",
+          "team": "HOU"
+        },
+        {
+          "name": "Dike, Chimere",
+          "position": "WR",
+          "team": "TEN"
+        },
+        {
+          "name": "Higgins, Jayden",
+          "position": "WR",
+          "team": "HOU"
+        },
+        {
+          "name": "Robinson, Wan'Dale",
+          "position": "WR",
+          "team": "TEN"
+        },
+        {
+          "name": "Slayton, Darius",
+          "position": "WR",
+          "team": "NYG"
+        },
+        {
+          "name": "Bowers, Brock",
+          "position": "TE",
+          "team": "LV"
+        },
+        {
+          "name": "Fannin, Harold",
+          "position": "TE",
+          "team": "CLE"
+        },
+        {
+          "name": "Bates, Jake",
+          "position": "K",
+          "team": "DET"
+        },
+        {
+          "name": "Patriots, New England",
+          "position": "DEF",
+          "team": "NE"
+        }
+      ]
+    },
+    {
+      "ownerName": "Easton Evil Empire",
+      "players": [
+        {
+          "name": "Daniels, Jayden",
+          "position": "QB",
+          "team": "WAS"
+        },
+        {
+          "name": "Lawrence, Trevor",
+          "position": "QB",
+          "team": "JAX"
+        },
+        {
+          "name": "McCarthy, J.J.",
+          "position": "QB",
+          "team": "MIN"
+        },
+        {
+          "name": "Young, Bryce",
+          "position": "QB",
+          "team": "CAR"
+        },
+        {
+          "name": "Benson, Trey",
+          "position": "RB",
+          "team": "ARI"
+        },
+        {
+          "name": "Charbonnet, Zach",
+          "position": "RB",
+          "team": "SEA"
+        },
+        {
+          "name": "Monangai, Kyle",
+          "position": "RB",
+          "team": "CHI"
+        },
+        {
+          "name": "Robinson, Brian",
+          "position": "RB",
+          "team": "ATL"
+        },
+        {
+          "name": "Addison, Jordan",
+          "position": "WR",
+          "team": "MIN"
+        },
+        {
+          "name": "Egbuka, Emeka",
+          "position": "WR",
+          "team": "TB"
+        },
+        {
+          "name": "Odunze, Rome",
+          "position": "WR",
+          "team": "CHI"
+        },
+        {
+          "name": "Pearsall, Ricky",
+          "position": "WR",
+          "team": "SF"
+        },
+        {
+          "name": "Smith-Njigba, Jaxon",
+          "position": "WR",
+          "team": "SEA"
+        },
+        {
+          "name": "Williams, Jameson",
+          "position": "WR",
+          "team": "DET"
+        },
+        {
+          "name": "Andrews, Mark",
+          "position": "TE",
+          "team": "BAL"
+        },
+        {
+          "name": "Goedert, Dallas",
+          "position": "TE",
+          "team": "PHI"
+        },
+        {
+          "name": "Boswell, Chris",
+          "position": "K",
+          "team": "PIT"
+        },
+        {
+          "name": "Broncos, Denver",
+          "position": "DEF",
+          "team": "DEN"
+        }
+      ]
+    },
+    {
+      "ownerName": "Kingsburg Killaz",
+      "players": [
+        {
+          "name": "Prescott, Dak",
+          "position": "QB",
+          "team": "DAL"
+        },
+        {
+          "name": "Williams, Caleb",
+          "position": "QB",
+          "team": "CHI"
+        },
+        {
+          "name": "Barkley, Saquon",
+          "position": "RB",
+          "team": "PHI"
+        },
+        {
+          "name": "Bigsby, Tank",
+          "position": "RB",
+          "team": "PHI"
+        },
+        {
+          "name": "Gainwell, Kenny",
+          "position": "RB",
+          "team": "TB"
+        },
+        {
+          "name": "Gibbs, Jahmyr",
+          "position": "RB",
+          "team": "DET"
+        },
+        {
+          "name": "Skattebo, Cam",
+          "position": "RB",
+          "team": "NYG"
+        },
+        {
+          "name": "Tracy, Tyrone",
+          "position": "RB",
+          "team": "NYG"
+        },
+        {
+          "name": "Burden, Luther",
+          "position": "WR",
+          "team": "CHI"
+        },
+        {
+          "name": "Harrison, Marvin",
+          "position": "WR",
+          "team": "ARI"
+        },
+        {
+          "name": "Lamb, CeeDee",
+          "position": "WR",
+          "team": "DAL"
+        },
+        {
+          "name": "McConkey, Ladd",
+          "position": "WR",
+          "team": "LAC"
+        },
+        {
+          "name": "Moore, DJ",
+          "position": "WR",
+          "team": "BUF"
+        },
+        {
+          "name": "Olave, Chris",
+          "position": "WR",
+          "team": "NO"
+        },
+        {
+          "name": "TeSlaa, Isaac",
+          "position": "WR",
+          "team": "DET"
+        },
+        {
+          "name": "Warren, Tyler",
+          "position": "TE",
+          "team": "IND"
+        },
+        {
+          "name": "Aubrey, Brandon",
+          "position": "K",
+          "team": "DAL"
+        },
+        {
+          "name": "Lions, Detroit",
+          "position": "DEF",
+          "team": "DET"
+        }
+      ]
+    },
+    {
+      "ownerName": "Lemoore Liberators",
+      "players": [
+        {
+          "name": "Burrow, Joe",
+          "position": "QB",
+          "team": "CIN"
+        },
+        {
+          "name": "Mayfield, Baker",
+          "position": "QB",
+          "team": "TB"
+        },
+        {
+          "name": "Rodgers, Aaron",
+          "position": "QB",
+          "team": "PIT"
+        },
+        {
+          "name": "Achane, De'Von",
+          "position": "RB",
+          "team": "MIA"
+        },
+        {
+          "name": "Swift, D'Andre",
+          "position": "RB",
+          "team": "CHI"
+        },
+        {
+          "name": "Warren, Jaylen",
+          "position": "RB",
+          "team": "PIT"
+        },
+        {
+          "name": "Ayomanor, Elic",
+          "position": "WR",
+          "team": "TEN"
+        },
+        {
+          "name": "Jennings, Jauan",
+          "position": "WR",
+          "team": "MIN"
+        },
+        {
+          "name": "Shakir, Khalil",
+          "position": "WR",
+          "team": "BUF"
+        },
+        {
+          "name": "Smith, DeVonta",
+          "position": "WR",
+          "team": "PHI"
+        },
+        {
+          "name": "St. Brown, Amon-Ra",
+          "position": "WR",
+          "team": "DET"
+        },
+        {
+          "name": "Thomas, Brian",
+          "position": "WR",
+          "team": "JAX"
+        },
+        {
+          "name": "Hockenson, T.J.",
+          "position": "TE",
+          "team": "MIN"
+        },
+        {
+          "name": "Kincaid, Dalton",
+          "position": "TE",
+          "team": "BUF"
+        },
+        {
+          "name": "Butker, Harrison",
+          "position": "K",
+          "team": "KC"
+        },
+        {
+          "name": "Falcons, Atlanta",
+          "position": "DEF",
+          "team": "ATL"
+        },
+        {
+          "name": "Texans, Houston",
+          "position": "DEF",
+          "team": "HOU"
+        }
+      ]
+    },
+    {
+      "ownerName": "Riverstone Stoners",
+      "players": [
+        {
+          "name": "Jackson, Lamar",
+          "position": "QB",
+          "team": "BAL"
+        },
+        {
+          "name": "Murray, Kyler",
+          "position": "QB",
+          "team": "MIN"
+        },
+        {
+          "name": "Purdy, Brock",
+          "position": "QB",
+          "team": "SF"
+        },
+        {
+          "name": "Croskey-Merritt, Jacory",
+          "position": "RB",
+          "team": "WAS"
+        },
+        {
+          "name": "Hall, Breece",
+          "position": "RB",
+          "team": "NYJ"
+        },
+        {
+          "name": "Jones, Aaron",
+          "position": "RB",
+          "team": "MIN"
+        },
+        {
+          "name": "Taylor, Jonathan",
+          "position": "RB",
+          "team": "IND"
+        },
+        {
+          "name": "Coker, Jalen",
+          "position": "WR",
+          "team": "CAR"
+        },
+        {
+          "name": "Higgins, Tee",
+          "position": "WR",
+          "team": "CIN"
+        },
+        {
+          "name": "Hunter, Travis",
+          "position": "WR",
+          "team": "JAX"
+        },
+        {
+          "name": "Mitchell, Adonai",
+          "position": "WR",
+          "team": "NYJ"
+        },
+        {
+          "name": "Nabers, Malik",
+          "position": "WR",
+          "team": "NYG"
+        },
+        {
+          "name": "Waddle, Jaylen",
+          "position": "WR",
+          "team": "DEN"
+        },
+        {
+          "name": "Wilson, Garrett",
+          "position": "WR",
+          "team": "NYJ"
+        },
+        {
+          "name": "LaPorta, Sam",
+          "position": "TE",
+          "team": "DET"
+        },
+        {
+          "name": "Pitts, Kyle",
+          "position": "TE",
+          "team": "ATL"
+        },
+        {
+          "name": "Pineiro, Eddy",
+          "position": "K",
+          "team": "SF"
+        },
+        {
+          "name": "Chiefs, Kansas City",
+          "position": "DEF",
+          "team": "KC"
+        }
+      ]
+    },
+    {
+      "ownerName": "Sanger Squatty Pottys",
+      "players": [
+        {
+          "name": "Goff, Jared",
+          "position": "QB",
+          "team": "DET"
+        },
+        {
+          "name": "Stafford, Matthew",
+          "position": "QB",
+          "team": "LAR"
+        },
+        {
+          "name": "Brown, Chase",
+          "position": "RB",
+          "team": "CIN"
+        },
+        {
+          "name": "Cook, James",
+          "position": "RB",
+          "team": "BUF"
+        },
+        {
+          "name": "Etienne, Travis",
+          "position": "RB",
+          "team": "NO"
+        },
+        {
+          "name": "Pollard, Tony",
+          "position": "RB",
+          "team": "TEN"
+        },
+        {
+          "name": "Allen, Keenan",
+          "position": "WR",
+          "team": "FA"
+        },
+        {
+          "name": "Flowers, Zay",
+          "position": "WR",
+          "team": "BAL"
+        },
+        {
+          "name": "McMillan, Tetairoa",
+          "position": "WR",
+          "team": "CAR"
+        },
+        {
+          "name": "Meyers, Jakobi",
+          "position": "WR",
+          "team": "JAX"
+        },
+        {
+          "name": "Pierce, Alec",
+          "position": "WR",
+          "team": "IND"
+        },
+        {
+          "name": "Reed, Jayden",
+          "position": "WR",
+          "team": "GB"
+        },
+        {
+          "name": "Watson, Christian",
+          "position": "WR",
+          "team": "GB"
+        },
+        {
+          "name": "Parkinson, Colby",
+          "position": "TE",
+          "team": "LAR"
+        },
+        {
+          "name": "Schultz, Dalton",
+          "position": "TE",
+          "team": "HOU"
+        },
+        {
+          "name": "Little, Cam",
+          "position": "K",
+          "team": "JAX"
+        },
+        {
+          "name": "Steelers, Pittsburgh",
+          "position": "DEF",
+          "team": "PIT"
+        }
+      ]
+    },
+    {
+      "ownerName": "South Town FF",
+      "players": [
+        {
+          "name": "Darnold, Sam",
+          "position": "QB",
+          "team": "SEA"
+        },
+        {
+          "name": "Love, Jordan",
+          "position": "QB",
+          "team": "GB"
+        },
+        {
+          "name": "Stroud, C.J.",
+          "position": "QB",
+          "team": "HOU"
+        },
+        {
+          "name": "Dowdle, Rico",
+          "position": "RB",
+          "team": "PIT"
+        },
+        {
+          "name": "Harvey, RJ",
+          "position": "RB",
+          "team": "DEN"
+        },
+        {
+          "name": "Knight, Zonovan",
+          "position": "RB",
+          "team": "ARI"
+        },
+        {
+          "name": "McCaffrey, Christian",
+          "position": "RB",
+          "team": "SF"
+        },
+        {
+          "name": "Mixon, Joe",
+          "position": "RB",
+          "team": "FA"
+        },
+        {
+          "name": "Aiyuk, Brandon",
+          "position": "WR",
+          "team": "SF"
+        },
+        {
+          "name": "Jeudy, Jerry",
+          "position": "WR",
+          "team": "CLE"
+        },
+        {
+          "name": "London, Drake",
+          "position": "WR",
+          "team": "ATL"
+        },
+        {
+          "name": "Metcalf, DK",
+          "position": "WR",
+          "team": "PIT"
+        },
+        {
+          "name": "Samuel, Deebo",
+          "position": "WR",
+          "team": "SF"
+        },
+        {
+          "name": "Sutton, Courtland",
+          "position": "WR",
+          "team": "DEN"
+        },
+        {
+          "name": "Kelce, Travis",
+          "position": "TE",
+          "team": "KC"
+        },
+        {
+          "name": "Loveland, Colston",
+          "position": "TE",
+          "team": "CHI"
+        },
+        {
+          "name": "Lutz, Wil",
+          "position": "K",
+          "team": "DEN"
+        },
+        {
+          "name": "Vikings, Minnesota",
+          "position": "DEF",
+          "team": "MIN"
+        }
+      ]
+    },
+    {
+      "ownerName": "Vancouver Moose Drool",
+      "players": [
+        {
+          "name": "Allen, Josh",
+          "position": "QB",
+          "team": "BUF"
+        },
+        {
+          "name": "Maye, Drake",
+          "position": "QB",
+          "team": "NE",
+          "keeper": true
+        },
+        {
+          "name": "Sanders, Shedeur",
+          "position": "QB",
+          "team": "CLE"
+        },
+        {
+          "name": "Davis, Malik",
+          "position": "RB",
+          "team": "DAL"
+        },
+        {
+          "name": "Hunt, Kareem",
+          "position": "RB",
+          "team": "FA"
+        },
+        {
+          "name": "Irving, Bucky",
+          "position": "RB",
+          "team": "TB"
+        },
+        {
+          "name": "Montgomery, David",
+          "position": "RB",
+          "team": "HOU"
+        },
+        {
+          "name": "Williams, Javonte",
+          "position": "RB",
+          "team": "DAL"
+        },
+        {
+          "name": "Adams, Davante",
+          "position": "WR",
+          "team": "LAR"
+        },
+        {
+          "name": "Chase, Ja'Marr",
+          "position": "WR",
+          "team": "CIN",
+          "keeper": true
+        },
+        {
+          "name": "Diggs, Stefon",
+          "position": "WR",
+          "team": "FA"
+        },
+        {
+          "name": "Godwin, Chris",
+          "position": "WR",
+          "team": "TB",
+          "keeper": true
+        },
+        {
+          "name": "McLaurin, Terry",
+          "position": "WR",
+          "team": "WAS"
+        },
+        {
+          "name": "Johnson, Juwan",
+          "position": "TE",
+          "team": "NO"
+        },
+        {
+          "name": "McBride, Trey",
+          "position": "TE",
+          "team": "ARI"
+        },
+        {
+          "name": "Fairbairn, Ka'imi",
+          "position": "K",
+          "team": "HOU"
+        },
+        {
+          "name": "Seahawks, Seattle",
+          "position": "DEF",
+          "team": "SEA"
+        }
+      ]
+    },
+    {
+      "ownerName": "Visalia Viagra Vipers",
+      "players": [
+        {
+          "name": "Brissett, Jacoby",
+          "position": "QB",
+          "team": "ARI"
+        },
+        {
+          "name": "Hurts, Jalen",
+          "position": "QB",
+          "team": "PHI"
+        },
+        {
+          "name": "Henderson, TreVeyon",
+          "position": "RB",
+          "team": "NE"
+        },
+        {
+          "name": "Henry, Derrick",
+          "position": "RB",
+          "team": "BAL"
+        },
+        {
+          "name": "Marks, Woody",
+          "position": "RB",
+          "team": "HOU"
+        },
+        {
+          "name": "Stevenson, Rhamondre",
+          "position": "RB",
+          "team": "NE"
+        },
+        {
+          "name": "Williams, Kyren",
+          "position": "RB",
+          "team": "LAR"
+        },
+        {
+          "name": "Evans, Mike",
+          "position": "WR",
+          "team": "SF"
+        },
+        {
+          "name": "Nacua, Puka",
+          "position": "WR",
+          "team": "LAR"
+        },
+        {
+          "name": "Pickens, George",
+          "position": "WR",
+          "team": "DAL"
+        },
+        {
+          "name": "Pittman, Michael",
+          "position": "WR",
+          "team": "PIT"
+        },
+        {
+          "name": "Wilson, Michael",
+          "position": "WR",
+          "team": "ARI"
+        },
+        {
+          "name": "Ferguson, Jake",
+          "position": "TE",
+          "team": "DAL"
+        },
+        {
+          "name": "Hill, Taysom",
+          "position": "TE",
+          "team": "FA"
+        },
+        {
+          "name": "Tonges, Jake",
+          "position": "TE",
+          "team": "SF"
+        },
+        {
+          "name": "Dicker, Cameron",
+          "position": "K",
+          "team": "LAC"
+        },
+        {
+          "name": "Saints, New Orleans",
+          "position": "DEF",
+          "team": "NO"
+        }
+      ]
+    }
+  ]
+}

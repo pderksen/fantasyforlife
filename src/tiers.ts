@@ -16,6 +16,13 @@ const TIER_CONFIGS: Record<string, TierConfig> = {
     { label: "TIER 2 — Drafted Rounds 6–10", beforeRound: 6 },
     { label: "TIER 3 — Drafted Rounds 11+ / Free Agency", beforeRound: 11 },
   ],
+  // Pre-draft rosters are the prior season's carryover, so these rounds are 2025's.
+  // The page is headed 2026, so the labels name the year to keep that unambiguous.
+  "2026:pre-draft": [
+    { label: "TIER 1 — Drafted Rounds 1–5 (2025)", beforeRound: 1 },
+    { label: "TIER 2 — Drafted Rounds 6–10 (2025)", beforeRound: 6 },
+    { label: "TIER 3 — Drafted Rounds 11+ / Free Agency (2025)", beforeRound: 11 },
+  ],
 };
 
 export function getTierConfig(season: string, snapshotType: SnapshotType): TierConfig | undefined {
@@ -46,6 +53,11 @@ const DRAFT_ORDERS: Record<string, string[]> = {
     "Visalia Viagra Vipers",
   ],
 };
+
+/** Configured pick order for one season, or undefined if that season has none. */
+export function getDraftOrder(season: string): string[] | undefined {
+  return DRAFT_ORDERS[season];
+}
 
 /** Returns the most recent draft order config, or undefined if none exist. */
 export function getLatestDraftOrder(): DraftOrder | undefined {
