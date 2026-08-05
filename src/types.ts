@@ -32,7 +32,7 @@ export interface LeagueUser {
     team_name?: string;
     [key: string]: unknown;
   };
-  is_owner: boolean;
+  is_owner: boolean | null;  // null for non-commissioners, not false (verified against the 2025 league)
 }
 
 export interface SleeperPlayer {
@@ -112,10 +112,17 @@ export interface Snapshot {
   rosters: SnapshotRoster[];
 }
 
+/**
+ * One generated page within a season. The roster snapshots plus the trade log, which is
+ * season-level rather than a point-in-time capture and so is not a SnapshotType.
+ */
+export type PageKey = SnapshotType | "trades";
+
 export interface NavLink {
   season: string;
-  snapshotType: SnapshotType;
-  label: string;
+  page: PageKey;
+  label: string;      // full, e.g. "2026 Pre-Draft Rosters"
+  chip: string;       // short, for nav pills and index chips, e.g. "Pre-Draft"
   href: string;       // relative path from current HTML file
   current: boolean;   // true if this is the page being rendered
 }
@@ -140,13 +147,25 @@ export interface TransactionDraftPick {
   previous_owner_id: number;
 }
 
+/** FAAB moved by a trade, as reported inside a transaction. */
+export interface WaiverBudgetTransfer {
+  sender: number;              // roster giving the dollars
+  receiver: number;            // roster getting them
+  amount: number;
+}
+
 /** Transaction from /league/{id}/transactions/{week}. Trades carry `draft_picks`. */
 export interface LeagueTransaction {
   type: string;                // "trade", "waiver", "free_agent", ...
   status: string;              // "complete", "failed", ...
   created: number;             // epoch ms — proposed
   status_updated: number;      // epoch ms — accepted/completed
+  leg: number;                 // week the transaction was processed in
+  roster_ids: number[];        // every roster taking part
+  adds: Record<string, number> | null;   // player_id → roster receiving them
+  drops: Record<string, number> | null;  // player_id → roster giving them up
   draft_picks: TransactionDraftPick[] | null;
+  waiver_budget: WaiverBudgetTransfer[] | null;
   [key: string]: unknown;
 }
 
@@ -166,6 +185,54 @@ export interface TradedPicksData {
   fetchedAt: string;
   picks: ResolvedTradedPick[];
   raw: LeagueTradedPick[];
+}
+
+// ── Trade Log Types ──
+
+/** A draft pick as it changed hands in a trade. Named by whose pick it originally was. */
+export interface TradedPickRef {
+  season: string;
+  round: number;
+  originalOwner: string;
+}
+
+/**
+ * A player as named in a trade. Deliberately no NFL team, unlike SnapshotPlayer.
+ *
+ * Player IDs resolve against the live /players/nfl database, which describes players as
+ * they are *today*, so a trade log built after the fact would stamp each player with a
+ * team they may not have been on. A roster snapshot escapes this by being captured in the
+ * moment; a trade log can be written months later and is then sealed for good. Name and
+ * position are stable, an NFL team is not, so the log carries what it can vouch for —
+ * and `raw` keeps the player ids if anyone ever wants more.
+ */
+export interface TradePlayer {
+  name: string;       // "Last, First"
+  position: string;   // "QB", "RB", etc.
+}
+
+/** One side of a trade: everything a single roster received. */
+export interface TradeParty {
+  owner: string;
+  players: TradePlayer[];
+  picks: TradedPickRef[];
+  faab?: number;      // FAAB dollars received; omitted when no budget moved
+}
+
+/** A completed trade, resolved to names. */
+export interface ResolvedTrade {
+  tradedOn: string;   // ISO timestamp — when the trade was accepted
+  week: number;       // Sleeper's `leg`
+  parties: TradeParty[];
+}
+
+/** Saved trade log file shape. */
+export interface TradesData {
+  leagueId: string;
+  season: string;
+  fetchedAt: string;
+  trades: ResolvedTrade[];      // newest first
+  raw: LeagueTransaction[];     // the completed trade transactions, verbatim
 }
 
 // ── Tier Types ──

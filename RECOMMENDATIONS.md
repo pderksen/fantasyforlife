@@ -55,6 +55,13 @@ so there was no durability case to buy, and the inlining half would have added t
 #6 already declined. CLAUDE.md's "self-contained" wording was corrected in the same pass, which
 was the last piece of residue #6 left open.
 
+**Revised again 2026-08-04 (eleventh pass)** after #12, #13, and #16 were implemented. The
+mechanical pass is done and the optional trade-log feature was built. #16 arrived half-expired:
+its stated complaint ("the site can show *what* was traded but never *when*") had already been
+answered by the `tradedOn` work, so what got built is the part that was still missing — a
+season trade log of players, picks, and FAAB. One design decision worth reading before touching
+it: the log deliberately omits each player's NFL team. See #16.
+
 **Overall verdict:** unchanged. The architecture is right for what this is (a 10-reader
 archival site regenerated ~3x a year). Pre-generated HTML committed to `main` with Cloudflare
 Pages serving `output/` is the correct setup: keep it. What remains is one draft-day config
@@ -108,6 +115,9 @@ side, below.
 | #11 tsconfig | ✅ **Closed.** `nodenext`, `ES2024`, `types: ["node"]`, `forceConsistentCasingInFileNames` dropped. |
 | #15 CLAUDE.md "Node 18+" | ✅ **Closed.** Fixed in CLAUDE.md and RUNBOOK.md as part of the same batch. |
 | #14 Google Fonts CDN | ✅ **Closed, declined.** CDN kept by decision. Degrades to fallback fonts, so no durability case; inlining would add the build step #6 declined. |
+| #12 `is_owner` type | ✅ **Closed.** `boolean \| null`. The API really does return `null` — 9 of 10 users in the 2025 league. |
+| #13 `generateFromExisting` catch | ✅ **Closed.** Missing-file check replaces the bare catch; parse and write errors now propagate. |
+| #16 Trade log | ✅ **Closed, built.** Half the item had already expired (dates landed with `tradedOn`); the season trade log shipped as `data/<season>/trades.json` + `output/<season>/trades.html`. |
 
 ---
 
@@ -529,24 +539,33 @@ Applied `compilerOptions` delta:
 // removed: "forceConsistentCasingInFileNames": true
 ```
 
-### 12. `is_owner` is typed non-nullable but the API returns `null`
+### 12. ✅ DONE — `is_owner` is typed non-nullable but the API returns `null`
 
-**Type:** Types (trivial) · Effort: trivial
+**Type:** Types (trivial) · **Status: landed 2026-08-04 (eleventh pass)** · Effort: trivial
 
-`src/types.ts:35` declares `is_owner: boolean` on `LeagueUser`; the live endpoint returns
-`null` for some users. Nothing reads the field, so this is latent rather than broken. Fold it
-into the mechanical pass alongside #10 and #11.
+`LeagueUser.is_owner` was declared `boolean`. Confirmed against both live leagues before
+changing it: the 2025 league returns `null` for 9 of its 10 users and `true` for the
+commissioner — `false` never appears. The 2026 league returns proper booleans, so a check
+against only the current league would have "disproved" the report. Now `boolean | null`, with
+the verification noted in the type and in CLAUDE.md's API section.
 
-### 13. `generateFromExisting` swallows real errors
+Nothing reads the field, so this stays latent rather than fixing a live bug.
 
-**Type:** Functional (minor) · Effort: small
+### 13. ✅ DONE — `generateFromExisting` swallows real errors
 
-The bare `catch` in `generateFromExisting()` (`src/index.ts:197`) treats *any* failure
-(corrupt JSON from a manual edit, write permission error) as "no snapshot found." With
-hand-edited JSON being a supported workflow, a parse error hiding as a silent skip will bite
-eventually.
+**Type:** Functional (minor) · **Status: landed 2026-08-04 (eleventh pass)** · Effort: small
 
-**Fix:** Use `existsSync` for the skip case and let genuine errors propagate.
+The bare `catch` treated *any* failure (JSON a hand edit broke, an unwritable output
+directory) as "no snapshot found." Hand-editing snapshot JSON is a supported workflow, so a
+parse error reported as absence would send you looking in the wrong place entirely.
+
+**As prescribed:** an `existsSync` check now decides the skip, and the `try` is gone, so every
+genuine error propagates to the top-level handler and keeps its stack trace. The
+already-correct behavior of `--generate <season> <type>` (a named type that is missing is an
+error, not a skip) is preserved.
+
+**Verified:** regenerated both seasons before touching any data; `git status -- output/` came
+back empty, so the refactor is behavior-preserving on the paths that matter.
 
 ### 14. ✅ CLOSED — Google Fonts dependency kept
 
@@ -581,21 +600,60 @@ The Tailwind lines in that same Tech Stack block were already updated alongside 
 and now record that v4 has no JS config so a future session doesn't reintroduce
 `tailwind.config` and quietly break the font.
 
-### 16. Optional feature: trade log from the transactions endpoint
+### 16. ✅ DONE — Trade log from the transactions endpoint
 
-**Type:** Feature · Effort: medium
+**Type:** Feature · **Status: landed 2026-08-04 (eleventh pass)** · Effort: medium
 
-`/league/{id}/traded_picks` carries no timestamp (only `round`, `season`, `roster_id`,
-`owner_id`, `previous_owner_id`), so the site can show *what* was traded but never *when*.
-`/league/{id}/transactions/{week}` does carry dates and includes pick trades: all five 2026
-picks were traded between Oct 2 and Nov 13, 2025.
+**Half of this item had already been done.** It opens with "the site can show *what* was
+traded but never *when*" — but the `tradedOn` work closed that: `getPickTrades()` already
+sweeps transactions, and every traded-picks table already carries a Traded On column. What was
+actually missing is the thing the item's second paragraph describes, the backward-looking
+history: which *players* moved, between whom, and when. That is what got built.
 
-This is a **backward-looking history** view, distinct from the forward-looking "who owns
-upcoming picks" table the site has now. Neither replaces the other. Costs 18 calls per season
-(one per week) versus the current 1, and would add a new per-season file that becomes
-immutable once the season ends.
+**What landed:**
 
-Build only if reading the trade history is something you actually want.
+- `data/<season>/trades.json` — every completed trade recorded in that season's league,
+  resolved to owner and player names, newest first, plus the raw transactions. Sealed on the
+  same rule as traded picks.
+- `output/<season>/trades.html` — Date / Week / Team / Received. Date and week `rowspan` the
+  trade's rows so both sides read as one exchange.
+- `--trades [league_id]`, plus a capture inside every `--snapshot` run. It takes a **league
+  id, not a season**, because trades live in the league that recorded them.
+- `getTrades()` sweeps **one** league, unlike `getPickTrades()`, which sweeps the lineage. A
+  season's log is what happened that season; the lineage sweep exists only because next year's
+  picks are traded in this year's league. Both now share one `sweepTrades()` helper.
+- The nav grew a fourth chip. `NavLink.snapshotType` became `page: PageKey`
+  (`SnapshotType | "trades"`), since the trade log is season-level rather than a point-in-time
+  capture and was being forced into a type that could not describe it.
+
+**The one decision worth re-reading before touching this: no NFL team on trade players.**
+Player ids resolve against the live `/players/nfl`, which describes players as they are today.
+A roster snapshot escapes that by being captured in the moment; a trade log can be written
+months later and is then sealed for good. Measured on the 2025 backfill before deciding: of
+the 20 players traded in 2025, 2 of the 15 drafted ones had already changed NFL teams (Diggs
+to FA, Meyers LV → JAX), and the 5 waiver-added ones were worse — Rico Dowdle would have been
+stamped PIT in a log of a season he spent in Carolina. Name and position are stable; an NFL
+team is not. The log carries what it can vouch for, and `raw` keeps the player ids if a future
+reader wants more. Capturing in-season (the designed path) has no such problem, but the file
+should not be silently less true depending on when it was written.
+
+**Also decided:** only what each side *received* is shown. Sleeper records both halves of every
+swap, so printing what a team gave up would repeat the same facts in mirror image and double
+the table for nothing.
+
+**Backfilled:** 2025's 10 trades, captured before the season sealed. Cross-checked against the
+raw API dump: rosters, players, and the four pick movements all match.
+
+**Verified:** regenerated everything and diffed. `output/` picked up exactly one line per
+existing page (the new nav chip) and one new page — no other byte moved, which is also the
+proof that the `NavLink` refactor was behavior-preserving. Rendered in headless Chrome at
+1280px to confirm the row grouping.
+
+**Known limits, all deliberate:** a season with no trades writes no file and gets no chip, so
+the first trade of a season needs a `--generate <season>` after it to put the chip into that
+season's roster pages (the same staleness every nav chip already has). Offseason trades land
+in whichever league recorded them, so a trade made between the rollover and the new season
+appears in the newer league's log.
 
 ### 17. Cloudflare: no action, one awareness note
 
@@ -627,15 +685,13 @@ if Pages ever gets a formal sunset date.
 |---|---|---|
 | **Draft-day blocker** | #3 (post-draft tier config) | **Before Aug 29, 2026. 25 days out as of this revision.** |
 | Pre-draft re-capture | #3 (keepers) | Keep running it daily; #4's guard now stays out of the way |
-| Quick mechanical pass | #12, #13 | Any time; one sitting. Tooling half (#9, #10, #11, #15) plus #7 and #8 are done. |
-| Optional feature | #16 | Only if you want a trade-history view |
 | Calendar item | #10 revisit | Oct 2026, when Node 26 goes LTS |
-| Closed | #1, #2, #4, #5, #6, #7, #8, #9, #10, #11, #14, #15 (✅ done) | — |
+| Closed | #1, #2, #4, #5, #6, #7, #8, #9, #10, #11, #12, #13, #14, #15, #16 (✅ done) | — |
 | No action | #17 | Awareness only |
 
-**Recommended order:** `2026:post-draft` in `TIER_CONFIGS` is now the only thing with a
-deadline, and it is the one piece that can't be backfilled without regenerating the page after
-the fact. Everything else can wait.
+**Recommended order:** `2026:post-draft` in `TIER_CONFIGS` is the only open item with a
+deadline, and the only one left that isn't a calendar reminder. Everything else in this report
+is closed.
 
 **The stack table now has nothing outstanding:** Node, Tailwind, TypeScript, `@types/node`,
 tsconfig, and Cloudflare are all current or deliberate, and the caret ranges mean minor/patch

@@ -14,6 +14,10 @@ import type {
   LeagueTransaction,
   ResolvedTradedPick,
   TradedPicksData,
+  PageKey,
+  ResolvedTrade,
+  TradeParty,
+  TradesData,
 } from "./types.js";
 import { SNAPSHOT_TYPE_LABELS } from "./types.js";
 import { getLeague, getRosters, getUsers, fetchAllPlayers } from "./sleeper-api.js";
@@ -50,7 +54,7 @@ function resolvePlayer(
   };
 }
 
-function sortPlayers(players: SnapshotPlayer[]): SnapshotPlayer[] {
+function sortPlayers<T extends { name: string; position: string }>(players: T[]): T[] {
   return players.sort((a, b) => {
     const posA = POS_ORDER[a.position] ?? 99;
     const posB = POS_ORDER[b.position] ?? 99;
@@ -285,14 +289,18 @@ export function getTradedPicksPath(season: string): string {
   return join(DATA_DIR, season, "traded-picks.json");
 }
 
-/** Newest season with a data directory, or undefined if there is no data yet. */
-export function newestDataSeason(): string | undefined {
-  if (!existsSync(DATA_DIR)) return undefined;
-  const seasons = readdirSync(DATA_DIR, { withFileTypes: true })
+/** Seasons with a data directory, oldest first. */
+function listSeasons(): string[] {
+  if (!existsSync(DATA_DIR)) return [];
+  return readdirSync(DATA_DIR, { withFileTypes: true })
     .filter((d) => d.isDirectory())
     .map((d) => d.name)
     .sort();
-  return seasons[seasons.length - 1];
+}
+
+/** Newest season with a data directory, or undefined if there is no data yet. */
+export function newestDataSeason(): string | undefined {
+  return listSeasons().at(-1);
 }
 
 /**
@@ -336,6 +344,122 @@ export async function loadTradedPicks(season: string): Promise<ResolvedTradedPic
   return data.picks;
 }
 
+// ── Trade log ──
+
+/**
+ * Resolve completed trades to owner and player names, newest first.
+ *
+ * Sleeper describes a trade by what each roster *gained*: `adds` maps player_id → the
+ * roster receiving them, `draft_picks[].owner_id` is the roster receiving the pick, and
+ * `waiver_budget` moves FAAB from a sender to a receiver. `drops` is the mirror image of
+ * `adds` and carries nothing extra, so it is ignored.
+ *
+ * `status_updated` is when the trade was accepted, `created` when it was proposed — same
+ * choice, for the same reason, as buildTradeDateMap().
+ */
+export function resolveTrades(
+  trades: LeagueTransaction[],
+  rosterOwnerMap: Map<number, string>,
+  playerDb: PlayerDatabase,
+): ResolvedTrade[] {
+  const ownerName = (rosterId: number) => rosterOwnerMap.get(rosterId) ?? `Roster ${rosterId}`;
+
+  return trades
+    .map((t) => {
+      const parties = new Map<number, TradeParty>();
+      const party = (rosterId: number): TradeParty => {
+        let existing = parties.get(rosterId);
+        if (!existing) {
+          existing = { owner: ownerName(rosterId), players: [], picks: [] };
+          parties.set(rosterId, existing);
+        }
+        return existing;
+      };
+
+      // Seed from roster_ids first, so every side of the trade is named and ordered as
+      // Sleeper reports it — including one that gave up everything and got nothing back.
+      for (const rosterId of t.roster_ids ?? []) party(rosterId);
+
+      for (const [playerId, rosterId] of Object.entries(t.adds ?? {})) {
+        // Name and position only — see TradePlayer for why the NFL team is dropped.
+        const { name, position } = resolvePlayer(playerId, playerDb);
+        party(rosterId).players.push({ name, position });
+      }
+      for (const pick of t.draft_picks ?? []) {
+        party(pick.owner_id).picks.push({
+          season: pick.season,
+          round: pick.round,
+          originalOwner: ownerName(pick.roster_id),
+        });
+      }
+      for (const transfer of t.waiver_budget ?? []) {
+        const receiver = party(transfer.receiver);
+        receiver.faab = (receiver.faab ?? 0) + transfer.amount;
+      }
+
+      for (const p of parties.values()) {
+        sortPlayers(p.players);
+        p.picks.sort((a, b) => a.season.localeCompare(b.season) || a.round - b.round);
+      }
+
+      return {
+        tradedOn: new Date(t.status_updated || t.created).toISOString(),
+        week: t.leg,
+        parties: [...parties.values()],
+      };
+    })
+    .sort((a, b) => b.tradedOn.localeCompare(a.tradedOn));
+}
+
+export function getTradesPath(season: string): string {
+  return join(DATA_DIR, season, "trades.json");
+}
+
+/** Whether a season has a saved trade log to link to. */
+export function hasTrades(season: string): boolean {
+  return existsSync(getTradesPath(season));
+}
+
+/**
+ * Write a season's trade log. Returns the path written, or undefined if the season is
+ * sealed.
+ *
+ * Sealed on the same rule as traded picks: once a newer season has data this league is
+ * complete, its trades can't change, and re-fetching would re-resolve owner names against
+ * whatever the teams are called today. Callers handle an empty trade list themselves —
+ * a season with no trades yet gets no file, and so no empty page and no dead nav chip.
+ */
+export async function saveTrades(
+  leagueId: string,
+  season: string,
+  trades: ResolvedTrade[],
+  raw: LeagueTransaction[],
+): Promise<string | undefined> {
+  const newest = newestDataSeason();
+  if (newest && season < newest && existsSync(getTradesPath(season))) {
+    return undefined;
+  }
+
+  const seasonDir = join(DATA_DIR, season);
+  await mkdir(seasonDir, { recursive: true });
+  const filePath = getTradesPath(season);
+  const data: TradesData = {
+    leagueId,
+    season,
+    fetchedAt: new Date().toISOString(),
+    trades,
+    raw,
+  };
+  await writeFile(filePath, JSON.stringify(data, null, 2), "utf-8");
+  return filePath;
+}
+
+export async function loadTrades(season: string): Promise<TradesData | undefined> {
+  const path = getTradesPath(season);
+  if (!existsSync(path)) return undefined;
+  return JSON.parse(await readFile(path, "utf-8")) as TradesData;
+}
+
 export function getSnapshotPath(season: string, snapshotType: SnapshotType): string {
   return join(DATA_DIR, season, `rosters-${snapshotType}.json`);
 }
@@ -372,8 +496,13 @@ export function saveDraftTradedPicks(season: string, raw: string): Promise<strin
   return saveDraftCapture(getDraftTradedPicksPath(season), season, raw);
 }
 
-export function getOutputPath(season: string, snapshotType: SnapshotType): string {
-  return join(DATA_DIR, "..", "output", season, `rosters-${snapshotType}.html`);
+/** File name a season's page is written to, within output/<season>/. */
+function pageFile(page: PageKey): string {
+  return page === "trades" ? "trades.html" : `rosters-${page}.html`;
+}
+
+export function getOutputPath(season: string, page: PageKey): string {
+  return join(DATA_DIR, "..", "output", season, pageFile(page));
 }
 
 
@@ -454,41 +583,37 @@ export async function loadSnapshot(filePath: string): Promise<Snapshot> {
 const SNAPSHOT_TYPE_ORDER: SnapshotType[] = ["end-of-season", "post-draft", "pre-draft"];
 
 /**
- * Discover all existing snapshot types across all seasons.
- * Returns { season, type }[] in chronological season order, newest snapshot type first within each season.
+ * Every page that exists for every season, in chronological season order and newest-first
+ * within each. The trade log sits last in a season's run because it isn't a point-in-time
+ * capture, so it has no place in that recency ordering.
  */
-function discoverSnapshots(): Array<{ season: string; snapshotType: SnapshotType }> {
-  const results: Array<{ season: string; snapshotType: SnapshotType }> = [];
-  if (!existsSync(DATA_DIR)) return results;
-
-  const seasons = readdirSync(DATA_DIR, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
-    .map((d) => d.name)
-    .sort();
-
-  for (const season of seasons) {
-    const seasonDir = join(DATA_DIR, season);
+function discoverPages(): Array<{ season: string; page: PageKey }> {
+  const results: Array<{ season: string; page: PageKey }> = [];
+  for (const season of listSeasons()) {
     for (const type of SNAPSHOT_TYPE_ORDER) {
-      if (existsSync(join(seasonDir, `rosters-${type}.json`))) {
-        results.push({ season, snapshotType: type });
-      }
+      if (existsSync(getSnapshotPath(season, type))) results.push({ season, page: type });
     }
+    if (hasTrades(season)) results.push({ season, page: "trades" });
   }
   return results;
 }
 
+/** Full page name ("2026 Pre-Draft Rosters") and its short chip form ("Pre-Draft"). */
+function pageLabels(season: string, page: PageKey): { label: string; chip: string } {
+  const name = page === "trades" ? "Trades" : SNAPSHOT_TYPE_LABELS[page];
+  return { label: `${season} ${name}`, chip: name.replace(" Rosters", "") };
+}
+
 /**
- * Build nav links relative to a roster page at output/<currentSeason>/.
+ * Build nav links relative to a page at output/<currentSeason>/.
  */
-export function buildNavLinks(currentSeason: string, currentType: SnapshotType): NavLink[] {
-  return discoverSnapshots().map(({ season, snapshotType }) => ({
+export function buildNavLinks(currentSeason: string, currentPage: PageKey): NavLink[] {
+  return discoverPages().map(({ season, page }) => ({
     season,
-    snapshotType,
-    label: `${season} ${SNAPSHOT_TYPE_LABELS[snapshotType]}`,
-    href: season === currentSeason
-      ? `rosters-${snapshotType}.html`
-      : `../${season}/rosters-${snapshotType}.html`,
-    current: season === currentSeason && snapshotType === currentType,
+    page,
+    ...pageLabels(season, page),
+    href: season === currentSeason ? pageFile(page) : `../${season}/${pageFile(page)}`,
+    current: season === currentSeason && page === currentPage,
   }));
 }
 
@@ -496,11 +621,11 @@ export function buildNavLinks(currentSeason: string, currentType: SnapshotType):
  * Build nav links relative to the index page at output/.
  */
 export function buildIndexNavLinks(): NavLink[] {
-  return discoverSnapshots().map(({ season, snapshotType }) => ({
+  return discoverPages().map(({ season, page }) => ({
     season,
-    snapshotType,
-    label: `${season} ${SNAPSHOT_TYPE_LABELS[snapshotType]}`,
-    href: `${season}/rosters-${snapshotType}.html`,
+    page,
+    ...pageLabels(season, page),
+    href: `${season}/${pageFile(page)}`,
     current: false,
   }));
 }

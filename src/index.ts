@@ -1,11 +1,11 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
-import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft, preDraftWindowClosed, SnapshotGuardError } from "./snapshot.js";
-import { generateHtml, generateIndexHtml, writeHtml, formatPacificDate } from "./html.js";
-import { getLeagueDrafts, getDraftPicks, getDraftTradedPicksRaw, fetchAllPlayers, getLeagueTradedPicks, getPickTrades, getLeague } from "./sleeper-api.js";
+import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft, resolveTrades, saveTrades, loadTrades, preDraftWindowClosed, SnapshotGuardError } from "./snapshot.js";
+import { generateHtml, generateIndexHtml, generateTradesHtml, writeHtml, formatPacificDate } from "./html.js";
+import { getLeagueDrafts, getDraftPicks, getDraftTradedPicksRaw, fetchAllPlayers, getLeagueTradedPicks, getPickTrades, getTrades, getLeague } from "./sleeper-api.js";
 import { getTierConfig, getLatestDraftOrder } from "./tiers.js";
-import type { SnapshotType, DraftPick, ResolvedTradedPick } from "./types.js";
+import type { SnapshotType, DraftPick, ResolvedTradedPick, PlayerDatabase } from "./types.js";
 
 // Sleeper mints a new league id each season and links back via `previous_league_id`.
 // Point this at the current season's league; earlier ones are reachable by walking that
@@ -47,6 +47,46 @@ async function fetchAndSaveTradedPicks(leagueId: string, season: string): Promis
   return tradedPicks;
 }
 
+/**
+ * Fetch, save, and render a season's trade log.
+ *
+ * The player database is only needed to name the players in a trade, so it is fetched
+ * lazily — a season with no trades yet (every run before September) never pays the 15MB.
+ * Callers that already hold one pass it in.
+ */
+async function fetchAndSaveTrades(leagueId: string, season: string, playerDb?: PlayerDatabase): Promise<void> {
+  console.log("Fetching trades...");
+  const [rawTrades, rosterOwnerMap] = await Promise.all([
+    getTrades(leagueId),
+    buildRosterOwnerMap(leagueId),
+  ]);
+
+  if (rawTrades.length === 0) {
+    // No file, so no empty page and no dead nav chip. Any earlier capture stands.
+    console.log(`No completed trades recorded in the ${season} league.`);
+  } else {
+    const trades = resolveTrades(rawTrades, rosterOwnerMap, playerDb ?? await fetchAllPlayers());
+    const tradesPath = await saveTrades(leagueId, season, trades, rawTrades);
+    if (tradesPath) {
+      console.log(`Trades saved: ${tradesPath} (${trades.length} trades)`);
+    } else {
+      console.log(`Trades for ${season} are sealed (a newer season has data) — left unchanged.`);
+    }
+  }
+
+  await generateTradesPage(season);
+}
+
+/** Render output/<season>/trades.html from the saved log. No-op when the season has none. */
+async function generateTradesPage(season: string): Promise<void> {
+  const data = await loadTrades(season);
+  if (!data) return;
+  const html = generateTradesHtml(LEAGUE_NAME, data, buildNavLinks(season, "trades"));
+  const outputPath = getOutputPath(season, "trades");
+  await writeHtml(html, outputPath);
+  console.log(`HTML written: ${outputPath}`);
+}
+
 async function regenerateIndex(): Promise<void> {
   const navLinks = buildIndexNavLinks();
   if (navLinks.length === 0) return;
@@ -58,7 +98,7 @@ async function regenerateIndex(): Promise<void> {
   // The latest season has drafted once it has any snapshot beyond pre-draft. Until then
   // its own picks are still upcoming and belong on the home page alongside future years.
   const latestHasDrafted = navLinks.some(
-    (l) => l.season === latestSeason && l.snapshotType !== "pre-draft",
+    (l) => l.season === latestSeason && (l.page === "post-draft" || l.page === "end-of-season"),
   );
   const lastDraftedSeason = latestHasDrafted ? latestSeason : String(Number(latestSeason) - 1);
   const upcomingPicks = picksAwaitingDraft(allPicks, lastDraftedSeason);
@@ -106,6 +146,10 @@ function printUsage(): void {
 
   npm run dev -- --traded-picks [league_id]
     Fetch and save traded picks for upcoming seasons.
+
+  npm run dev -- --trades [league_id]
+    Fetch and save that league's completed trades, and generate its trade log page.
+    Also runs as part of every --snapshot.
 `);
 }
 
@@ -138,6 +182,9 @@ async function snapshotAndGenerate(snapshotType: SnapshotType, leagueId: string,
 
   // Fetch and save traded picks
   const tradedPicks = await fetchAndSaveTradedPicks(leagueId, snapshot.season);
+
+  // Before the roster page renders, so a first trade log puts its chip in that page's nav.
+  await fetchAndSaveTrades(leagueId, snapshot.season, playerDb);
 
   const ownerOrder = await loadDraftOrder(snapshot.season);
   const navLinks = buildNavLinks(snapshot.season, snapshotType);
@@ -215,26 +262,31 @@ async function generateFromExisting(season: string, snapshotType?: SnapshotType)
 
   for (const type of types) {
     const snapshotPath = getSnapshotPath(season, type);
-    try {
-      const snapshot = await loadSnapshot(snapshotPath);
-      const navLinks = buildNavLinks(season, type);
-      const tiers = getTierConfig(season, type);
-      const draftRounds = await loadDraftRoundsFor(season, type);
-      const picksForType = type === "pre-draft"
-        ? picksForDraft(tradedPicks, season)
-        : picksAwaitingDraft(tradedPicks, season);
-      const html = generateHtml(snapshot, navLinks, ownerOrder, tiers, draftRounds, picksForType);
-      const outputPath = getOutputPath(season, type);
-      await writeHtml(html, outputPath);
-      console.log(`HTML written: ${outputPath}`);
-    } catch {
-      if (!snapshotType) {
-        console.log(`Skipping ${type}: no snapshot found at ${snapshotPath}`);
-      } else {
-        throw new Error(`Snapshot not found: ${snapshotPath}`);
-      }
+    // A missing file is the only thing that means "nothing to generate". Anything else —
+    // JSON a hand edit broke, an unwritable output directory — is a real failure and has
+    // to surface as one; hand-editing snapshots is a supported workflow, so a parse error
+    // reported as "no snapshot found" would send you looking in the wrong place entirely.
+    if (!existsSync(snapshotPath)) {
+      if (snapshotType) throw new Error(`Snapshot not found: ${snapshotPath}`);
+      console.log(`Skipping ${type}: no snapshot found at ${snapshotPath}`);
+      continue;
     }
+
+    const snapshot = await loadSnapshot(snapshotPath);
+    const navLinks = buildNavLinks(season, type);
+    const tiers = getTierConfig(season, type);
+    const draftRounds = await loadDraftRoundsFor(season, type);
+    const picksForType = type === "pre-draft"
+      ? picksForDraft(tradedPicks, season)
+      : picksAwaitingDraft(tradedPicks, season);
+    const html = generateHtml(snapshot, navLinks, ownerOrder, tiers, draftRounds, picksForType);
+    const outputPath = getOutputPath(season, type);
+    await writeHtml(html, outputPath);
+    console.log(`HTML written: ${outputPath}`);
   }
+
+  // Only when regenerating the whole season — `--generate <season> <type>` names one page.
+  if (!snapshotType) await generateTradesPage(season);
 }
 
 async function main(): Promise<void> {
@@ -288,6 +340,13 @@ async function main(): Promise<void> {
     const leagueId = args[1] || DEFAULT_LEAGUE_ID;
     const league = await getLeague(leagueId);
     await fetchAndSaveTradedPicks(leagueId, league.season);
+
+  } else if (args[0] === "--trades") {
+    // Takes a league id rather than a season: trades are read out of the league that
+    // recorded them, so backfilling an older year means naming that year's league.
+    const leagueId = args[1] || DEFAULT_LEAGUE_ID;
+    const league = await getLeague(leagueId);
+    await fetchAndSaveTrades(leagueId, league.season);
 
   } else {
     printUsage();

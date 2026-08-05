@@ -88,12 +88,34 @@ export async function getLeagueLineage(leagueId: string): Promise<string[]> {
 }
 
 /**
+ * Every completed trade in the given leagues. There is no all-weeks endpoint, so sweep
+ * them. A week the league hasn't reached yet errors; treat that as "no trades" rather
+ * than failing the whole run.
+ */
+async function sweepTrades(leagueIds: string[]): Promise<LeagueTransaction[]> {
+  const weeks = await Promise.all(
+    leagueIds.flatMap((id) =>
+      Array.from({ length: TRANSACTION_WEEKS }, (_, i) =>
+        getTransactions(id, i + 1).catch(() => [] as LeagueTransaction[]))),
+  );
+  return weeks.flat().filter((t) => t.type === "trade" && t.status === "complete");
+}
+
+/**
+ * Every completed trade recorded in one league — the season's trade log.
+ *
+ * One league only, unlike getPickTrades(): a season's log is what happened in that
+ * season, and sweeping the lineage would fold every earlier year into it.
+ */
+export function getTrades(leagueId: string): Promise<LeagueTransaction[]> {
+  return sweepTrades([leagueId]);
+}
+
+/**
  * Every completed trade that moved a draft pick, across this league and its predecessors.
  *
  * The only place Sleeper dates a pick trade — /league/{id}/traded_picks reports where a
- * pick ended up but never when it moved. There is no all-weeks endpoint, so sweep them.
- * A week the league hasn't reached yet errors; treat that as "no trades" rather than
- * failing the whole snapshot.
+ * pick ended up but never when it moved.
  *
  * The lineage sweep is what makes those dates survive the offseason: next year's picks
  * are traded during this year's season, so they are recorded against the league that has
@@ -101,13 +123,6 @@ export async function getLeagueLineage(leagueId: string): Promise<string[]> {
  * forward) but none of their dates.
  */
 export async function getPickTrades(leagueId: string): Promise<LeagueTransaction[]> {
-  const leagueIds = await getLeagueLineage(leagueId);
-  const weeks = await Promise.all(
-    leagueIds.flatMap((id) =>
-      Array.from({ length: TRANSACTION_WEEKS }, (_, i) =>
-        getTransactions(id, i + 1).catch(() => [] as LeagueTransaction[]))),
-  );
-  return weeks
-    .flat()
-    .filter((t) => t.type === "trade" && t.status === "complete" && (t.draft_picks?.length ?? 0) > 0);
+  const trades = await sweepTrades(await getLeagueLineage(leagueId));
+  return trades.filter((t) => (t.draft_picks?.length ?? 0) > 0);
 }

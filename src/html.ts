@@ -1,6 +1,6 @@
 import { writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
-import type { Snapshot, SnapshotType, SnapshotRoster, SnapshotPlayer, NavLink, TierConfig, ResolvedTradedPick } from "./types.js";
+import type { Snapshot, SnapshotType, SnapshotRoster, SnapshotPlayer, NavLink, TierConfig, ResolvedTradedPick, TradesData } from "./types.js";
 import { SNAPSHOT_TYPE_LABELS } from "./types.js";
 import type { DraftOrder } from "./tiers.js";
 
@@ -38,10 +38,6 @@ function esc(text: string): string {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
-}
-
-function shortLabel(link: NavLink): string {
-  return SNAPSHOT_TYPE_LABELS[link.snapshotType].replace(" Rosters", "");
 }
 
 // ── Shared HTML fragments ──
@@ -292,6 +288,23 @@ function tradedPicksSection(tradedPicks?: ResolvedTradedPick[]): string {
   return `${heading}\n${tradedPicksTable(tradedPicks)}`;
 }
 
+// ── Shared page furniture ──
+
+/** Nav bar for a season's pages: Home, then that season's chips. Empty when there are none. */
+function navBar(navLinks: NavLink[], season: string): string {
+  const items = navLinks
+    .filter((l) => l.season === season)
+    .map((l) => l.current
+      ? `<span class="${PILL_ACTIVE}">${esc(l.chip)}</span>`
+      : `<a href="${esc(l.href)}" class="${PILL_LINK}">${esc(l.chip)}</a>`)
+    .join("\n      ");
+  if (!items) return "";
+  return `  <nav class="flex flex-wrap items-center gap-2 mb-6">
+      <a href="../index.html" class="${PILL_LINK}">Home</a>
+      ${items}
+    </nav>`;
+}
+
 // ── Roster page styles ──
 
 const ROSTER_STYLES = `    .pos-wr  { background: #d0e8ff; }
@@ -351,23 +364,7 @@ export function generateHtml(
       ? buildTieredRows(rosters, tiers!, draftRounds!)
       : buildSequentialRows(rosters, maxPlayers, tiers);
 
-  // Nav bar — current season links only
-  let navHtml = "";
-  if (navLinks.length > 0) {
-    const items = navLinks
-      .filter((l) => l.season === snapshot.season)
-      .map((l) => {
-        const label = shortLabel(l);
-        return l.current
-          ? `<span class="${PILL_ACTIVE}">${esc(label)}</span>`
-          : `<a href="${esc(l.href)}" class="${PILL_LINK}">${esc(label)}</a>`;
-      })
-      .join("\n      ");
-    navHtml = `  <nav class="flex flex-wrap items-center gap-2 mb-6">
-      <a href="../index.html" class="${PILL_LINK}">Home</a>
-      ${items}
-    </nav>`;
-  }
+  const navHtml = navBar(navLinks, snapshot.season);
 
   const styles = ROSTER_STYLES + (isPostDraft ? ROUND_COL_STYLE : "");
   const roundTh = isPostDraft ? `      <th class="${TH}">Round</th>\n` : "";
@@ -401,6 +398,82 @@ ${tradedPicksSection(tradedPicks)}
 </html>`;
 }
 
+/**
+ * Season trade log: one block per trade, one row per side, listing what that side received.
+ *
+ * "Received" is the only direction shown on purpose. Sleeper records both halves of every
+ * swap, so printing what each team gave up would repeat the same facts in mirror image and
+ * double the table for nothing — the other rows of the trade already say it.
+ */
+export function generateTradesHtml(
+  leagueName: string,
+  data: TradesData,
+  navLinks: NavLink[] = [],
+): string {
+  const { season, trades } = data;
+
+  const rows = trades
+    .map((trade) => {
+      const when = esc(formatPacificDate(trade.tradedOn));
+      return trade.parties
+        .map((party, i) => {
+          const items = [
+            ...party.players.map((p) => `${esc(p.name)} <span class="text-gray-400">${esc(p.position)}</span>`),
+            ...party.picks.map((p) => `${esc(p.season)} Round ${p.round} <span class="text-gray-400">(${esc(p.originalOwner)})</span>`),
+            ...(party.faab ? [`$${party.faab} FAAB`] : []),
+          ];
+          const received = items.length > 0
+            ? items.map((item) => `<div>${item}</div>`).join("")
+            : `<span class="text-gray-400">&mdash;</span>`;
+          // The date and week span the trade's rows, so the sides read as one exchange.
+          // The heavier rule goes on the <tr>, where it collapses with the thin cell
+          // borders into one line — a class on the cells would fight TP_TD's own border
+          // color, and Tailwind resolves that by stylesheet order, not by class order.
+          const spanned = i === 0
+            ? `<td class="${TP_TD} align-top whitespace-nowrap" rowspan="${trade.parties.length}">${when}</td>` +
+              `<td class="${TP_TD} align-top whitespace-nowrap" rowspan="${trade.parties.length}"><span class="text-gray-500">Week ${trade.week}</span></td>`
+            : "";
+          return `      <tr${i === 0 ? ` class="border-t-2 border-gray-200"` : ""}>${spanned}` +
+            `<td class="${TP_TD} align-top whitespace-nowrap font-medium">${esc(party.owner)}</td>` +
+            `<td class="${TP_TD} align-top">${received}</td></tr>`;
+        })
+        .join("\n");
+    })
+    .join("\n");
+
+  const table = trades.length > 0
+    ? `  <div class="overflow-x-auto -mx-1">
+  <table class="text-sm w-auto">
+    <thead><tr>
+      <th class="${TP_TH}">Date</th><th class="${TP_TH}">Week</th><th class="${TP_TH}">Team</th><th class="${TP_TH}">Received</th>
+    </tr></thead>
+    <tbody>
+${rows}
+    </tbody>
+  </table>
+  </div>`
+    : `  <p class="text-sm text-gray-500">None</p>`;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+${htmlHead({
+    title: `${leagueName} - ${season} Trades`,
+    ogTitle: `${season} Trades`,
+    description: `Every completed trade of the ${season} season, and what each team received.`,
+    siteName: leagueName,
+  })}
+<body class="bg-gray-50 text-gray-900 font-sans antialiased">
+  <div class="max-w-4xl px-3 sm:px-5 pt-4 sm:pt-5 pb-10">
+  <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 mb-1">${esc(season)} Trades</h1>
+  <div class="text-sm text-gray-500 mb-4">${esc(leagueName)}</div>
+${navBar(navLinks, season)}
+${table}
+  <footer class="mt-8 text-xs text-gray-400">Data retrieved ${esc(formatPacificTime(data.fetchedAt))}</footer>
+  </div>
+</body>
+</html>`;
+}
+
 export function generateIndexHtml(
   leagueName: string,
   navLinks: NavLink[],
@@ -419,13 +492,15 @@ export function generateIndexHtml(
   const seasonRows = sortedSeasons
     .map((season) => {
       const links = seasons.get(season)!;
-      const hasPreDraft = links.some((l) => l.snapshotType === "pre-draft");
+      const hasPreDraft = links.some((l) => l.page === "pre-draft");
+      // A trade log alone says nothing about keepers, so only roster pages can earn the badge.
+      const hasRosters = links.some((l) => l.page !== "trades");
 
       const pills = links
-        .map((l) => `<a href="${esc(l.href)}" class="${PILL_LINK}">${esc(shortLabel(l))}</a>`)
+        .map((l) => `<a href="${esc(l.href)}" class="${PILL_LINK}">${esc(l.chip)}</a>`)
         .join("\n          ");
 
-      const throwback = !hasPreDraft && links.length > 0
+      const throwback = !hasPreDraft && hasRosters
         ? `\n        <span class="text-xs font-medium bg-green-800 text-white rounded px-1.5 py-0.5 mr-auto ml-3">Throwback</span>`
         : "";
 

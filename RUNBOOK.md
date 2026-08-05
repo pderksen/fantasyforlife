@@ -13,7 +13,7 @@ so **nothing is live until you commit and push**. Running a command locally is o
 |---|---|---|
 | Aug, up to draft day (non-throwback years) | `npm run dev -- --snapshot pre-draft` | Daily while keepers trickle in |
 | Right after the draft | `npm run dev -- --snapshot-draft <season>` | Once |
-| During the NFL season | `npm run dev -- --traded-picks` then `npm run dev -- --generate <season>` | Weekly |
+| During the NFL season | `npm run dev -- --traded-picks`, `npm run dev -- --trades`, then `npm run dev -- --generate <season>` | Weekly |
 | After NFL Week 18 (~early Jan) | `npm run dev -- --snapshot end-of-season` | Once |
 | After any of the above | `git add -A && git commit && git push` | Every time |
 
@@ -85,19 +85,31 @@ This one **is** safe to redo later. Draft picks are immutable and always retriev
 
 ---
 
-## 3. In-season: traded picks refresh
+## 3. In-season: traded picks and trade log refresh
 
-Pick trades happen all season and apply to next year's draft. Two commands, and the second one
-is not optional:
+Trades happen all season: players move now, and pick trades apply to next year's draft. Three
+commands, and the last one is not optional:
 
 ```
 npm run dev -- --traded-picks
+npm run dev -- --trades
 npm run dev -- --generate <season>
 ```
 
 `--traded-picks` re-fetches, re-dates (sweeping transactions weeks 1–18 across the whole league
 lineage), saves `data/<season>/traded-picks.json`, and regenerates **only the home page**. The
 roster pages keep their stale tables until `--generate` runs. Weekly during the season is plenty.
+
+`--trades` sweeps the same 18 weeks for *this* league only, saves `data/<season>/trades.json`,
+and writes `output/<season>/trades.html`. It defaults to `DEFAULT_LEAGUE_ID`; pass an explicit
+league id to backfill an older season, since trades live in the league that recorded them. A
+season with no trades yet writes nothing at all, which is why the trade log chip only appears
+once there is something to show — and why the first trade of a season needs `--generate` after
+it, to put that chip into the roster pages' nav.
+
+Capture during the season, not years later: player names resolve against the live database, so
+a late backfill still gets names and positions right but has no way to know a player's NFL team
+at the time. That is why the log doesn't show one.
 
 ---
 
@@ -128,7 +140,7 @@ Both `data/` and `output/` are committed on purpose; only `dist/` and `node_modu
 ## Verifying a run worked
 
 - **Console output** names every file written: `Snapshot saved:`, `Traded picks saved:`,
-  `HTML written:`, `Index written:`.
+  `Trades saved:`, `HTML written:`, `Index written:`.
 - **`git status`** should show the files you expect to have changed. An empty diff after a
   snapshot run means the capture was identical, which is normal for a re-run, and suspicious
   after a real change.
@@ -145,10 +157,13 @@ Both `data/` and `output/` are committed on purpose; only `dist/` and `node_modu
   `npm run dev -- --generate <season>` to regenerate without opening anything.
 - **`--traded-picks` doesn't touch roster pages.** Always pair it with `--generate <season>`.
 - **`--snapshot <type>` regenerates only that one page**, plus the home page.
-- **Traded picks seal.** Once `data/<newer season>/` exists, the older season's
-  `traded-picks.json` stops being rewritten and the command prints `... are sealed (a newer
-  season has data) — left unchanged.` That's correct behavior, not a failure: re-fetching would
-  re-resolve owner names against current team names and quietly rewrite history.
+- **Traded picks and the trade log seal.** Once `data/<newer season>/` exists, the older
+  season's `traded-picks.json` and `trades.json` stop being rewritten and the command prints
+  `... are sealed (a newer season has data) — left unchanged.` That's correct behavior, not a
+  failure: re-fetching would re-resolve owner names against current team names and quietly
+  rewrite history.
+- **`--trades` and `--generate` both skip a season with no trades.** No file, no page, no chip.
+  Nothing is wrong; there just haven't been any trades yet.
 - **Pre-draft is the only unrecoverable capture.** Post-draft and traded picks can be rebuilt
   from the API later; keepers cannot. The guard in step 1 is the backstop; `--force` is the
   only way past it, so never put `--force` in a scheduled prompt.
@@ -188,11 +203,12 @@ no longer can: the run now refuses the moment the league leaves `pre_draft` and 
 without fetching anything, so a stale schedule reports a failure instead of overwriting the
 keeper record with a keeper-less roster. Still turn it off — a daily failure email is noise.
 
-**B. Traded picks refresh** — weekly, Tuesday ~6am Pacific, Sep through early Jan:
+**B. Traded picks and trade log refresh** — weekly, Tuesday ~6am Pacific, Sep through early Jan:
 
-> In c:\Dev\fantasyforlife, run `npm run dev -- --traded-picks` followed by
-> `npm run dev -- --generate <season>`. If `git status` shows changes, commit them with a message
-> describing which picks moved, and push. If nothing changed, report that and stop.
+> In c:\Dev\fantasyforlife, run `npm run dev -- --traded-picks`, then `npm run dev -- --trades`,
+> then `npm run dev -- --generate <season>`. If `git status` shows changes, commit them with a
+> message describing which picks and players moved, and push. If nothing changed, report that
+> and stop.
 
 **C. End-of-season capture** — once, early January after Week 18:
 
@@ -211,6 +227,6 @@ argument and won't infer it.
 | Early Aug | Update `DEFAULT_LEAGUE_ID`, `DRAFT_ORDERS`, `TIER_CONFIGS`. Enable schedule A. |
 | Mid–late Aug | Daily pre-draft snapshots (skip in throwback years) |
 | Draft day (late Aug) | Final pre-draft snapshot, then `--snapshot-draft` after. Disable A, enable B. |
-| Sep–Dec | Weekly traded picks refresh |
+| Sep–Dec | Weekly traded picks + trade log refresh |
 | Early Jan | `--snapshot end-of-season`. Disable B. |
 | Jan–Jul | Nothing to run |

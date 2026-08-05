@@ -33,13 +33,17 @@ Fantasy football roster viewer for a long-running league. Pulls roster data from
 
 **Traded Picks**: Fetched from `/league/{id}/traded_picks` and saved **unfiltered** (every pick, every draft season) with both resolved (human-readable) and raw API data. Each pick is dated from the trade transaction that moved it. Re-fetched with each snapshot command until the season seals. Pages narrow the list at render time.
 
-**HTML Output**: `output/<season>/` (one per snapshot type) + `output/index.html` home page. Roster pages include chip-style nav bar. Every roster page and the home page show a "Traded Picks" section. Table cells color-coded by position. Footer shows capture timestamp in Pacific time.
+**Trade Log**: Every completed trade in a season's league, resolved to owner and player names and dated, saved as `data/<season>/trades.json` and rendered as `output/<season>/trades.html`. Built by sweeping `/league/{id}/transactions/{week}` for weeks 1–18 of that **one** league (not the lineage — a season's log is what happened that season). Captured by every `--snapshot` run and by `--trades`; seals like traded picks. A season with no trades gets no file, so no empty page and no dead nav chip.
+
+**HTML Output**: `output/<season>/` (one per snapshot type, plus `trades.html`) + `output/index.html` home page. Roster pages include chip-style nav bar. Every roster page and the home page show a "Traded Picks" section. Table cells color-coded by position. Footer shows capture timestamp in Pacific time.
 
 ## Sleeper API
 - Docs: https://docs.sleeper.com/ — Base URL: `https://api.sleeper.app/v1` — No auth required
 - Key endpoints: `/league/{id}`, `/league/{id}/rosters`, `/league/{id}/users`, `/league/{id}/drafts`, `/draft/{draft_id}/picks`, `/league/{id}/traded_picks`, `/league/{id}/transactions/{week}`, `/players/nfl`
 - `/league/{id}/traded_picks`: `roster_id` = original owner, `owner_id` = current owner (both numeric despite the name). Carries **no date** — trade dates come from transactions.
-- `/league/{id}/transactions/{week}`: one week per call, no all-weeks endpoint. `getPickTrades()` sweeps weeks 1–18 across the **whole league lineage** (`getLeagueLineage()` walks `previous_league_id`) and keeps completed trades with a non-empty `draft_picks` array. `status_updated` = accepted, `created` = proposed.
+- `/league/{id}/transactions/{week}`: one week per call, no all-weeks endpoint. Both callers go through `sweepTrades()`, which keeps `type: "trade"` + `status: "complete"`. `getPickTrades()` sweeps the **whole league lineage** (`getLeagueLineage()` walks `previous_league_id`) and then keeps only trades with a non-empty `draft_picks` array, because next year's picks are traded in this year's league. `getTrades()` sweeps **one league** for the trade log. `status_updated` = accepted, `created` = proposed.
+- A trade names what each roster *gained*: `adds` maps player_id → receiving roster, `draft_picks[].owner_id` is the receiving roster, `waiver_budget` moves FAAB. `drops` is the mirror image of `adds` and carries nothing extra.
+- `users[].is_owner` is `null` for non-commissioners, not `false` (verified 2026-08-04 against the 2025 league: 9 of 10 users `null`).
 - Rate limit: 1000 calls/min
 - **Consumed picks persist**: a completed league still returns its own season's traded picks, so pre-draft pick state stays recoverable after the draft
 - `roster_id` → `owner_id` is stable across the season rollover (verified 2025→2026), so raw pick data isn't ambiguous between leagues
@@ -53,6 +57,7 @@ Fantasy football roster viewer for a long-running league. Pulls roster data from
 - `npm run dev -- --snapshot-draft <season> [league_id]` — post-draft from draft-picks.json; works retroactively
 - `npm run dev -- --generate <season> [type]` — regenerate HTML (omit type for all)
 - `npm run dev -- --traded-picks [league_id]` — fetch traded picks standalone
+- `npm run dev -- --trades [league_id]` — fetch that league's trades and write its trade log page. Takes a **league id, not a season**: trades live in the league that recorded them, so backfilling an old year means naming that year's league.
 - All commands auto-regenerate `output/index.html`
 
 ## League
@@ -89,18 +94,20 @@ All three steps auto-fetch traded picks. Post-draft snapshots can be created ret
 Both throw `SnapshotGuardError`, which `index.ts` prints without a stack trace. The catch handler sets `process.exitCode` rather than calling `process.exit()`: on Windows, exiting outright while a just-completed `fetch` is still tearing down trips a libuv assertion and returns a crash status instead of 1.
 
 ## Project Structure
-- `src/types.ts` — TypeScript interfaces, `SNAPSHOT_TYPE_LABELS` map
+- `src/types.ts` — TypeScript interfaces, `SNAPSHOT_TYPE_LABELS` map, `PageKey` (`SnapshotType | "trades"` — every page a season can have)
 - `src/sleeper-api.ts` — Sleeper API fetch wrappers
-- `src/snapshot.ts` — Snapshot capture/save/load, path helpers, draft round lookup, traded picks resolution + display filters (`picksForDraft()`, `picksAwaitingDraft()`, `newestDataSeason()`), pre-draft overwrite guard (`preDraftWindowClosed()`, `SnapshotGuardError`). `OWNER_NAME_OVERRIDES`: `ClovisJets` → `Clovis Jets`
-- `src/html.ts` — HTML generation (sequential, post-draft, tiered layouts), index page. Shared constants: `CELL`, `TH`, `TABLE_WRAP`, `PILL_LINK`, `PILL_ACTIVE`, `SECTION_H2`, `TP_TH`, `TP_TD`. Helpers: `htmlHead()`, `tradedPicksTable()`, `esc()`
+- `src/snapshot.ts` — Snapshot capture/save/load, path helpers, draft round lookup, traded picks resolution + display filters (`picksForDraft()`, `picksAwaitingDraft()`, `newestDataSeason()`), trade log resolution/save/load (`resolveTrades()`, `saveTrades()`, `loadTrades()`, `hasTrades()`), page discovery + nav (`discoverPages()`, `pageFile()`), pre-draft overwrite guard (`preDraftWindowClosed()`, `SnapshotGuardError`). `OWNER_NAME_OVERRIDES`: `ClovisJets` → `Clovis Jets`
+- `src/html.ts` — HTML generation (sequential, post-draft, tiered layouts), trade log page, index page. Shared constants: `CELL`, `TH`, `TABLE_WRAP`, `PILL_LINK`, `PILL_ACTIVE`, `SECTION_H2`, `TP_TH`, `TP_TD`. Helpers: `htmlHead()`, `navBar()`, `tradedPicksTable()`, `esc()`
 - `src/tiers.ts` — `TIER_CONFIGS` (season:snapshotType → tier boundaries), `DRAFT_ORDERS` (season → owner pick order)
 - `src/index.ts` — CLI entry point
 - `data/<season>/rosters-<type>.json` — Snapshots
 - `data/<season>/draft-picks.json` — Immutable draft picks
 - `data/<season>/draft-traded-picks.json` — Immutable traded pick data for specific draft
 - `data/<season>/traded-picks.json` — League-level traded picks, unfiltered; re-fetched per command until sealed
+- `data/<season>/trades.json` — Season trade log; re-fetched per command until sealed
 - `output/index.html` — Home page
 - `output/<season>/rosters-<type>.html` — Roster pages
+- `output/<season>/trades.html` — Trade log page (only for seasons that had trades)
 
 ## Snapshot JSON Shape
 ```typescript
@@ -155,12 +162,43 @@ interface ResolvedTradedPick {
 }
 ```
 
+## Trade Log
+
+Backward-looking history: what actually changed hands, and when. Distinct from the forward-looking Traded Picks table, which only says who owns an *upcoming* pick. Neither replaces the other.
+
+One file per season, `data/<season>/trades.json`, holding every completed trade recorded in that season's league. Costs 18 calls (one per week) against the current 1 for traded picks. Sealed on the same rule as traded picks: once a newer season has a data directory and the file exists, it stops being rewritten.
+
+**No NFL team on trade players, deliberately.** Player IDs resolve against the live `/players/nfl`, which describes players as they are *today*. A roster snapshot escapes that by being captured in the moment; a trade log can be written months later and is then sealed for good. Measured on the 2025 backfill: 2 of 15 drafted players had changed NFL teams, and waiver-added players were worse. Name and position are stable, so the log carries only those; `raw` keeps the player ids if anyone ever wants more.
+
+**Only what each side received.** Sleeper records both halves of every swap, so printing what a team gave up would repeat the same facts in mirror image and double the table — the trade's other rows already say it.
+
+**JSON Shape** (`data/<season>/trades.json`):
+```typescript
+interface TradesData {
+  leagueId: string; season: string; fetchedAt: string;
+  trades: ResolvedTrade[];    // newest first
+  raw: LeagueTransaction[];   // the completed trade transactions, verbatim
+}
+interface ResolvedTrade {
+  tradedOn: string;  // ISO timestamp — status_updated, i.e. when it was accepted
+  week: number;      // Sleeper's `leg`
+  parties: TradeParty[];
+}
+interface TradeParty {
+  owner: string;
+  players: { name: string; position: string }[];              // no team — see above
+  picks: { season: string; round: number; originalOwner: string }[];
+  faab?: number;     // FAAB dollars received; omitted when no budget moved
+}
+```
+
 ## Data Mutability
 | Data Type | Mutable | Notes |
 |-----------|---------|-------|
 | Rosters | Yes | Snapshot at 3 key moments per season |
 | Draft picks | No | Immutable; always available from API |
 | League traded picks | Until sealed | Re-fetched per command while the season is current; frozen once a newer season has data |
+| Trade log | Until sealed | Same rule as traded picks |
 | Player data | N/A | Fetched in-memory only; not persisted |
 
 ## Roster & Player Ordering
@@ -207,7 +245,9 @@ Generated by `generateIndexHtml` in `src/html.ts`. Light mode, Tailwind CDN + In
 
 **Season chips**: `bg-gray-100 text-gray-700 rounded-lg`, hover `bg-gray-200`. Labels from `SNAPSHOT_TYPE_LABELS` with " Rosters" stripped. Season rows use `flex flex-wrap gap-y-2` so chips wrap on narrow screens.
 
-**Chip order**: Within a season, chips run most-recent-first left to right (End-of-Season, Post-Draft, Pre-Draft). Controlled by `SNAPSHOT_TYPE_ORDER` in `snapshot.ts`, which feeds both index chips and roster page nav bars.
+**Chip order**: Within a season, chips run most-recent-first left to right (End-of-Season, Post-Draft, Pre-Draft), then Trades last. Controlled by `discoverPages()` in `snapshot.ts` (snapshots ordered by `SNAPSHOT_TYPE_ORDER`), which feeds index chips and every page's nav bar. Trades sits last because it isn't a point-in-time capture, so it has no place in that recency ordering.
+
+**Throwback badge guard**: the badge means "snapshots exist but no pre-draft one." A trade log alone must not earn it, so the check requires a page that isn't `trades`.
 
 ## Roster Page UI
 Generated by `generateHtml` in `src/html.ts`. Light mode, `bg-gray-50` body. Content in `px-3 sm:px-5 pt-4 sm:pt-5 pb-10` wrapper div. Roster table wrapped in `TABLE_WRAP` (scrolls horizontally on mobile by design, and vertically inside a viewport-height cap). Nav uses `flex flex-wrap`.
@@ -223,11 +263,19 @@ Generated by `generateHtml` in `src/html.ts`. Light mode, `bg-gray-50` body. Con
 
 **Footer**: "Data retrieved" timestamp in Pacific time via `formatPacificTime()` (`America/Los_Angeles`).
 
+## Trade Log Page UI
+
+Generated by `generateTradesHtml` in `src/html.ts`. Same shell as a roster page (h1, league name, `navBar()`, footer) but capped at `max-w-4xl` — it's a reading list, not a wide grid.
+
+Columns Date, Week, Team, Received. Date and Week `rowspan` the trade's rows so both sides read as one exchange; each side's haul is a stack of `<div>`s (players, then picks as `2026 Round 6 (Original Owner)`, then `$N FAAB`), with an em dash when a side received nothing.
+
+- **Trade separator**: a `border-t-2 border-gray-200` on the first `<tr>` of each trade, *not* on its cells. Tailwind preflight sets `border-collapse: collapse`, so the row rule collapses with the thin cell borders into one line. Putting it on the cells would pit `border-gray-200` against `TP_TD`'s `border-gray-100`, and Tailwind resolves same-property conflicts by stylesheet order, not by the order classes appear in the attribute — the same reason the muted "Week N" text is a `<span class="text-gray-500">` inside the cell rather than another class on a `text-gray-900` cell.
+
 ## Page Head Metadata
 
 `htmlHead()` takes a `HeadOptions` object (`title`, optional `ogTitle`, `description`, `siteName`, optional `extraStyles`) and emits the same block on every page.
 
-- **Open Graph**: `og:type`, `og:site_name`, `og:title`, `og:description`, plus `twitter:card` = `summary` (no image exists, so `summary` is correct) and a plain `<meta name="description">`. Roster pages pass `ogTitle` as just `"<season> <label>"` — the league name is already the `og:site_name`, so repeating it wastes the preview card's bold line. Per-page copy comes from `OG_DESCRIPTIONS` in `html.ts`, keyed by snapshot type.
+- **Open Graph**: `og:type`, `og:site_name`, `og:title`, `og:description`, plus `twitter:card` = `summary` (no image exists, so `summary` is correct) and a plain `<meta name="description">`. Roster pages pass `ogTitle` as just `"<season> <label>"` — the league name is already the `og:site_name`, so repeating it wastes the preview card's bold line. Per-page copy comes from `OG_DESCRIPTIONS` in `html.ts`, keyed by snapshot type; the trade log page writes its own line inline.
 - **No `og:url` / `og:image`**: the deployed hostname isn't recorded anywhere in the repo, and a wrong canonical URL unfurls worse than none. No artwork exists.
 - **`noindex`**: `<meta name="robots" content="noindex, nofollow">`. The site is deliberately not Googleable. **Do not "reinforce" this with a `robots.txt` `Disallow`** — disallowing blocks the fetch, so the crawler never reads the `noindex` and the URL can still be listed bare from an inbound link. Staying crawlable is what makes the directive work. Unfurlers ignore robots rules, so previews are unaffected.
 - **No favicon**, by choice. `/favicon.ico` 404s harmlessly.
