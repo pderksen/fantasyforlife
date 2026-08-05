@@ -4,8 +4,10 @@
 Fantasy football roster viewer for a long-running league. Pulls roster data from the Sleeper API and generates HTML tables showing all rostered players organized by owner.
 
 ## Tech Stack
-- TypeScript / Node.js (ES modules)
-- Native `fetch` (Node 18+, no HTTP library)
+- TypeScript 7 (`^7.0.2`) / Node.js 24 LTS (ES modules). `package.json` declares `"engines": { "node": ">=24" }`; `@types/node` is held at `^24` to match the runtime, so ignore `npm outdated` nagging about 25/26 until Node 26 reaches LTS (Oct 2026).
+  - **TS 7 does not auto-discover `@types/node`.** `tsconfig.json` must keep `"types": ["node"]`, or every `node:` import and `process` reference fails with `TS2591`.
+- `tsconfig`: `module`/`moduleResolution` `nodenext`, `target` `ES2024`
+- Native `fetch` (no HTTP library)
 - Zero npm runtime dependencies
 - Tailwind CSS v4 via browser CDN (loaded in generated HTML, not installed): `https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4`. The `@4` auto-tracks the latest 4.x, so no repo change is needed to pick up updates.
   - **v4 has no JS config.** Theme customization goes in `<style type="text/tailwindcss">` with an `@theme { --font-sans: ... }` block in `htmlHead()`. Do not reintroduce `tailwind.config = {...}`; the v4 browser build ignores it.

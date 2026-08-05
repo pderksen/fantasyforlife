@@ -137,8 +137,9 @@ Both `data/` and `output/` are committed on purpose; only `dist/` and `node_modu
 - **Pre-draft is the only unrecoverable capture.** Post-draft and traded picks can be rebuilt
   from the API later; keepers cannot.
 - **Every command auto-regenerates `output/index.html`**, so the home page never drifts.
-- **Node 18+** required for native `fetch`. `npm run dev` runs `tsc` first, so a TypeScript
-  error blocks the run before any network call.
+- **Node 24 LTS** is the supported runtime (`engines: >=24`); native `fetch` needs no HTTP
+  library. `npm run dev` runs `tsc` first, so a TypeScript error blocks the run before any
+  network call.
 - **A fresh league returns picks but zero transactions.** If every `tradedOn` suddenly vanishes,
   the lineage walk (`previous_league_id`) is broken, not the API.
 

@@ -10,27 +10,38 @@ Two items closed (#1 fixed, #5 expired), one partly done (#6), two changed shape
 #9 gained a hard prerequisite that was found by actually running the upgrade rather than
 reasoning about it.
 
+**Revised again 2026-08-04 (third pass)** after the TypeScript/tsconfig batch was actually
+applied. #9, #10, and #11 are now done and verified in the working tree; #15 is done as a
+side effect. The stack table has nothing outstanding.
+
 **Overall verdict:** unchanged. The architecture is right for what this is (a 10-reader
 archival site regenerated ~3x a year). Pre-generated HTML committed to `main` with Cloudflare
 Pages serving `output/` is the correct setup: keep it. What remains is three draft-day fixes,
-one mechanical tooling batch, and a set of small improvements.
+a handful of small improvements, and one optional feature.
 
 ---
 
-## Tech stack status (re-verified 2026-08-04)
+## Tech stack status (re-verified 2026-08-04, third pass)
 
 | Component | Project | Current | Status |
 |---|---|---|---|
-| Node (installed) | v24.13.0 | 24 is Active LTS until Oct 2026 | ✅ Current |
+| Node (installed) | v24.13.0, `engines: >=24` | 24 is Active LTS until Oct 2026 | ✅ Current |
 | Tailwind | v4 browser CDN, `@4` range | 4.3.3 | ✅ **Done** (commit `9b24f01`) |
-| TypeScript | ^5.9.3 | 7.0.2 | ⚠️ Two majors behind; see #9 for the prerequisite |
-| @types/node | ^25.2.1 | 26.1.2 published, but **^24 is what this project wants** | ⚠️ Wrong major; see #10 |
-| `tsconfig` module | `Node16` | `nodenext` | ⚠️ Works, but legacy-ish |
+| TypeScript | `^7.0.2` | 7.0.2 | ✅ **Done** |
+| @types/node | `^24.13.3` | 26.1.2 published, but **^24 is what this project wants** | ✅ **Done** (deliberate major) |
+| `tsconfig` module | `nodenext` | `nodenext` | ✅ **Done** |
 | Cloudflare Pages | commit-and-serve | Workers static assets is the steered path for new projects | ✅ Fine as-is |
 
 **Note on the `@types/node` row:** "Current 26.1.2" is the published latest, not the target.
 Node 26 released April 2026 and does not become LTS until October 2026. Since the runtime here
-is Node 24 LTS, the correct move is **down to `^24`**, not up to 26. See #10.
+is Node 24 LTS, `^24` is correct and `npm outdated` will keep flagging it. Ignore that until
+Node 26 goes LTS. See #10.
+
+**Range policy:** both devDependencies use carets, so minor and patch releases are picked up by
+a plain `npm install` while majors stay a deliberate decision (`^7.0.2` → any 7.x, `^24.13.3` →
+any 24.x). The patch-level floor is documentation of the verified minimum, not a tighter pin;
+it does not narrow what an upgrade can resolve to. `package-lock.json` is committed, so actual
+installs stay reproducible regardless.
 
 The architecture-level choices (zero runtime deps, native `fetch`, plain `tsc`, static HTML)
 are essentially timeless. Do not add a framework, bundler, or test harness.
@@ -48,7 +59,10 @@ side, below.
 | #6 Tailwind CDN | 🟡 **Partly done.** v4 upgrade landed, so the deprecation is resolved. Inlining the CSS is still open, now as archival durability rather than stack currency. |
 | #3 2026 season prep | 🟡 **Mostly done.** Pre-draft ran in production against the right league; `2026:post-draft` tier config still missing. |
 | #4 Overwrite guard | 🔄 **Risk reshaped.** Snapshot is now committed, so git backstops it, but a deliberate re-capture is expected before the draft. |
-| #9 TypeScript 7 | 🔄 **Prerequisite found.** Fails without `"types": ["node"]`; verified safe with it. |
+| #9 TypeScript 7 | ✅ **Closed.** Landed at `^7.0.2` with `"types": ["node"]`. Emit byte-identical, `output/` diff empty. |
+| #10 `@types/node` / `engines` | ✅ **Closed.** `^24.13.3` + `"engines": { "node": ">=24" }`. |
+| #11 tsconfig | ✅ **Closed.** `nodenext`, `ES2024`, `types: ["node"]`, `forceConsistentCasingInFileNames` dropped. |
+| #15 CLAUDE.md "Node 18+" | ✅ **Closed.** Fixed in CLAUDE.md and RUNBOOK.md as part of the same batch. |
 
 ---
 
@@ -203,11 +217,11 @@ disproportionate polish win.
 **Related decision:** Add `noindex` if you'd rather the league's rosters not be Googleable;
 it's a public URL today.
 
-### 9. Bump TypeScript to 7.x — requires one tsconfig line, verified
+### 9. ✅ DONE — Bump TypeScript to 7.x
 
-**Type:** Stack / tooling · Effort: small · **Trial-run 2026-08-04**
+**Type:** Stack / tooling · **Status: landed 2026-08-04** · Effort: small
 
-Project is on 5.9.3; latest is 7.0.2 (the native-compiler line, much faster `tsc`, which is
+Project was on 5.9.3; now `^7.0.2` (the native-compiler line, much faster `tsc`, which is
 paid on every `npm run dev` since dev recompiles each run).
 
 **Correction to the original assessment.** "Migration risk is near zero, worst case a tsconfig
@@ -220,53 +234,57 @@ declared. This was isolated in a clean two-line minimal repro, and reproduced id
 against `@types/node` at 24, 25, and 26, so it is a TS 7 behavior change and not a version
 pairing problem. TypeScript 5.9.3 compiles the same file with no errors.
 
-**The whole migration is this one line:**
+**The whole migration was this one line:**
 
 ```jsonc
 "types": ["node"]
 ```
 
-**Verified results with that line in place** (full project source, TS 7.0.2, `nodenext`,
-`ES2024`, `@types/node@24`):
+**Verified results after landing** (full project source, TS 7.0.2, `nodenext`, `ES2024`,
+`@types/node@24.13.3`):
 
-- 0 errors
-- Emitted JS is **byte-identical** to TypeScript 5.9.3's output (full `dist/` diff, sourcemaps
-  excluded)
-- 1.5s versus 2.4s compile, so roughly 0.9s off every `npm run dev`
+- 0 errors on a clean rebuild
+- Emitted JS is **byte-identical** to TypeScript 5.9.3's output (per-file SHA-256 across all
+  six `dist/*.js`)
+- Regenerating both seasons plus the index leaves `git status -- output/` empty, so no visual
+  regression
+- Clean full build now ~0.7s versus ~2.4s on 5.9.3
 
-Without that line the upgrade looks broken on first attempt. With it, it is genuinely safe.
+Without that line the upgrade looks broken on first attempt (22 errors, every `node:` import
+and `process` reference unresolved). The requirement is recorded in CLAUDE.md so it does not
+get dropped by a future tsconfig edit.
 
-### 10. Version hygiene: `@types/node` and `engines`
+### 10. ✅ DONE — Version hygiene: `@types/node` and `engines`
 
-**Type:** Stack / tooling · Effort: trivial
+**Type:** Stack / tooling · **Status: landed 2026-08-04** · Effort: trivial
 
-- Pin `@types/node` to `^24` to match the runtime actually in use (types for Node 25 can
-  claim APIs Node 24 lacks). Currently `^25.2.1`, installed 25.2.1.
-- **This is a downgrade, not an upgrade.** `npm outdated` reports 26.1.2 as latest and will
-  keep nagging; ignore it. Node 26 released April 2026 and does not reach LTS until October
-  2026, while this project runs Node 24 LTS. Revisit in Oct 2026.
-- Add `"engines": { "node": ">=24" }` to `package.json` so the floor is documented.
+- `@types/node` moved from `^25.2.1` **down** to `^24.13.3`, matching the runtime actually in
+  use. `@types/node`'s major tracks the Node major it describes, so types ahead of the runtime
+  will happily type-check APIs the running Node lacks — a clean compile, then a runtime throw.
+- **Why 24 and not 26.** Node 24 is Active LTS through Oct 2026 (maintenance to April 2028) and
+  is what's installed (v24.13.0). Node 26 shipped April 2026 but is still the Current line; it
+  becomes LTS in Oct 2026. Node 25, the previous setting here, is an odd-numbered line that
+  never goes LTS at all, so it was the worst of the three. `npm outdated` will keep reporting
+  26.1.2 as latest — ignore it. **Revisit Oct 2026** and bump runtime, `engines`, and types
+  together, not types alone.
+- `"engines": { "node": ">=24" }` added to `package.json` so the floor is documented.
 
-### 11. tsconfig modernization
+### 11. ✅ DONE — tsconfig modernization
 
-**Type:** Stack / tooling · Effort: trivial
+**Type:** Stack / tooling · **Status: landed 2026-08-04** · Effort: trivial
 
-While in there: `module`/`moduleResolution` → `"nodenext"` (forward-compatible successor to
-`Node16`), `target` → `ES2024` (Node 24 supports it), drop `forceConsistentCasingInFileNames`
-(default-on since TS 5.0). Add `"types": ["node"]`, which #9 requires.
+`module`/`moduleResolution` → `"nodenext"` (forward-compatible successor to `Node16`),
+`target` → `ES2024` (Node 24 supports it), `forceConsistentCasingInFileNames` dropped
+(default-on since TS 5.0), `"types": ["node"]` added, which #9 requires.
 
-**Verified 2026-08-04:** this exact config compiles clean on *both* TypeScript 5.9.3 and 7.0.2,
-and both emit byte-identical JS. So the tsconfig change is safe to land independently of #9,
-in either order.
-
-Resulting `compilerOptions` delta:
+Applied `compilerOptions` delta:
 
 ```jsonc
 "target": "ES2024",              // was ES2022
 "module": "nodenext",            // was Node16
 "moduleResolution": "nodenext",  // was Node16
 "types": ["node"],               // NEW, required by TS 7
-// remove: "forceConsistentCasingInFileNames": true
+// removed: "forceConsistentCasingInFileNames": true
 ```
 
 ### 12. `is_owner` is typed non-nullable but the API returns `null`
@@ -296,12 +314,14 @@ Same archival argument as #6 but lower stakes, since a dead font CDN degrades gr
 fallbacks. Either subset and inline Inter as a data-URI woff2, or use a system font stack
 (`system-ui`), which at table-of-names density is visually near-identical.
 
-### 15. CLAUDE.md stale line: "Node 18+"
+### 15. ✅ DONE — CLAUDE.md stale line: "Node 18+"
 
-**Type:** Docs · Effort: trivial
+**Type:** Docs · **Status: landed 2026-08-04** · Effort: trivial
 
-`CLAUDE.md:8` reads "Native `fetch` (Node 18+, no HTTP library)", which lands as a support
-statement, but Node 18 went EOL in April 2025. Once #10 lands, that line should say Node 24 LTS.
+`CLAUDE.md:8` read "Native `fetch` (Node 18+, no HTTP library)", which landed as a support
+statement, but Node 18 went EOL in April 2025. The Tech Stack block now names TypeScript 7 and
+Node 24 LTS, records the `^24` types decision and its Oct 2026 revisit, and carries the
+`"types": ["node"]` gotcha. The same line in `RUNBOOK.md:140` was corrected alongside it.
 
 The Tailwind lines in that same Tech Stack block were already updated alongside the v4 upgrade,
 and now record that v4 has no JS config so a future session doesn't reintroduce
@@ -353,14 +373,17 @@ if Pages ever gets a formal sunset date.
 |---|---|---|
 | **Draft-day blockers** | #2, #3 (post-draft tier config), #4 | **Before Aug 29, 2026. 25 days out as of this revision.** |
 | Pre-draft re-capture | #3 (keepers) | Once keeper selection completes; needs #4 to allow a deliberate overwrite |
-| Quick mechanical pass | #9, #10, #11, #12, #15 (tooling) + #7, #8, #13 | Any time; one sitting. Do #11 with #9, it is the prerequisite. |
+| Quick mechanical pass | #12 + #7, #8, #13 | Any time; one sitting. Tooling half (#9, #10, #11, #15) is done. |
 | CSS inlining | #6 remainder (then #14 alongside) | Any time; archival durability only, no longer stack-currency |
 | Optional feature | #16 | Only if you want trade history |
-| Closed | #1, #5 | ✅ done / ⛔ expired |
+| Calendar item | #10 revisit | Oct 2026, when Node 26 goes LTS |
+| Closed | #1, #9, #10, #11, #15 (✅ done) · #5 (⛔ expired) | — |
 | No action | #17 | Awareness only |
 
-**Recommended order:** the draft-day batch first. It has a real deadline; the tooling batch has
-none. #2 and #4 are both small and independent of each other.
+**Recommended order:** the draft-day batch first. It has a real deadline; nothing else does.
+#2 and #4 are both small and independent of each other.
 
-After the mechanical pass lands, the stack table has nothing outstanding: Node, Tailwind,
-TypeScript, `@types/node`, tsconfig, and Cloudflare would all be current or deliberate.
+**The stack table now has nothing outstanding:** Node, Tailwind, TypeScript, `@types/node`,
+tsconfig, and Cloudflare are all current or deliberate, and the caret ranges mean minor/patch
+drift is picked up without a repo change. The only scheduled stack work is the Oct 2026
+Node 26 LTS revisit.
