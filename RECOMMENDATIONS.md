@@ -29,6 +29,14 @@ documented workflow in both #3 above and RUNBOOK step 1. A guard that fires dail
 to pass `--force` daily, and then it protects nothing. What landed instead refuses the two
 writes that actually destroy data and lets routine re-captures through untouched. See #4.
 
+**Revised again 2026-08-04 (seventh pass)** after #7 was implemented. The fix turned out to be
+the wrapper rather than the header — the classes on the header were right all along, they just
+had no scrollport to pin to. Two things surfaced while doing it that the item didn't anticipate
+(collapsed borders on a pinned cell, and whether Tailwind would even emit the arbitrary `calc`).
+A headless-Chrome render afterward turned up a third: the fix is real but fires only on short
+viewports, and is invisible on a 1080p-or-larger monitor because the whole table already fits
+there. Kept on that basis rather than dropped. All three are recorded in #7.
+
 **Overall verdict:** unchanged. The architecture is right for what this is (a 10-reader
 archival site regenerated ~3x a year). Pre-generated HTML committed to `main` with Cloudflare
 Pages serving `output/` is the correct setup: keep it. What remains is one draft-day config
@@ -75,6 +83,7 @@ side, below.
 | #6 Tailwind CDN | ✅ **Closed.** v4 upgrade landed, resolving the deprecation. CSS inlining declined: the archival hedge doesn't justify adding a build step, and it stays recoverable later. |
 | #3 2026 season prep | 🟡 **Mostly done.** Pre-draft ran in production against the right league; `2026:post-draft` tier config still missing. |
 | #4 Overwrite guard | ✅ **Closed, reshaped.** Landed as a keeper-loss guard plus `--force`, not the existence guard specified — that one would have fired on every routine daily re-capture. |
+| #7 Sticky header | ✅ **Closed.** Wrapper now caps at viewport height, so the header has something to pin to; the header markup was never the problem. Narrower payoff than the item claimed — measured inert at 1080p and up, where the table already fits. |
 | #9 TypeScript 7 | ✅ **Closed.** Landed at `^7.0.2` with `"types": ["node"]`. Emit byte-identical, `output/` diff empty. |
 | #10 `@types/node` / `engines` | ✅ **Closed.** `^24.13.3` + `"engines": { "node": ">=24" }`. |
 | #11 tsconfig | ✅ **Closed.** `nodenext`, `ES2024`, `types: ["node"]`, `forceConsistentCasingInFileNames` dropped. |
@@ -290,17 +299,84 @@ one.
 
 **Revisit only if** jsdelivr announces a sunset, or the pages need to work offline.
 
-### 7. The sticky header row doesn't actually work
+### 7. ✅ DONE — The sticky header row didn't actually work
 
-**Type:** UI / Visual · Effort: small
+**Type:** UI / Visual · **Status: landed 2026-08-04 (seventh pass)** · Effort: small
 
-The `TH` constant in `src/html.ts` includes `sticky top-0`, but the roster table sits inside
-an `overflow-x-auto` wrapper, which becomes the sticky containing scroll box. Since that
-wrapper never scrolls vertically, the header never sticks when scrolling the page. On the
-end-of-season page (~20 rows × 10 columns) you lose track of which column is which owner.
+The diagnosis held up exactly. `TH` carried `sticky top-0`, but the roster table sat inside an
+`overflow-x-auto` wrapper, and an overflow container is the scrollport its sticky descendants
+pin to. That wrapper was sized to its content vertically, so it never scrolled on that axis and
+the header never moved relative to it. On the end-of-season page (~25 rows × 10 columns) you
+lost track of which column was which owner.
 
-**Fix:** Give the wrapper a viewport-height `max-height` with `overflow-y: auto` so
-stickiness works inside it, or drop the dead classes.
+**Which of the two suggested fixes:** capped the wrapper, not deleted the classes. Deleting
+would have made the file honest without addressing the complaint the item opens with. The
+header row is the only thing on that page identifying a column.
+
+**What landed:**
+
+- A `TABLE_WRAP` constant, `overflow-auto max-h-[calc(100dvh_-_10rem)]`, replacing the bare
+  `overflow-x-auto` on the roster table wrapper. 10rem is the block sitting above the table
+  (page padding + h1 + league name + nav, ~152px at `sm` and up), so the box runs to the bottom
+  of the viewport and only ever scrolls when the table is taller than the screen. It is a
+  constant rather than an inline string specifically so the "why" comment has somewhere to
+  live: the next person to simplify that class list back to `overflow-x-auto` silently breaks
+  the header again, with nothing in the diff to say so.
+- `dvh` rather than `vh`, so mobile browser chrome doesn't push the bottom of the box off
+  screen. Within the v4 browser-support floor already documented in CLAUDE.md.
+- `z-10` on `TH`. Not strictly required (positioned elements already paint over the
+  non-positioned `td` backgrounds) but it makes the stacking intent explicit against the
+  position tints and tier rows.
+- `th.sticky { box-shadow: inset -1px 0 #d1d5db, 0 1px 0 #d1d5db; }` in `ROSTER_STYLES`.
+
+**Two things the item didn't anticipate, both found by doing it:**
+
+1. **`border-collapse` strips a pinned cell's borders.** With collapsed borders the table owns
+   them, not the cell, so a `th` that has been offset by sticky positioning loses its own — the
+   header would have degraded from a bordered grid into one merged dark bar the moment you
+   scrolled. That is the `th.sticky` box-shadow above, redrawing the right and bottom edges as
+   something that travels with the cell.
+2. **Whether Tailwind would emit the arbitrary `calc` at all**, since a bare
+   `calc(100dvh-10rem)` is invalid CSS and only works if Tailwind's operator-spacing
+   normalization recognizes `dvh`. Verified instead of assumed: compiled the class set against
+   `@tailwindcss/cli` 4.3.3, the same version the `@4` CDN range serves. Both the bare and the
+   underscore form emit `max-height: calc(100dvh - 10rem)`. Kept the underscore form, which
+   needs no normalization heuristic.
+
+**Verified:** clean build, both seasons regenerated. `git diff -- output/` shows only the three
+intended changes across the three roster pages (wrapper class, `z-10` on each `th`, the new
+style rule); `output/index.html` is untouched, since the index page has no roster table. Then
+rendered in headless Chrome and confirmed visually at 1280×800: header pinned to the top of the
+box, tier rows scrolled up underneath it, borders intact.
+
+**Scope, measured — this fires on a narrower range of screens than the item implies.** The
+end-of-season table renders 695px tall, and the box only overflows when that exceeds
+`viewport − 10rem`:
+
+| Viewport | In-box scroll range | Useful? |
+|---|---|---|
+| 1920×1080 and up | 0px | No — the whole table already fits on screen |
+| 1280×800 | 165px | Yes, this is the case the fix serves |
+| Phone, 390×844 | ~11px | Barely — the table nearly fits vertically |
+
+Kept anyway: it costs one wrapper class, one `z-index`, and one CSS rule, and it is inert
+rather than harmful where it doesn't apply. But do not expect to see it on a desktop monitor —
+there is nothing there to solve.
+
+**Related thing this item got wrong.** It attributes the confusion to losing track of owners
+while scrolling *down*. On a phone the table is 1822px wide against a 390px screen, so the
+disorienting axis is horizontal, and a sticky header row does nothing for that. There is no fix
+available here either: the owners *are* the columns, so there is no row-label column to pin.
+
+**Considered and declined:** page-level sticky (drop the wrapper entirely, let the header pin to
+the viewport for the table's full height at any size). It works uniformly, but the document then
+scrolls horizontally on narrow screens, sliding the h1, nav, and footer off with it. That
+reverses the deliberate "horizontal scroll stays contained to the table" decision in CLAUDE.md,
+which is a worse trade on a phone than the narrow win it buys.
+
+**Left alone:** the traded-picks wrapper keeps plain `overflow-x-auto`. Those tables run a
+handful of rows and have no sticky header, so a height cap would do nothing but add a
+scrollbar.
 
 ### 8. Favicon + Open Graph tags
 
@@ -469,10 +545,10 @@ if Pages ever gets a formal sunset date.
 |---|---|---|
 | **Draft-day blocker** | #3 (post-draft tier config) | **Before Aug 29, 2026. 25 days out as of this revision.** |
 | Pre-draft re-capture | #3 (keepers) | Keep running it daily; #4's guard now stays out of the way |
-| Quick mechanical pass | #12 + #7, #8, #13 | Any time; one sitting. Tooling half (#9, #10, #11, #15) is done. |
+| Quick mechanical pass | #12 + #8, #13 | Any time; one sitting. Tooling half (#9, #10, #11, #15) and #7 are done. |
 | Optional feature | #16 · #14 (system-font swap) | Only if you want trade history / dislike the font CDN |
 | Calendar item | #10 revisit | Oct 2026, when Node 26 goes LTS |
-| Closed | #1, #2, #4, #6, #9, #10, #11, #15 (✅ done) · #5 (⛔ expired) | — |
+| Closed | #1, #2, #4, #6, #7, #9, #10, #11, #15 (✅ done) · #5 (⛔ expired) | — |
 | No action | #17 | Awareness only |
 
 **Recommended order:** `2026:post-draft` in `TIER_CONFIGS` is now the only thing with a

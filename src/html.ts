@@ -47,7 +47,15 @@ function shortLabel(link: NavLink): string {
 // ── Shared HTML fragments ──
 
 const CELL = "border border-gray-300 px-2 py-1 whitespace-nowrap";
-const TH = `${CELL} bg-gray-800 text-white sticky top-0`;
+const TH = `${CELL} bg-gray-800 text-white sticky top-0 z-10`;
+/**
+ * Roster table wrapper. The max-height is what makes `sticky top-0` on the header work:
+ * an overflow container is the scrollport its sticky descendants pin to, so without a
+ * height cap the box never scrolls vertically and the header never sticks. 10rem is the
+ * block above the table (page padding + h1 + league name + nav), so the box runs to the
+ * bottom of the viewport. Horizontal scrolling on mobile is unchanged.
+ */
+const TABLE_WRAP = "overflow-auto max-h-[calc(100dvh_-_10rem)]";
 const PILL = "inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg";
 const PILL_LINK = `${PILL} text-gray-700 bg-gray-100 transition-colors hover:bg-gray-200 no-underline`;
 const PILL_ACTIVE = `${PILL} text-gray-900 bg-gray-200`;
@@ -260,6 +268,10 @@ const ROSTER_STYLES = `    .pos-wr  { background: #d0e8ff; }
     /* Keepers. Declared after the position tints so it wins — same specificity, later
        rule. The position stays readable in the cell text. */
     .keeper  { background: #ffff00; }
+    /* Sticky header. border-collapse hands cell borders to the table, so a pinned th
+       loses its own borders mid-scroll and the row reads as one merged dark bar.
+       Redraw the right and bottom edges as a shadow, which travels with the cell. */
+    th.sticky { box-shadow: inset -1px 0 #d1d5db, 0 1px 0 #d1d5db; }
     .tier td { font-weight: bold; color: white; text-align: left; font-size: 12px; letter-spacing: 1px; padding: 3px 8px; }
     .tier-1 td { background: #1a6b2a; }
     .tier-2 td { background: #8b6914; }
@@ -333,7 +345,7 @@ ${htmlHead(`${snapshot.leagueName} - ${snapshot.season} ${typeLabel}`, styles)}
   <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 mb-1">${esc(snapshot.season)} ${esc(typeLabel)}</h1>
   <div class="text-sm text-gray-500 mb-4">${esc(snapshot.leagueName)}</div>
 ${navHtml}
-  <div class="overflow-x-auto">
+  <div class="${TABLE_WRAP}">
   <table class="border-collapse bg-white text-xs">
     <tr>
 ${roundTh}${headerCells}
