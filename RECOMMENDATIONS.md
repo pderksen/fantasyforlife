@@ -43,6 +43,12 @@ The `noindex` mechanism was a real choice rather than a formality (meta tag, not
 `Disallow`) and the reason is recorded in #8 and in a code comment, because the two look
 interchangeable and only one of them actually de-indexes.
 
+**Revised again 2026-08-04 (ninth pass)** after #5 was re-checked against the file on disk
+rather than against the earlier pass's note. It had been recorded as expired with the defect
+intact; in fact the re-fetch landed hours before the seal closed, so `data/2025/traded-picks.json`
+holds the complete ten-pick array. The item is corrected below, and the second-pass line above
+("#5 expired") is left standing as the record of what was believed at the time.
+
 **Overall verdict:** unchanged. The architecture is right for what this is (a 10-reader
 archival site regenerated ~3x a year). Pre-generated HTML committed to `main` with Cloudflare
 Pages serving `output/` is the correct setup: keep it. What remains is one draft-day config
@@ -85,7 +91,7 @@ side, below.
 |---|---|
 | #1 `DEFAULT_LEAGUE_ID` | ✅ **Closed.** Now the 2026 league (`src/index.ts:13`). |
 | #2 draft record never saved | ✅ **Closed.** `--snapshot-draft` now writes `draft-picks.json` and `draft-traded-picks.json`, and refuses to overwrite either. Verified byte-identical against the committed 2025 capture. |
-| #5 2025 traded-picks backfill | ⛔ **Closed, expired.** `data/2026/` now exists, so the file is sealed. No loss; skipping was the standing recommendation. |
+| #5 2025 traded-picks backfill | ✅ **Closed, resolved.** The re-fetch landed at 22:09 on 2026-08-04, before `data/2026/` sealed the season. The file holds all 10 resolved picks, not 5. |
 | #6 Tailwind CDN | ✅ **Closed.** v4 upgrade landed, resolving the deprecation. CSS inlining declined: the archival hedge doesn't justify adding a build step, and it stays recoverable later. |
 | #3 2026 season prep | 🟡 **Mostly done.** Pre-draft ran in production against the right league; `2026:post-draft` tier config still missing. |
 | #4 Overwrite guard | ✅ **Closed, reshaped.** Landed as a keeper-loss guard plus `--force`, not the existence guard specified — that one would have fired on every routine daily re-capture. |
@@ -250,20 +256,34 @@ End-of-season is a live capture and *could* take an analogous guard, but there i
 signal equivalent to `pre_draft` status that says "the window has closed," and no comparable
 history of a scheduled job running past its window. Not worth inventing one speculatively.
 
-### 5. ⛔ WINDOW CLOSED — re-fetch the 2025 traded picks
+### 5. ✅ DONE — re-fetch the 2025 traded picks
 
-**Type:** Data hygiene · **Status: expired, no action possible or needed** · Effort: n/a
+**Type:** Data hygiene · **Status: resolved before the seal closed; verified 2026-08-04 (ninth
+pass)** · Effort: n/a
 
-`data/2025/traded-picks.json` predates the unfiltered-storage change, so its resolved `picks`
-array holds only the five future-season picks rather than all ten the league reports.
+The original complaint: `data/2025/traded-picks.json` predated the unfiltered-storage change,
+so its resolved `picks` array held only the five future-season picks rather than all ten the
+league reports.
 
-`saveTradedPicks()` seals a season once a newer season has a data directory, and there is no
-`--force` escape. **`data/2026/` now exists**, so this file is frozen in its current shape.
+**That is no longer the file on disk.** It was re-fetched at `2026-08-04T22:09:27Z` and now
+carries all 10 resolved picks (five for the 2025 draft, five for 2026) against 10 in `raw`.
+The second-pass note calling this "expired with the defect intact" was written from the earlier
+description rather than from the file, and was wrong.
 
-**No loss.** Skipping was the standing recommendation: nothing visible changes (the `> 2025`
-display filter yields the same rows either way), and the file's `raw` field already contains
-the complete unfiltered API response, so no data is actually missing. Recorded here only so a
-future reader doesn't go hunting for the discrepancy.
+**It is sealed now, in the good shape.** `saveTradedPicks()` skips a season once a newer one has
+a data directory (`season < newestDataSeason()` plus the file existing), with no `--force`
+escape. `data/2026/traded-picks.json` was written at `23:51Z` the same evening, so the backfill
+beat the seal by about 100 minutes. Ordering luck, not design: had the two run in the other
+order, this item really would have expired.
+
+**Nothing renders differently either way**, which is why it went unnoticed. The 2025 pages
+filter `season > 2025`, so they show the five 2026 picks and always did. The five 2025-draft
+picks carry no `tradedOn` (their trades predate the league's Sleeper lineage, so no transaction
+records them) and would surface only on a 2025 pre-draft page, which does not exist because
+2025 was a throwback year. They are archive-only rows.
+
+Kept in the report so a future reader who sees "only five picks" here does not go hunting for a
+discrepancy that was closed.
 
 ### 6. ✅ CLOSED — Tailwind CDN: v4 upgrade landed, inlining declined
 
@@ -593,7 +613,7 @@ if Pages ever gets a formal sunset date.
 | Quick mechanical pass | #12, #13 | Any time; one sitting. Tooling half (#9, #10, #11, #15) plus #7 and #8 are done. |
 | Optional feature | #16 · #14 (system-font swap) | Only if you want trade history / dislike the font CDN |
 | Calendar item | #10 revisit | Oct 2026, when Node 26 goes LTS |
-| Closed | #1, #2, #4, #6, #7, #8, #9, #10, #11, #15 (✅ done) · #5 (⛔ expired) | — |
+| Closed | #1, #2, #4, #5, #6, #7, #8, #9, #10, #11, #15 (✅ done) | — |
 | No action | #17 | Awareness only |
 
 **Recommended order:** `2026:post-draft` in `TIER_CONFIGS` is now the only thing with a
