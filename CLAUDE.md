@@ -12,8 +12,8 @@ Fantasy football roster viewer for a long-running league. Pulls roster data from
 - Tailwind CSS v4 via browser CDN (loaded in generated HTML, not installed): `https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4`. The `@4` auto-tracks the latest 4.x, so no repo change is needed to pick up updates.
   - **v4 has no JS config.** Theme customization goes in `<style type="text/tailwindcss">` with an `@theme { --font-sans: ... }` block in `htmlHead()`. Do not reintroduce `tailwind.config = {...}`; the v4 browser build ignores it.
   - Requires Safari 16.4+ / Chrome 111+ / Firefox 128+.
-- Inter font via Google Fonts CDN
-- All styling: Tailwind utility classes + ~10 lines of inline `<style>` for custom colors (position, tier, round). Each HTML file is self-contained.
+- Inter font via Google Fonts CDN. Self-hosting was weighed and declined (Aug 2026): a dead font CDN falls back to system fonts with the pages still readable, so there is no durability case worth a build step. Same call as the Tailwind CSS inlining decision above.
+- All styling: Tailwind utility classes + ~10 lines of inline `<style>` for custom colors (position, tier, round). Each HTML file carries all its own markup and custom CSS, but is **not** fully self-contained: Tailwind and Inter both load from CDNs at page view. Deliberate — see the two notes above.
 
 ## Key Concepts
 

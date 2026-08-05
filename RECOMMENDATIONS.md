@@ -49,6 +49,12 @@ intact; in fact the re-fetch landed hours before the seal closed, so `data/2025/
 holds the complete ten-pick array. The item is corrected below, and the second-pass line above
 ("#5 expired") is left standing as the record of what was believed at the time.
 
+**Revised again 2026-08-04 (tenth pass):** #14 closed by decision, like #6 before it. The
+Google Fonts CDN stays. A dead font CDN falls back to system fonts and the pages stay readable,
+so there was no durability case to buy, and the inlining half would have added the build step
+#6 already declined. CLAUDE.md's "self-contained" wording was corrected in the same pass, which
+was the last piece of residue #6 left open.
+
 **Overall verdict:** unchanged. The architecture is right for what this is (a 10-reader
 archival site regenerated ~3x a year). Pre-generated HTML committed to `main` with Cloudflare
 Pages serving `output/` is the correct setup: keep it. What remains is one draft-day config
@@ -101,6 +107,7 @@ side, below.
 | #10 `@types/node` / `engines` | ✅ **Closed.** `^24.13.3` + `"engines": { "node": ">=24" }`. |
 | #11 tsconfig | ✅ **Closed.** `nodenext`, `ES2024`, `types: ["node"]`, `forceConsistentCasingInFileNames` dropped. |
 | #15 CLAUDE.md "Node 18+" | ✅ **Closed.** Fixed in CLAUDE.md and RUNBOOK.md as part of the same batch. |
+| #14 Google Fonts CDN | ✅ **Closed, declined.** CDN kept by decision. Degrades to fallback fonts, so no durability case; inlining would add the build step #6 declined. |
 
 ---
 
@@ -318,11 +325,9 @@ Reasoning:
 - What we keep by declining: a brief unstyled flash on page load. Real, and trivial at this
   scale.
 
-**Known residue:** CLAUDE.md describes each HTML file as "self-contained," which stays not
-quite true while Tailwind and Inter both load from CDNs. That is a wording fix, not a code fix.
-#14 (Google Fonts) is the same tradeoff with lower stakes and is judged the same way — it
-remains listed only for the system-font option, which is a taste call rather than a durability
-one.
+**Known residue — resolved.** CLAUDE.md described each HTML file as "self-contained," which was
+not quite true while Tailwind and Inter both load from CDNs. Fixed in the tenth pass alongside
+#14, which closed the same way: both CDNs stay, and the doc now says so.
 
 **Revisit only if** jsdelivr announces a sunset, or the pages need to work offline.
 
@@ -543,13 +548,25 @@ eventually.
 
 **Fix:** Use `existsSync` for the skip case and let genuine errors propagate.
 
-### 14. Self-host or drop the Google Fonts dependency
+### 14. ✅ CLOSED — Google Fonts dependency kept
 
-**Type:** UI / structural (minor) · Effort: small
+**Type:** UI / structural (minor) · **Status: declined by decision 2026-08-04 (tenth pass)** · Effort: n/a
 
-Same archival argument as #6 but lower stakes, since a dead font CDN degrades gracefully to
-fallbacks. Either subset and inline Inter as a data-URI woff2, or use a system font stack
-(`system-ui`), which at table-of-names density is visually near-identical.
+The proposal was to drop the Google Fonts CDN, either by subsetting and inlining Inter as a
+data-URI woff2 or by switching to a `system-ui` stack. **Keeping the CDN**, by decision.
+
+The archival argument here was always the weaker version of #6's. A dead font CDN degrades to
+the fallback stack and the pages stay fully readable, so unlike a dead Tailwind CDN there is no
+failure mode worth pre-paying for. The inlining half would also add a build step to a project
+that deliberately has none, which is the same cost #6 declined for higher stakes. The
+system-font half was a pure taste call, and the taste call is: keep Inter.
+
+Both remaining CDN dependencies (jsdelivr for Tailwind, Google Fonts for Inter) are now
+deliberate rather than unexamined. **Revisit only if** the pages need to work offline, in which
+case both get resolved together rather than one at a time.
+
+**Residue cleared:** CLAUDE.md's "Each HTML file is self-contained" was the one thing this
+decision made inaccurate (noted under #6). Corrected to name both CDNs.
 
 ### 15. ✅ DONE — CLAUDE.md stale line: "Node 18+"
 
@@ -611,9 +628,9 @@ if Pages ever gets a formal sunset date.
 | **Draft-day blocker** | #3 (post-draft tier config) | **Before Aug 29, 2026. 25 days out as of this revision.** |
 | Pre-draft re-capture | #3 (keepers) | Keep running it daily; #4's guard now stays out of the way |
 | Quick mechanical pass | #12, #13 | Any time; one sitting. Tooling half (#9, #10, #11, #15) plus #7 and #8 are done. |
-| Optional feature | #16 · #14 (system-font swap) | Only if you want trade history / dislike the font CDN |
+| Optional feature | #16 | Only if you want a trade-history view |
 | Calendar item | #10 revisit | Oct 2026, when Node 26 goes LTS |
-| Closed | #1, #2, #4, #5, #6, #7, #8, #9, #10, #11, #15 (✅ done) | — |
+| Closed | #1, #2, #4, #5, #6, #7, #8, #9, #10, #11, #14, #15 (✅ done) | — |
 | No action | #17 | Awareness only |
 
 **Recommended order:** `2026:post-draft` in `TIER_CONFIGS` is now the only thing with a
