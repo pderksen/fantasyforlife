@@ -18,10 +18,14 @@ side effect. The stack table has nothing outstanding.
 writes itself on draft day, so the highest-priority open item is closed. Two draft-day items
 remain: the `2026:post-draft` tier config (#3) and the pre-draft overwrite guard (#4).
 
+**Revised again 2026-08-04 (fifth pass):** #6 closed by decision rather than by work. The
+Tailwind v4 upgrade already resolved the deprecation; inlining the compiled CSS was weighed
+and declined as an archival hedge that doesn't earn a build step. #14 was judged the same way.
+
 **Overall verdict:** unchanged. The architecture is right for what this is (a 10-reader
 archival site regenerated ~3x a year). Pre-generated HTML committed to `main` with Cloudflare
 Pages serving `output/` is the correct setup: keep it. What remains is two draft-day fixes,
-a handful of small improvements, and one optional feature.
+a handful of small improvements, and two optional items.
 
 ---
 
@@ -61,7 +65,7 @@ side, below.
 | #1 `DEFAULT_LEAGUE_ID` | ✅ **Closed.** Now the 2026 league (`src/index.ts:13`). |
 | #2 draft record never saved | ✅ **Closed.** `--snapshot-draft` now writes `draft-picks.json` and `draft-traded-picks.json`, and refuses to overwrite either. Verified byte-identical against the committed 2025 capture. |
 | #5 2025 traded-picks backfill | ⛔ **Closed, expired.** `data/2026/` now exists, so the file is sealed. No loss; skipping was the standing recommendation. |
-| #6 Tailwind CDN | 🟡 **Partly done.** v4 upgrade landed, so the deprecation is resolved. Inlining the CSS is still open, now as archival durability rather than stack currency. |
+| #6 Tailwind CDN | ✅ **Closed.** v4 upgrade landed, resolving the deprecation. CSS inlining declined: the archival hedge doesn't justify adding a build step, and it stays recoverable later. |
 | #3 2026 season prep | 🟡 **Mostly done.** Pre-draft ran in production against the right league; `2026:post-draft` tier config still missing. |
 | #4 Overwrite guard | 🔄 **Risk reshaped.** Snapshot is now committed, so git backstops it, but a deliberate re-capture is expected before the draft. |
 | #9 TypeScript 7 | ✅ **Closed.** Landed at `^7.0.2` with `"types": ["node"]`. Emit byte-identical, `output/` diff empty. |
@@ -195,9 +199,9 @@ display filter yields the same rows either way), and the file's `raw` field alre
 the complete unfiltered API response, so no data is actually missing. Recorded here only so a
 future reader doesn't go hunting for the discrepancy.
 
-### 6. ✅ PARTLY DONE — Tailwind CDN: v4 upgrade landed, inlining did not
+### 6. ✅ CLOSED — Tailwind CDN: v4 upgrade landed, inlining declined
 
-**Type:** Functional / structural · **Status: deprecation resolved; archival concern remains** · Effort: medium for what's left
+**Type:** Functional / structural · **Status: upgrade done; inlining deliberately skipped 2026-08-04** · Effort: n/a
 
 **Done (commit `9b24f01`):** `htmlHead()` now loads
 `https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4` instead of the v3-era
@@ -212,19 +216,29 @@ removed v4 utilities and every `border-*` already carries an explicit color, so 
 `currentColor` border default never applies. The payload also shrank, 126 KB over the wire on
 v3 versus 71 KB on v4.
 
-**Still open, at reduced scope:** it is still a CDN that compiles in the browser. The original
-archival argument stands undiminished, because it never depended on the version: the 2025
-pages should still render in 2035, and today they break the day that CDN URL dies. There is
-also still a brief unstyled flash on load.
+**Declined: inlining the compiled CSS.** The proposal was to run Tailwind CLI at generation
+time (devDependency only; runtime stays zero-dep) and inline the compiled CSS into each page —
+a measured 13,458 bytes for the real `output/` class set under Tailwind 4.3.3. Not doing it.
 
-**Remaining fix (unchanged):** run Tailwind CLI at generation time (devDependency only; runtime
-stays zero-dep) and inline the ~13 KB compiled CSS into each page. That number is measured, not
-estimated: compiling the real `output/` class set with Tailwind 4.3.3 produces 13,458 bytes.
-Inlining also makes each file genuinely self-contained, which CLAUDE.md already claims as a
-design goal.
+Reasoning:
 
-**Priority note:** with the deprecation gone, this is no longer a stack-currency issue. It is
-purely an archival-durability choice, so it can wait indefinitely without the stack drifting.
+- The failure mode is the jsdelivr URL dying. That is a durable CDN and `@4` tracks 4.x with no
+  repo change. If it ever does go dark, the fix is running the CLI once and pasting the CSS in —
+  the same work, done then instead of now. Nothing degrades irrecoverably in the meantime, and
+  the markup is plain class names, so recovery needs no archaeology.
+- The cost is a devDependency plus a compile step in generation, in a project that otherwise
+  has no build harness beyond `tsc`. This report argues against exactly that (see "Explicitly
+  not recommended"), so it would be the one exception, bought against a 2035 hypothetical.
+- What we keep by declining: a brief unstyled flash on page load. Real, and trivial at this
+  scale.
+
+**Known residue:** CLAUDE.md describes each HTML file as "self-contained," which stays not
+quite true while Tailwind and Inter both load from CDNs. That is a wording fix, not a code fix.
+#14 (Google Fonts) is the same tradeoff with lower stakes and is judged the same way — it
+remains listed only for the system-font option, which is a taste call rather than a durability
+one.
+
+**Revisit only if** jsdelivr announces a sunset, or the pages need to work offline.
 
 ### 7. The sticky header row doesn't actually work
 
@@ -406,10 +420,9 @@ if Pages ever gets a formal sunset date.
 | **Draft-day blockers** | #3 (post-draft tier config), #4 | **Before Aug 29, 2026. 25 days out as of this revision.** |
 | Pre-draft re-capture | #3 (keepers) | Once keeper selection completes; needs #4 to allow a deliberate overwrite |
 | Quick mechanical pass | #12 + #7, #8, #13 | Any time; one sitting. Tooling half (#9, #10, #11, #15) is done. |
-| CSS inlining | #6 remainder (then #14 alongside) | Any time; archival durability only, no longer stack-currency |
-| Optional feature | #16 | Only if you want trade history |
+| Optional feature | #16 · #14 (system-font swap) | Only if you want trade history / dislike the font CDN |
 | Calendar item | #10 revisit | Oct 2026, when Node 26 goes LTS |
-| Closed | #1, #2, #9, #10, #11, #15 (✅ done) · #5 (⛔ expired) | — |
+| Closed | #1, #2, #6, #9, #10, #11, #15 (✅ done) · #5 (⛔ expired) | — |
 | No action | #17 | Awareness only |
 
 **Recommended order:** finish the draft-day batch first. It has a real deadline; nothing else
