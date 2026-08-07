@@ -289,7 +289,7 @@ Hosted on **Cloudflare Pages**, serving the `output/` directory directly from th
 - Cloudflare Pages config: build command = *(empty)*, output directory = `output`
 - Deploy workflow: generate HTML locally → commit `output/` → push to `main` → Cloudflare auto-deploys
 - **Scheduled refresh**: `.github/workflows/refresh.yml` runs the CLI on GitHub's runners
-  (daily in Aug, Tue + Fri Sep–Jan), commits `data/` and `output/`, and pushes to `main`, which
+  (daily in Aug, Thursdays Sep–Jan), commits `data/` and `output/`, and pushes to `main`, which
   Cloudflare then deploys. Free (public repo) and secret-free (Sleeper needs no auth). Git stays
   the archive of record, which is why the scheduler lives at GitHub rather than on Cloudflare:
   Pages build containers are ephemeral and Workers have no filesystem, so neither can persist a

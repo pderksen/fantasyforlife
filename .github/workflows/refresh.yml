@@ -11,8 +11,8 @@ on:
     # Cron is UTC and fixed, so a single expression drifts an hour across DST.
     # 11:17 UTC lands at 4:17am PDT (summer) and 3:17am PST (winter): overnight Pacific
     # year-round. The odd minute dodges the top-of-hour queue on GitHub's schedulers.
-    - cron: '17 11 * 8 *'         # Daily through August: keeper watch (also refreshes trades)
-    - cron: '17 11 * 9-12,1 2,5'  # Tue + Fri, Sep-Jan: in-season trade and pick refresh
+    - cron: '17 11 * 8 *'        # Daily through August: keeper watch (also refreshes trades)
+    - cron: '17 11 * 9-12,1 4'   # Thursdays, Sep-Jan: in-season trade and pick refresh
   workflow_dispatch:
     inputs:
       pre_draft:

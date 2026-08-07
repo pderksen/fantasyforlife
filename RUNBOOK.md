@@ -13,7 +13,7 @@ so **nothing is live until you commit and push**. Running a command locally is o
 |---|---|---|---|
 | Aug, up to draft day (non-throwback years) | `npm run dev -- --snapshot pre-draft` | Daily while keepers trickle in | **Automated** |
 | Right after the draft | `npm run dev -- --snapshot-draft <season>` | Once | You |
-| During the NFL season | `npm run dev -- --traded-picks`, `npm run dev -- --trades`, then `npm run dev -- --generate <season>` | Tue + Fri | **Automated** |
+| During the NFL season | `npm run dev -- --traded-picks`, `npm run dev -- --trades`, then `npm run dev -- --generate <season>` | Weekly, Thursdays | **Automated** |
 | After NFL Week 18 (~early Jan) | `npm run dev -- --snapshot end-of-season` | Once | You |
 | After anything you ran by hand | `git add -A && git commit && git push` | Every time | You |
 
@@ -228,7 +228,7 @@ Pacific year-round; the odd minute dodges the top-of-hour queue on GitHub's sche
 | Cron | When | Why |
 |---|---|---|
 | `17 11 * 8 *` | Daily, all August | Keeper watch. `--snapshot pre-draft` also refreshes picks and trades, so this covers everything. |
-| `17 11 * 9-12,1 2,5` | Tue + Fri, Sep–Jan | In-season pick and trade refresh. |
+| `17 11 * 9-12,1 4` | Thursdays, Sep–Jan | In-season pick and trade refresh. |
 
 **The draft-day handover is automatic.** The daily cron stops firing on Sep 1 by month, and any
 August run after the draft hits the guard, which refuses and exits without writing. Nothing to
@@ -289,6 +289,6 @@ all three are worth eyeballing before they ship.
 | Early Aug | Update `DEFAULT_LEAGUE_ID`, `DRAFT_ORDERS`, `TIER_CONFIGS`. Re-enable the workflow in the Actions tab if the dead season disabled it. |
 | Mid–late Aug | Automated daily. Nothing to do (skip in throwback years: turn the workflow off, or let the keeper-less capture be overwritten). |
 | Draft day (late Aug) | Run `--snapshot pre-draft` by hand right before the draft starts, then `--snapshot-draft <season>` after it ends. Commit and push both. In 2026, also settle the post-draft keeper flag (step 2). |
-| Sep–Dec | Automated Tue + Fri. Nothing to do. |
+| Sep–Dec | Automated weekly on Thursdays. Nothing to do. |
 | Early Jan | `--snapshot end-of-season` by hand. Commit and push. |
 | Feb–Jul | Nothing to run. Expect GitHub to disable the schedule. |
