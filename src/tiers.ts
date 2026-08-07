@@ -1,9 +1,14 @@
 import type { SnapshotType, TierConfig } from "./types.js";
 
 /**
- * Tier configurations keyed by "season:snapshotType".
- * Each entry lists tier breaks — the tier label row is inserted right above
- * the specified round (post-draft) or 1-based row index (pre-draft/end-of-season).
+ * Tier configurations keyed by "season:snapshotType". Each entry lists tier breaks;
+ * the label row is inserted right above the position `beforeRound` names.
+ *
+ * `beforeRound` is not one thing. buildPostDraftRows() and buildTieredRows() read it
+ * as a DRAFT ROUND, which covers every normal path (post-draft, pre-draft,
+ * end-of-season). buildSequentialRows() reads it as a 1-based ROW INDEX, and only
+ * runs as the fallback when a tier config exists but draftRounds comes back empty.
+ * Same config, different bar placement, no error. See the call sites in html.ts.
  */
 const TIER_CONFIGS: Record<string, TierConfig> = {
   "2025:post-draft": [
