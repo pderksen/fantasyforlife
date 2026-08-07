@@ -3,7 +3,7 @@
   "leagueName": "Fantasy For Life (FFL)",
   "season": "2026",
   "snapshotType": "pre-draft",
-  "capturedAt": "2026-08-05T17:06:59.887Z",
+  "capturedAt": "2026-08-07T12:00:07.291Z",
   "rosters": [
     {
       "ownerName": "Clovis Jets",
@@ -116,7 +116,8 @@
         {
           "name": "Shough, Tyler",
           "position": "QB",
-          "team": "NO"
+          "team": "NO",
+          "keeper": true
         },
         {
           "name": "Allgeier, Tyler",
@@ -141,7 +142,8 @@
         {
           "name": "Robinson, Bijan",
           "position": "RB",
-          "team": "ATL"
+          "team": "ATL",
+          "keeper": true
         },
         {
           "name": "Wilson, Emanuel",
@@ -152,11 +154,6 @@
           "name": "Collins, Nico",
           "position": "WR",
           "team": "HOU"
-        },
-        {
-          "name": "Dike, Chimere",
-          "position": "WR",
-          "team": "TEN"
         },
         {
           "name": "Higgins, Jayden",
@@ -181,7 +178,8 @@
         {
           "name": "Fannin, Harold",
           "position": "TE",
-          "team": "CLE"
+          "team": "CLE",
+          "keeper": true
         },
         {
           "name": "Bates, Jake",
@@ -811,7 +809,7 @@
         {
           "name": "Diggs, Stefon",
           "position": "WR",
-          "team": "FA"
+          "team": "WAS"
         },
         {
           "name": "Godwin, Chris",
