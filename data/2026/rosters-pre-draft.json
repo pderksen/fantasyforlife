@@ -3,7 +3,7 @@
   "leagueName": "Fantasy For Life (FFL)",
   "season": "2026",
   "snapshotType": "pre-draft",
-  "capturedAt": "2026-08-08T11:46:58.451Z",
+  "capturedAt": "2026-08-09T11:48:16.010Z",
   "rosters": [
     {
       "ownerName": "Clovis Jets",
@@ -488,7 +488,8 @@
         {
           "name": "Purdy, Brock",
           "position": "QB",
-          "team": "SF"
+          "team": "SF",
+          "keeper": true
         },
         {
           "name": "Croskey-Merritt, Jacory",
@@ -498,8 +499,7 @@
         {
           "name": "Hall, Breece",
           "position": "RB",
-          "team": "NYJ",
-          "keeper": true
+          "team": "NYJ"
         },
         {
           "name": "Jones, Aaron",
