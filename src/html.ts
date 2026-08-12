@@ -55,6 +55,11 @@ const TABLE_WRAP = "overflow-auto max-h-[calc(100dvh_-_10rem)]";
 const PILL = "inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg";
 const PILL_LINK = `${PILL} text-gray-700 bg-gray-100 transition-colors hover:bg-gray-200 no-underline`;
 const PILL_ACTIVE = `${PILL} text-gray-900 bg-gray-200`;
+/**
+ * Index-page chip for the newest tiers that exist. Still a link (unlike `PILL_ACTIVE`,
+ * which marks the page you are already on), so it needs a hover state.
+ */
+const PILL_LATEST = `${PILL} text-white bg-gray-900 transition-colors hover:bg-gray-700 no-underline`;
 const SECTION_H2 = "text-base font-semibold text-gray-700 mb-5 mt-0";
 const TP_TH = "text-left text-xs font-semibold uppercase tracking-wide text-gray-400 px-3 pb-2.5 border-b-2 border-gray-200";
 const TP_TD = "px-3 py-2.5 border-b border-gray-100 text-gray-900";
@@ -433,13 +438,18 @@ export function generateIndexHtml(
   }
   const sortedSeasons = [...seasons.keys()].sort().reverse();
 
+  // The newest tiers published: first chip of the newest season, since `discoverPages()`
+  // orders each season's links newest-type-first. It moves on its own — 2026 points at
+  // Pre-Draft today and at Post-Draft the moment that page exists.
+  const latest = seasons.get(sortedSeasons[0])?.[0];
+
   const seasonRows = sortedSeasons
     .map((season) => {
       const links = seasons.get(season)!;
       const hasPreDraft = links.some((l) => l.page === "pre-draft");
 
       const pills = links
-        .map((l) => `<a href="${esc(l.href)}" class="${PILL_LINK}">${esc(l.chip)}</a>`)
+        .map((l) => `<a href="${esc(l.href)}" class="${l === latest ? PILL_LATEST : PILL_LINK}">${esc(l.chip)}</a>`)
         .join("\n          ");
 
       const throwback = !hasPreDraft
