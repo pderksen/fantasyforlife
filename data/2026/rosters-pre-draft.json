@@ -3,7 +3,7 @@
   "leagueName": "Fantasy For Life (FFL)",
   "season": "2026",
   "snapshotType": "pre-draft",
-  "capturedAt": "2026-08-07T12:00:07.291Z",
+  "capturedAt": "2026-08-12T12:01:35.039Z",
   "rosters": [
     {
       "ownerName": "Clovis Jets",
@@ -477,7 +477,8 @@
         {
           "name": "Jackson, Lamar",
           "position": "QB",
-          "team": "BAL"
+          "team": "BAL",
+          "keeper": true
         },
         {
           "name": "Murray, Kyler",
@@ -487,7 +488,8 @@
         {
           "name": "Purdy, Brock",
           "position": "QB",
-          "team": "SF"
+          "team": "SF",
+          "keeper": true
         },
         {
           "name": "Croskey-Merritt, Jacory",
@@ -552,7 +554,8 @@
         {
           "name": "Pitts, Kyle",
           "position": "TE",
-          "team": "ATL"
+          "team": "ATL",
+          "keeper": true
         },
         {
           "name": "Pineiro, Eddy",
