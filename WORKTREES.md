@@ -37,6 +37,13 @@ Put it in `~/.claude/settings.json` (all projects) or `.claude/settings.json` he
 Without it the default is `"fresh"`, which branches from `origin/main` and does a network fetch
 (capped at five seconds) before creating the worktree. `"head"` is local and instant.
 
+**This is a correctness setting, not a speed one.** `"fresh"` starts you at `origin/main`, so every
+commit sitting on your local `main` unpushed is missing from the worktree — including any rule or
+convention added in one of them. That happened with this very file: a worktree branched under
+`"fresh"` couldn't see `WORKTREES.md`, committed `output/` against the step-2 rule below, and hit a
+merge conflict from a `src/html.ts` change that was already on `main`. Set `"head"`, or push before
+you branch.
+
 Nothing else needs configuring. `.gitignore` already excludes all of `.claude/`, so in-repo
 worktrees never show up as untracked files.
 
@@ -113,10 +120,14 @@ By hand it is:
 
 ```bash
 git pull && git merge worktree-NAME
-npm run build && npm run dev -- --generate <season>
+npm run build && npm run dev -- --generate <season>   # once per season with a page
 git add output/ && git commit -m "Regenerate output" && git push
 git worktree remove .claude/worktrees/NAME && git branch -d worktree-NAME
 ```
+
+`git branch -d` is the safety check, not a formality: it refuses on a branch that isn't fully
+merged, so it will not let you delete work you thought you had landed. Save `-D` for the abandoned
+case at the bottom of this file.
 
 ---
 
@@ -194,6 +205,12 @@ proof.
 
 Workbooks (`*.xlsx`) can't be inspected in a conflict at all. Same fix, and it is exactly correct
 here: the bytes are deterministic, so regenerating reproduces the right file bit for bit.
+
+**The likeliest source conflict is the class-constant block at the top of `src/html.ts`.** Two
+independent UI changes both declare a new `PILL_*` next to the existing ones and land on the same
+lines. This is the one conflict where taking either side is wrong: keep both declarations. Rebuild
+and regenerate afterward, since a merge of two source branches leaves the committed `output/`
+matching neither.
 
 **A merged feature branch deploys nothing until `output/` is regenerated on `main` and pushed.**
 Cloudflare serves the committed HTML, so a source-only merge changes the site not at all. This is
