@@ -36,7 +36,8 @@ npm run dev -- --snapshot pre-draft
 ```
 
 Reads `roster.keepers` from the live API, writes `data/<season>/rosters-pre-draft.json`,
-refreshes traded picks, regenerates `output/<season>/rosters-pre-draft.html` and the home page.
+refreshes traded picks, regenerates `output/<season>/rosters-pre-draft.html` (plus its `.csv`
+twin, written by the same run) and the home page.
 
 Why daily: owners lock keepers on their own schedule, sometimes on draft morning. Each run
 overwrites the previous capture, and the console names the teams still missing. **The last run
@@ -192,6 +193,10 @@ Both `data/` and `output/` are committed on purpose; only `dist/` and `node_modu
   from the API later; keepers cannot. The guard in step 1 is the backstop; `--force` is the
   only way past it, so never put `--force` in a scheduled prompt.
 - **Every command auto-regenerates `output/index.html`**, so the home page never drifts.
+- **Roster pages ship with a CSV twin.** Anything that writes `output/<season>/rosters-<type>.html`
+  writes `<season>-rosters-<type>.csv` beside it in the same call, and the page's CSV pill links
+  it (the export repeats the season because it gets downloaded away from its folder). If a
+  download 404s, the page was committed without its CSV — re-run `--generate <season>`.
 - **Node 24 LTS** is the supported runtime (`engines: >=24`); native `fetch` needs no HTTP
   library. `npm run dev` runs `tsc` first, so a TypeScript error blocks the run before any
   network call.
