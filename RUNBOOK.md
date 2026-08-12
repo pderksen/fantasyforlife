@@ -36,7 +36,7 @@ npm run dev -- --snapshot pre-draft
 ```
 
 Reads `roster.keepers` from the live API, writes `data/<season>/rosters-pre-draft.json`,
-refreshes traded picks, regenerates `output/<season>/rosters-pre-draft.html` (plus its `.csv`
+refreshes traded picks, regenerates `output/<season>/rosters-pre-draft.html` (plus its `.xlsx`
 twin, written by the same run) and the home page.
 
 Why daily: owners lock keepers on their own schedule, sometimes on draft morning. Each run
@@ -193,10 +193,15 @@ Both `data/` and `output/` are committed on purpose; only `dist/` and `node_modu
   from the API later; keepers cannot. The guard in step 1 is the backstop; `--force` is the
   only way past it, so never put `--force` in a scheduled prompt.
 - **Every command auto-regenerates `output/index.html`**, so the home page never drifts.
-- **Roster pages ship with a CSV twin.** Anything that writes `output/<season>/rosters-<type>.html`
-  writes `<season>-rosters-<type>.csv` beside it in the same call, and the page's CSV pill links
+- **Roster pages ship with an Excel twin.** Anything that writes `output/<season>/rosters-<type>.html`
+  writes `<season>-rosters-<type>.xlsx` beside it in the same call, and the page's Excel pill links
   it (the export repeats the season because it gets downloaded away from its folder). If a
-  download 404s, the page was committed without its CSV — re-run `--generate <season>`.
+  download 404s, the page was committed without its workbook — re-run `--generate <season>`.
+- **The workbook is written by hand** (`src/zip.ts` + `src/xlsx.ts`), so a change to its styles or
+  sheet XML can produce a file Excel refuses to open. Structural checks — `unzip -t` on the file,
+  a PowerShell `[xml]` cast over each entry — catch malformed parts, but only opening it in Excel
+  proves it. Do that before committing such a change. Regenerating alone is not a test: the bytes
+  are deterministic, so a broken workbook regenerates broken every time, quietly.
 - **Node 24 LTS** is the supported runtime (`engines: >=24`); native `fetch` needs no HTTP
   library. `npm run dev` runs `tsc` first, so a TypeScript error blocks the run before any
   network call.

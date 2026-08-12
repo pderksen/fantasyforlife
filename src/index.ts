@@ -1,9 +1,9 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
-import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, getCsvOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft, resolveTrades, saveTrades, preDraftWindowClosed, SnapshotGuardError } from "./snapshot.js";
+import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, getExportOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft, resolveTrades, saveTrades, preDraftWindowClosed, SnapshotGuardError } from "./snapshot.js";
 import { generateHtml, generateIndexHtml, writeHtml, formatPacificDate } from "./html.js";
-import { generateCsv, writeCsv } from "./csv.js";
+import { generateWorkbook, writeWorkbook } from "./xlsx.js";
 import { getLeagueDrafts, getDraftPicks, getDraftTradedPicksRaw, fetchAllPlayers, getLeagueTradedPicks, getPickTrades, getTrades, getLeague } from "./sleeper-api.js";
 import { getTierConfig, getLatestDraftOrder } from "./tiers.js";
 import type { Snapshot, SnapshotType, DraftPick, NavLink, ResolvedTradedPick, TierConfig, PlayerDatabase } from "./types.js";
@@ -110,9 +110,9 @@ interface RosterPageInputs {
 }
 
 /**
- * Write a season's page and its CSV export. The two always ship together — the page links
- * its own CSV as a sibling, so a run that wrote one and not the other would serve a dead
- * link or a stale download. Every generate path goes through here for that reason.
+ * Write a season's page and its Excel export. The two always ship together — the page links
+ * its own workbook as a sibling, so a run that wrote one and not the other would serve a
+ * dead link or a stale download. Every generate path goes through here for that reason.
  */
 async function writeRosterOutputs(snapshot: Snapshot, inputs: RosterPageInputs): Promise<void> {
   const { navLinks, ownerOrder, tiers, draftRounds, tradedPicks } = inputs;
@@ -122,9 +122,9 @@ async function writeRosterOutputs(snapshot: Snapshot, inputs: RosterPageInputs):
   await writeHtml(generateHtml(snapshot, navLinks, ownerOrder, tiers, draftRounds, tradedPicks), outputPath);
   console.log(`HTML written: ${outputPath}`);
 
-  const csvPath = getCsvOutputPath(season, snapshotType);
-  await writeCsv(generateCsv(snapshot, ownerOrder, tiers, draftRounds), csvPath);
-  console.log(`CSV written: ${csvPath}`);
+  const exportPath = getExportOutputPath(season, snapshotType);
+  await writeWorkbook(generateWorkbook(snapshot, { ownerOrder, tiers, draftRounds, tradedPicks }), exportPath);
+  console.log(`Excel written: ${exportPath}`);
 }
 
 /**

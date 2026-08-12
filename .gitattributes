@@ -1,0 +1,4 @@
+# Generated workbooks are zip archives. Git's binary auto-detection would almost certainly
+# catch them, but "almost" is the wrong bet for a committed artifact — a CRLF conversion
+# inside a deflate stream produces a file Excel refuses to open.
+*.xlsx binary

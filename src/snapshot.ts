@@ -498,23 +498,23 @@ export function pageFileName(page: SnapshotType): string {
 }
 
 /**
- * File name a season's CSV export is written to, within output/<season>/.
+ * File name a season's Excel export is written to, within output/<season>/.
  *
  * The season is in the name where the page's isn't: a page is read in place, under a URL
- * that already says which year it is, while its CSV gets downloaded into a folder alongside
- * every other year's — where a bare `rosters-pre-draft.csv` identifies nothing.
+ * that already says which year it is, while its workbook gets downloaded into a folder
+ * alongside every other year's — where a bare `rosters-pre-draft.xlsx` identifies nothing.
  */
-export function csvFileName(season: string, page: SnapshotType): string {
-  return `${season}-rosters-${page}.csv`;
+export function exportFileName(season: string, page: SnapshotType): string {
+  return `${season}-rosters-${page}.xlsx`;
 }
 
 export function getOutputPath(season: string, page: SnapshotType): string {
   return join(DATA_DIR, "..", "output", season, pageFileName(page));
 }
 
-/** Companion CSV for a roster page, written alongside it by every generate path. */
-export function getCsvOutputPath(season: string, page: SnapshotType): string {
-  return join(DATA_DIR, "..", "output", season, csvFileName(season, page));
+/** Companion workbook for a roster page, written alongside it by every generate path. */
+export function getExportOutputPath(season: string, page: SnapshotType): string {
+  return join(DATA_DIR, "..", "output", season, exportFileName(season, page));
 }
 
 

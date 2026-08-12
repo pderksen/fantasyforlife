@@ -4,11 +4,11 @@ import type { Snapshot, SnapshotType, SnapshotRoster, SnapshotPlayer, NavLink, T
 import { SNAPSHOT_TYPE_LABELS } from "./types.js";
 import type { DraftOrder } from "./tiers.js";
 import { buildRosterGrid, type DraftRoundLookup, type GridRow } from "./roster-grid.js";
-import { csvFileName } from "./snapshot.js";
+import { exportFileName } from "./snapshot.js";
 
 // ── Utility helpers ──
 
-function formatPacificTime(isoString: string): string {
+export function formatPacificTime(isoString: string): string {
   const date = new Date(isoString);
   return date.toLocaleString("en-US", {
     timeZone: "America/Los_Angeles",
@@ -210,11 +210,11 @@ function tradedPicksSection(tradedPicks?: ResolvedTradedPick[]): string {
 const DOWNLOAD_ICON = `<svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 3a.75.75 0 0 1 .75.75v7.19l2.22-2.22a.75.75 0 1 1 1.06 1.06l-3.5 3.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 1 1 1.06-1.06l2.22 2.22V3.75A.75.75 0 0 1 10 3Z"/><path d="M3.75 12.5a.75.75 0 0 1 .75.75v1.25c0 .414.336.75.75.75h9.5a.75.75 0 0 0 .75-.75v-1.25a.75.75 0 0 1 1.5 0v1.25A2.25 2.25 0 0 1 14.75 16.75h-9.5A2.25 2.25 0 0 1 3 14.5v-1.25a.75.75 0 0 1 .75-.75Z"/></svg>`;
 
 /**
- * Nav bar for a season's pages: Home, that season's chips, then the CSV export pushed to
+ * Nav bar for a season's pages: Home, that season's chips, then the Excel export pushed to
  * the right. The export sits here rather than under the table so it is reachable without
  * scrolling past a full roster, and wears the same pill as its neighbours so it stays quiet.
  */
-function navBar(navLinks: NavLink[], season: string, csvHref: string): string {
+function navBar(navLinks: NavLink[], season: string, exportHref: string): string {
   const items = navLinks
     .filter((l) => l.season === season)
     .map((l) => l.current
@@ -224,7 +224,7 @@ function navBar(navLinks: NavLink[], season: string, csvHref: string): string {
   return `  <nav class="flex flex-wrap items-center gap-2 mb-6">
       <a href="../index.html" class="${PILL_LINK}">Home</a>
       ${items}
-      <a href="${esc(csvHref)}" download class="${PILL_EXPORT}" title="Download this table as a CSV">${DOWNLOAD_ICON}CSV</a>
+      <a href="${esc(exportHref)}" download class="${PILL_EXPORT}" title="Download this page as an Excel workbook">${DOWNLOAD_ICON}Excel</a>
     </nav>`;
 }
 
@@ -272,7 +272,7 @@ export function generateHtml(
   const dataRows = renderGridRows(rows, rosters.length + (hasRoundColumn ? 1 : 0), hasRoundColumn);
 
   // Sibling file, written by the same run that writes this page.
-  const navHtml = navBar(navLinks, snapshot.season, csvFileName(snapshot.season, snapshot.snapshotType));
+  const navHtml = navBar(navLinks, snapshot.season, exportFileName(snapshot.season, snapshot.snapshotType));
 
   const styles = ROSTER_STYLES + (hasRoundColumn ? ROUND_COL_STYLE : "");
   const roundTh = hasRoundColumn ? `      <th class="${TH}">Round</th>\n` : "";
