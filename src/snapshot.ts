@@ -493,12 +493,28 @@ export function saveDraftTradedPicks(season: string, raw: string): Promise<strin
 }
 
 /** File name a season's page is written to, within output/<season>/. */
-function pageFile(page: SnapshotType): string {
+export function pageFileName(page: SnapshotType): string {
   return `rosters-${page}.html`;
 }
 
+/**
+ * File name a season's Excel export is written to, within output/<season>/.
+ *
+ * The season is in the name where the page's isn't: a page is read in place, under a URL
+ * that already says which year it is, while its workbook gets downloaded into a folder
+ * alongside every other year's — where a bare `rosters-pre-draft.xlsx` identifies nothing.
+ */
+export function exportFileName(season: string, page: SnapshotType): string {
+  return `${season}-rosters-${page}.xlsx`;
+}
+
 export function getOutputPath(season: string, page: SnapshotType): string {
-  return join(DATA_DIR, "..", "output", season, pageFile(page));
+  return join(DATA_DIR, "..", "output", season, pageFileName(page));
+}
+
+/** Companion workbook for a roster page, written alongside it by every generate path. */
+export function getExportOutputPath(season: string, page: SnapshotType): string {
+  return join(DATA_DIR, "..", "output", season, exportFileName(season, page));
 }
 
 
@@ -606,7 +622,7 @@ export function buildNavLinks(currentSeason: string, currentPage: SnapshotType):
     season,
     page,
     ...pageLabels(season, page),
-    href: season === currentSeason ? pageFile(page) : `../${season}/${pageFile(page)}`,
+    href: season === currentSeason ? pageFileName(page) : `../${season}/${pageFileName(page)}`,
     current: season === currentSeason && page === currentPage,
   }));
 }
@@ -619,7 +635,7 @@ export function buildIndexNavLinks(): NavLink[] {
     season,
     page,
     ...pageLabels(season, page),
-    href: `${season}/${pageFile(page)}`,
+    href: `${season}/${pageFileName(page)}`,
     current: false,
   }));
 }

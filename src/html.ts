@@ -3,13 +3,12 @@ import { dirname } from "node:path";
 import type { Snapshot, SnapshotType, SnapshotRoster, SnapshotPlayer, NavLink, TierConfig, ResolvedTradedPick } from "./types.js";
 import { SNAPSHOT_TYPE_LABELS } from "./types.js";
 import type { DraftOrder } from "./tiers.js";
-
-/** Map of "Last, First" player name → draft round number */
-export type DraftRoundLookup = Map<string, number>;
+import { buildRosterGrid, type DraftRoundLookup, type GridRow } from "./roster-grid.js";
+import { exportFileName } from "./snapshot.js";
 
 // ── Utility helpers ──
 
-function formatPacificTime(isoString: string): string {
+export function formatPacificTime(isoString: string): string {
   const date = new Date(isoString);
   return date.toLocaleString("en-US", {
     timeZone: "America/Los_Angeles",
@@ -52,14 +51,23 @@ const TH = `${CELL} bg-gray-800 text-white sticky top-0 z-10`;
  * bottom of the viewport. Horizontal scrolling on mobile is unchanged.
  */
 const TABLE_WRAP = "overflow-auto max-h-[calc(100dvh_-_10rem)]";
-const PILL = "inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg";
-const PILL_LINK = `${PILL} text-gray-700 bg-gray-100 transition-colors hover:bg-gray-200 no-underline`;
+const PILL_BOX = "px-3.5 py-1.5 text-sm font-medium rounded-lg";
+const PILL = `inline-block ${PILL_BOX}`;
+/** Colors only, so a pill that needs a different `display` can borrow them without a conflict. */
+const PILL_LINK_COLORS = "text-gray-700 bg-gray-100 transition-colors hover:bg-gray-200 no-underline";
+const PILL_LINK = `${PILL} ${PILL_LINK_COLORS}`;
 const PILL_ACTIVE = `${PILL} text-gray-900 bg-gray-200`;
 /**
  * Index-page chip for the newest tiers that exist. Still a link (unlike `PILL_ACTIVE`,
  * which marks the page you are already on), so it needs a hover state.
  */
 const PILL_LATEST = `${PILL} text-white bg-gray-900 transition-colors hover:bg-gray-700 no-underline`;
+/**
+ * The Excel export pill. `inline-flex` replaces `inline-block` rather than joining it — two
+ * `display` utilities on one element resolve by stylesheet order, not attribute order, so
+ * whichever Tailwind emits last would win silently.
+ */
+const PILL_EXPORT = `inline-flex items-center gap-1.5 ${PILL_BOX} ${PILL_LINK_COLORS} ml-auto`;
 const SECTION_H2 = "text-base font-semibold text-gray-700 mb-5 mt-0";
 const TP_TH = "text-left text-xs font-semibold uppercase tracking-wide text-gray-400 px-3 pb-2.5 border-b-2 border-gray-200";
 const TP_TD = "px-3 py-2.5 border-b border-gray-100 text-gray-900";
@@ -132,125 +140,13 @@ function dataRow(cells: string[]): string {
   return `    <tr>\n${cells.join("\n")}\n    </tr>`;
 }
 
-function buildSequentialRows(rosters: SnapshotRoster[], maxPlayers: number, tiers?: TierConfig): string[] {
-  const tierAtRow = new Map<number, string>();
-  if (tiers) {
-    for (let i = 0; i < tiers.length; i++) {
-      tierAtRow.set(tiers[i].beforeRound - 1, tierRow(tiers[i].label, i, rosters.length));
-    }
-  }
-
-  const rows: string[] = [];
-  for (let i = 0; i < maxPlayers; i++) {
-    const tier = tierAtRow.get(i);
-    if (tier) rows.push(tier);
-    rows.push(dataRow(rosters.map((r) => playerCell(r.players[i]))));
-  }
-  return rows;
-}
-
-const POS_SORT_TAIL: Record<string, number> = { DEF: 1, K: 2 };
-
-function buildTieredRows(
-  rosters: SnapshotRoster[],
-  tiers: TierConfig,
-  draftRounds: DraftRoundLookup,
-): string[] {
-  const colSpan = rosters.length;
-  const tierRanges = tiers.map((t, i) => ({
-    min: t.beforeRound,
-    max: i + 1 < tiers.length ? tiers[i + 1].beforeRound : Infinity,
-  }));
-
-  function getTierIndex(p: SnapshotPlayer): number {
-    const round = draftRounds.get(p.name);
-    if (round == null) return tiers.length - 1;
-    for (let i = 0; i < tierRanges.length; i++) {
-      if (round >= tierRanges[i].min && round < tierRanges[i].max) return i;
-    }
-    return tiers.length - 1;
-  }
-
-  function playerSortKey(p: SnapshotPlayer, tierIdx: number): number {
-    const round = draftRounds.get(p.name);
-    if (tierIdx === tiers.length - 1 && POS_SORT_TAIL[p.position]) {
-      return 90000 + POS_SORT_TAIL[p.position] * 1000;
-    }
-    if (round != null) return round;
-    return 80000;
-  }
-
-  const rosterBuckets = rosters.map((r) => {
-    const buckets: SnapshotPlayer[][] = tiers.map(() => []);
-    for (const p of r.players) buckets[getTierIndex(p)].push(p);
-    // Keepers float to the top of whichever tier their draft round earned them — a team
-    // may keep several from one tier, and they simply stack there in round order.
-    for (let t = 0; t < buckets.length; t++) {
-      buckets[t].sort((a, b) =>
-        Number(!!b.keeper) - Number(!!a.keeper) || playerSortKey(a, t) - playerSortKey(b, t));
-    }
-    return buckets;
+/** Render a built grid's rows as table markup. Layout decisions all live in `roster-grid.ts`. */
+function renderGridRows(rows: GridRow[], colSpan: number, hasRoundColumn: boolean): string[] {
+  return rows.map((row) => {
+    if (row.kind === "tier") return tierRow(row.label, row.tierIndex, colSpan);
+    const roundCell = hasRoundColumn ? [`      <td class="${CELL}">${esc(row.label ?? "")}</td>`] : [];
+    return dataRow([...roundCell, ...row.cells.map(playerCell)]);
   });
-
-  const rows: string[] = [];
-  for (let t = 0; t < tiers.length; t++) {
-    const maxInTier = Math.max(...rosterBuckets.map((rb) => rb[t].length));
-    if (maxInTier === 0) continue;
-    rows.push(tierRow(tiers[t].label, t, colSpan));
-    for (let i = 0; i < maxInTier; i++) {
-      rows.push(dataRow(rosterBuckets.map((rb) => playerCell(rb[t][i]))));
-    }
-  }
-  return rows;
-}
-
-function buildPostDraftRows(rosters: SnapshotRoster[], tiers?: TierConfig): string[] {
-  const allRounds = new Set<number>();
-  for (const r of rosters) {
-    for (const p of r.players) {
-      if (p.round != null) allRounds.add(p.round);
-    }
-  }
-  const sortedRounds = [...allRounds].sort((a, b) => a - b);
-
-  const roundMaxPicks = new Map<number, number>();
-  for (const round of sortedRounds) {
-    let max = 1;
-    for (const r of rosters) {
-      const count = r.players.filter((p) => p.round === round).length;
-      if (count > max) max = count;
-    }
-    roundMaxPicks.set(round, max);
-  }
-
-  const tierAtRound = new Map<number, string>();
-  if (tiers) {
-    for (let i = 0; i < tiers.length; i++) {
-      tierAtRound.set(tiers[i].beforeRound, tierRow(tiers[i].label, i, rosters.length + 1));
-    }
-  }
-
-  const rows: string[] = [];
-  for (const round of sortedRounds) {
-    const tier = tierAtRound.get(round);
-    if (tier) rows.push(tier);
-
-    const maxPicks = roundMaxPicks.get(round)!;
-    const needsSuffix = maxPicks > 1;
-
-    for (let slot = 0; slot < maxPicks; slot++) {
-      const label = needsSuffix ? `${round}${String.fromCharCode(97 + slot)}` : `${round}`;
-      const cells = [
-        `      <td class="${CELL}">${label}</td>`,
-        ...rosters.map((r) => {
-          const roundPlayers = r.players.filter((p) => p.round === round);
-          return playerCell(roundPlayers[slot]);
-        }),
-      ];
-      rows.push(dataRow(cells));
-    }
-  }
-  return rows;
 }
 
 // ── Traded picks table (shared by roster pages and index page) ──
@@ -315,18 +211,25 @@ function tradedPicksSection(tradedPicks?: ResolvedTradedPick[]): string {
 
 // ── Shared page furniture ──
 
-/** Nav bar for a season's pages: Home, then that season's chips. Empty when there are none. */
-function navBar(navLinks: NavLink[], season: string): string {
+/** Heroicons `arrow-down-tray`, inlined — the project ships no icon font or sprite. */
+const DOWNLOAD_ICON = `<svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 3a.75.75 0 0 1 .75.75v7.19l2.22-2.22a.75.75 0 1 1 1.06 1.06l-3.5 3.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 1 1 1.06-1.06l2.22 2.22V3.75A.75.75 0 0 1 10 3Z"/><path d="M3.75 12.5a.75.75 0 0 1 .75.75v1.25c0 .414.336.75.75.75h9.5a.75.75 0 0 0 .75-.75v-1.25a.75.75 0 0 1 1.5 0v1.25A2.25 2.25 0 0 1 14.75 16.75h-9.5A2.25 2.25 0 0 1 3 14.5v-1.25a.75.75 0 0 1 .75-.75Z"/></svg>`;
+
+/**
+ * Nav bar for a season's pages: Home, that season's chips, then the Excel export pushed to
+ * the right. The export sits here rather than under the table so it is reachable without
+ * scrolling past a full roster, and wears the same pill as its neighbours so it stays quiet.
+ */
+function navBar(navLinks: NavLink[], season: string, exportHref: string): string {
   const items = navLinks
     .filter((l) => l.season === season)
     .map((l) => l.current
       ? `<span class="${PILL_ACTIVE}">${esc(l.chip)}</span>`
       : `<a href="${esc(l.href)}" class="${PILL_LINK}">${esc(l.chip)}</a>`)
     .join("\n      ");
-  if (!items) return "";
   return `  <nav class="flex flex-wrap items-center gap-2 mb-6">
       <a href="../index.html" class="${PILL_LINK}">Home</a>
       ${items}
+      <a href="${esc(exportHref)}" download class="${PILL_EXPORT}" title="Download this page as an Excel workbook">${DOWNLOAD_ICON}Excel</a>
     </nav>`;
 }
 
@@ -365,34 +268,19 @@ export function generateHtml(
   tradedPicks?: ResolvedTradedPick[],
 ): string {
   const typeLabel = SNAPSHOT_TYPE_LABELS[snapshot.snapshotType] ?? "Rosters";
-  const rosters = [...snapshot.rosters].sort((a, b) => {
-    if (ownerOrder) {
-      const idxA = ownerOrder.indexOf(a.ownerName);
-      const idxB = ownerOrder.indexOf(b.ownerName);
-      if (idxA >= 0 && idxB >= 0) return idxA - idxB;
-      if (idxA >= 0) return -1;
-      if (idxB >= 0) return 1;
-    }
-    return a.ownerName.localeCompare(b.ownerName);
-  });
-  const maxPlayers = Math.max(...rosters.map((r) => r.players.length));
+  const { rosters, hasRoundColumn, rows } = buildRosterGrid(snapshot, ownerOrder, tiers, draftRounds);
 
   const headerCells = rosters
     .map((r) => `      <th class="${TH}">${esc(r.ownerName)}</th>`)
     .join("\n");
 
-  const isPostDraft = snapshot.snapshotType === "post-draft" && rosters.some((r) => r.players.some((p) => p.round != null));
-  const useTieredLayout = !isPostDraft && tiers && draftRounds && draftRounds.size > 0;
-  const dataRows = isPostDraft
-    ? buildPostDraftRows(rosters, tiers)
-    : useTieredLayout
-      ? buildTieredRows(rosters, tiers!, draftRounds!)
-      : buildSequentialRows(rosters, maxPlayers, tiers);
+  const dataRows = renderGridRows(rows, rosters.length + (hasRoundColumn ? 1 : 0), hasRoundColumn);
 
-  const navHtml = navBar(navLinks, snapshot.season);
+  // Sibling file, written by the same run that writes this page.
+  const navHtml = navBar(navLinks, snapshot.season, exportFileName(snapshot.season, snapshot.snapshotType));
 
-  const styles = ROSTER_STYLES + (isPostDraft ? ROUND_COL_STYLE : "");
-  const roundTh = isPostDraft ? `      <th class="${TH}">Round</th>\n` : "";
+  const styles = ROSTER_STYLES + (hasRoundColumn ? ROUND_COL_STYLE : "");
+  const roundTh = hasRoundColumn ? `      <th class="${TH}">Round</th>\n` : "";
 
   return `<!DOCTYPE html>
 <html lang="en">

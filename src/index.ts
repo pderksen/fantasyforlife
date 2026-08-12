@@ -1,11 +1,13 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
-import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft, resolveTrades, saveTrades, preDraftWindowClosed, SnapshotGuardError } from "./snapshot.js";
+import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, getExportOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft, resolveTrades, saveTrades, preDraftWindowClosed, SnapshotGuardError } from "./snapshot.js";
 import { generateHtml, generateIndexHtml, writeHtml, formatPacificDate } from "./html.js";
+import { generateWorkbook, writeWorkbook } from "./xlsx.js";
 import { getLeagueDrafts, getDraftPicks, getDraftTradedPicksRaw, fetchAllPlayers, getLeagueTradedPicks, getPickTrades, getTrades, getLeague } from "./sleeper-api.js";
 import { getTierConfig, getLatestDraftOrder } from "./tiers.js";
-import type { SnapshotType, DraftPick, ResolvedTradedPick, PlayerDatabase } from "./types.js";
+import type { Snapshot, SnapshotType, DraftPick, NavLink, ResolvedTradedPick, TierConfig, PlayerDatabase } from "./types.js";
+import type { DraftRoundLookup } from "./roster-grid.js";
 
 // Sleeper mints a new league id each season and links back via `previous_league_id`.
 // Point this at the current season's league; earlier ones are reachable by walking that
@@ -99,6 +101,32 @@ async function regenerateIndex(): Promise<void> {
   console.log(`Index written: ${outputPath}`);
 }
 
+interface RosterPageInputs {
+  navLinks: NavLink[];
+  ownerOrder?: string[];
+  tiers?: TierConfig;
+  draftRounds?: DraftRoundLookup;
+  tradedPicks?: ResolvedTradedPick[];
+}
+
+/**
+ * Write a season's page and its Excel export. The two always ship together — the page links
+ * its own workbook as a sibling, so a run that wrote one and not the other would serve a
+ * dead link or a stale download. Every generate path goes through here for that reason.
+ */
+async function writeRosterOutputs(snapshot: Snapshot, inputs: RosterPageInputs): Promise<void> {
+  const { navLinks, ownerOrder, tiers, draftRounds, tradedPicks } = inputs;
+  const { season, snapshotType } = snapshot;
+
+  const outputPath = getOutputPath(season, snapshotType);
+  await writeHtml(generateHtml(snapshot, navLinks, ownerOrder, tiers, draftRounds, tradedPicks), outputPath);
+  console.log(`HTML written: ${outputPath}`);
+
+  const exportPath = getExportOutputPath(season, snapshotType);
+  await writeWorkbook(generateWorkbook(snapshot, { ownerOrder, tiers, draftRounds, tradedPicks }), exportPath);
+  console.log(`Excel written: ${exportPath}`);
+}
+
 /**
  * Open a local file in the OS default browser (detached, so npm exits immediately).
  * Hand-rolled rather than pulling in an `open` package — this project has zero runtime deps.
@@ -184,10 +212,7 @@ async function snapshotAndGenerate(snapshotType: SnapshotType, leagueId: string,
   const picksForType = snapshotType === "pre-draft"
     ? picksForDraft(tradedPicks, snapshot.season)
     : picksAwaitingDraft(tradedPicks, snapshot.season);
-  const html = generateHtml(snapshot, navLinks, ownerOrder, tiers, draftRounds, picksForType);
-  const outputPath = getOutputPath(snapshot.season, snapshotType);
-  await writeHtml(html, outputPath);
-  console.log(`HTML written: ${outputPath}`);
+  await writeRosterOutputs(snapshot, { navLinks, ownerOrder, tiers, draftRounds, tradedPicks: picksForType });
 }
 
 async function draftSnapshotAndGenerate(season: string, leagueId: string): Promise<void> {
@@ -236,12 +261,12 @@ async function draftSnapshotAndGenerate(season: string, leagueId: string): Promi
   const tradedPicks = await fetchAndSaveTradedPicks(leagueId, season);
 
   const ownerOrder = snapshot.rosters.map((r) => r.ownerName);
-  const navLinks = buildNavLinks(season, "post-draft");
-  const tiers = getTierConfig(season, "post-draft");
-  const html = generateHtml(snapshot, navLinks, ownerOrder, tiers, undefined, picksAwaitingDraft(tradedPicks, season));
-  const outputPath = getOutputPath(season, "post-draft");
-  await writeHtml(html, outputPath);
-  console.log(`HTML written: ${outputPath}`);
+  await writeRosterOutputs(snapshot, {
+    navLinks: buildNavLinks(season, "post-draft"),
+    ownerOrder,
+    tiers: getTierConfig(season, "post-draft"),
+    tradedPicks: picksAwaitingDraft(tradedPicks, season),
+  });
 }
 
 async function generateFromExisting(season: string, snapshotType?: SnapshotType): Promise<void> {
@@ -262,16 +287,16 @@ async function generateFromExisting(season: string, snapshotType?: SnapshotType)
     }
 
     const snapshot = await loadSnapshot(snapshotPath);
-    const navLinks = buildNavLinks(season, type);
-    const tiers = getTierConfig(season, type);
-    const draftRounds = await loadDraftRoundsFor(season, type);
     const picksForType = type === "pre-draft"
       ? picksForDraft(tradedPicks, season)
       : picksAwaitingDraft(tradedPicks, season);
-    const html = generateHtml(snapshot, navLinks, ownerOrder, tiers, draftRounds, picksForType);
-    const outputPath = getOutputPath(season, type);
-    await writeHtml(html, outputPath);
-    console.log(`HTML written: ${outputPath}`);
+    await writeRosterOutputs(snapshot, {
+      navLinks: buildNavLinks(season, type),
+      ownerOrder,
+      tiers: getTierConfig(season, type),
+      draftRounds: await loadDraftRoundsFor(season, type),
+      tradedPicks: picksForType,
+    });
   }
 }
 
