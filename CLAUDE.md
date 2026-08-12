@@ -108,7 +108,7 @@ Both throw `SnapshotGuardError`, which `index.ts` prints without a stack trace. 
   ([index.ts](src/index.ts) `saveSnapshot` precedes them), so without the repeat a refused capture
   would also cost that day's trade refresh
 - `RUNBOOK.md` — operational cadence: what to run when, verification steps, gotchas, yearly calendar
-- `RECOMMENDATIONS.md` — numbered improvement backlog; commit messages cite its item numbers ("Close #14"). Read it for the reasoning behind decisions, not as a description of current state: it is a dated audit with revision passes, and a closed item can be reverted afterward without the item being updated. #16 is the live example, still describing a per-season trade log page that was removed a day later.
+- `docs/audit-2026-08-04.md` — **archived** improvement audit (was `RECOMMENDATIONS.md` at the repo root until 2026-08-12). Commit messages cite its item numbers ("Close #14"), so it stays reachable by name rather than through `git show`. Read it for the reasoning behind decisions, especially the declined ones, never as a description of current state: it is a dated audit with revision passes, and a closed item can be reverted afterward without the item being updated. #16 is the live example, still describing a per-season trade log page that was removed a day later. It tracks nothing open; its one unfinished item (`TIER_CONFIGS` entries for 2026) belongs to RUNBOOK.md.
 - `data/<season>/rosters-<type>.json` — Snapshots
 - `data/<season>/draft-picks.json` — Immutable draft picks
 - `data/<season>/draft-traded-picks.json` — Immutable traded pick data for specific draft

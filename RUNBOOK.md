@@ -69,7 +69,9 @@ later command depends on them being right.
    both the home page draft order list and the column order on the pre-draft page.
 3. **Add `TIER_CONFIGS` entries** in [src/tiers.ts:8](src/tiers.ts#L8) for
    `<season>:post-draft` and `<season>:end-of-season` once keeper rules for the year are
-   settled. No entry means no tier rows, which is why `2026:pre-draft` renders flat.
+   settled. No entry means no tier rows at all, silently. **Both 2026 entries are still
+   missing**; `2026:pre-draft` is the only one configured, and it renders its three tier rows
+   normally (bucketed by 2025's draft rounds, which is why its labels name the year).
 
 Then, after the draft finishes:
 
