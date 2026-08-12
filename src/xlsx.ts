@@ -151,9 +151,16 @@ function sheetXml(spec: SheetSpec): string {
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><dimension ref="A1:${lastRef}"/><sheetViews><sheetView workbookViewId="0">${pane}</sheetView></sheetViews><sheetFormatPr defaultRowHeight="15"/>${spec.cols}<sheetData>${spec.rows.toXml()}</sheetData>${merges}</worksheet>`;
 }
 
-/** Excel forbids : \ / ? * [ ] in sheet names and caps them at 31 characters. */
-function safeSheetName(name: string): string {
-  return name.replace(/[:\\/?*[\]]/g, " ").slice(0, 31);
+/**
+ * Sheet tab name: league and season, then what the tab holds.
+ *
+ * Both tabs carry the prefix because a workbook gets downloaded and its sheets get copied
+ * into other books, where a bare "Traded Picks" says nothing about which year it came from.
+ * Excel forbids `: \ / ? * [ ]` in tab names and caps them at 31 characters — the longest
+ * this produces is "FFL 2026 End-of-Season Rosters" at 30, so the slice is a backstop.
+ */
+function sheetName(season: string, label: string): string {
+  return `FFL ${season} ${label}`.replace(/[:\\/?*[\]]/g, " ").slice(0, 31);
 }
 
 function buildRosterSheet(
@@ -201,7 +208,7 @@ function buildRosterSheet(
 
   const typeLabel = SNAPSHOT_TYPE_LABELS[snapshot.snapshotType] ?? "Rosters";
   return {
-    name: safeSheetName(`${snapshot.season} ${typeLabel}`),
+    name: sheetName(snapshot.season, typeLabel),
     cols,
     rows,
     merges,
@@ -225,14 +232,14 @@ function playerValue(p: SnapshotPlayer | undefined): CellValue {
  * Second tab: the picks this page shows, under the same display rules — the roster page and
  * its workbook should never disagree about which drafts are still outstanding.
  */
-function buildTradedPicksSheet(picks: ResolvedTradedPick[]): SheetSpec {
+function buildTradedPicksSheet(season: string, picks: ResolvedTradedPick[]): SheetSpec {
   const rows = new SheetRows();
 
   if (picks.length === 0) {
     rows.add([{ style: STYLE.TP_HEADER, value: { text: "Traded Picks" } }]);
     rows.add([{ style: STYLE.TP_CELL, value: { text: "None" } }]);
     return {
-      name: "Traded Picks",
+      name: sheetName(season, "Traded Picks"),
       cols: `<cols><col min="1" max="1" width="16" customWidth="1"/></cols>`,
       rows,
       merges: [],
@@ -262,7 +269,7 @@ function buildTradedPicksSheet(picks: ResolvedTradedPick[]): SheetSpec {
   }
 
   return {
-    name: "Traded Picks",
+    name: sheetName(season, "Traded Picks"),
     cols: `<cols><col min="1" max="1" width="10" customWidth="1"/><col min="2" max="2" width="8" customWidth="1"/><col min="3" max="4" width="26" customWidth="1"/><col min="5" max="5" width="16" customWidth="1"/></cols>`,
     rows,
     merges: [],
@@ -311,7 +318,7 @@ export interface WorkbookInputs {
 /** The roster page as a two-sheet .xlsx: the grid, then that page's traded picks. */
 export function generateWorkbook(snapshot: Snapshot, inputs: WorkbookInputs = {}): Buffer {
   const rosterSheet = buildRosterSheet(snapshot, inputs.ownerOrder, inputs.tiers, inputs.draftRounds);
-  const picksSheet = buildTradedPicksSheet(inputs.tradedPicks ?? []);
+  const picksSheet = buildTradedPicksSheet(snapshot.season, inputs.tradedPicks ?? []);
 
   const entries: ZipEntry[] = [
     { name: "[Content_Types].xml", data: CONTENT_TYPES },

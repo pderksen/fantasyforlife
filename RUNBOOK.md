@@ -196,9 +196,11 @@ Both `data/` and `output/` are committed on purpose; only `dist/` and `node_modu
   only way past it, so never put `--force` in a scheduled prompt.
 - **Every command auto-regenerates `output/index.html`**, so the home page never drifts.
 - **Roster pages ship with an Excel twin.** Anything that writes `output/<season>/rosters-<type>.html`
-  writes `<season>-rosters-<type>.xlsx` beside it in the same call, and the page's Excel pill links
-  it (the export repeats the season because it gets downloaded away from its folder). If a
-  download 404s, the page was committed without its workbook — re-run `--generate <season>`.
+  writes `rosters-<type>-<season>-ffl.xlsx` beside it in the same call, and the page's Excel pill
+  links it (the export names the season and league because it gets downloaded away from its
+  folder). If a download 404s, the page was committed without its workbook — re-run
+  `--generate <season>`. **Renaming the export orphans the old files**: the generator writes the
+  new name and leaves the old one committed beside it, so `git rm` the strays by hand.
 - **The workbook is written by hand** (`src/zip.ts` + `src/xlsx.ts`), so a change to its styles or
   sheet XML can produce a file Excel refuses to open. Structural checks — `unzip -t` on the file,
   a PowerShell `[xml]` cast over each entry — catch malformed parts, but only opening it in Excel

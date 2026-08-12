@@ -500,12 +500,13 @@ export function pageFileName(page: SnapshotType): string {
 /**
  * File name a season's Excel export is written to, within output/<season>/.
  *
- * The season is in the name where the page's isn't: a page is read in place, under a URL
- * that already says which year it is, while its workbook gets downloaded into a folder
- * alongside every other year's — where a bare `rosters-pre-draft.xlsx` identifies nothing.
+ * The season and league are in the name where the page's aren't: a page is read in place,
+ * under a URL that already says which year it is, while its workbook gets downloaded into a
+ * folder next to every other year's and every other league's — where a bare
+ * `rosters-pre-draft.xlsx` identifies nothing. Type leads so the three sort together.
  */
 export function exportFileName(season: string, page: SnapshotType): string {
-  return `${season}-rosters-${page}.xlsx`;
+  return `rosters-${page}-${season}-ffl.xlsx`;
 }
 
 export function getOutputPath(season: string, page: SnapshotType): string {
