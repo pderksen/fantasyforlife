@@ -339,7 +339,8 @@ Snapshot JSON files are human-readable and editable. Regenerate the pages and th
 
 ## Verifying Changes
 - No test framework. Exercise logic with `node --input-type=module -e '...'` importing from `./dist/` after `npm run build`.
-- `output/` is committed, so regenerate then `git diff -- output/`: an empty diff proves no visual regression, a non-empty one shows exactly what changed. Only `--generate` is deterministic this way; anything that re-fetches rewrites `capturedAt`/`fetchedAt`, so its diff is never empty.
+- `output/` is committed, so regenerate then `git diff -- output/`: an empty diff proves no visual regression, a non-empty one shows exactly what changed. Only `--generate` is deterministic this way; anything that re-fetches rewrites `capturedAt`/`fetchedAt`, so its diff is never empty. **Read the diff, not `git status`** — the repo checks out CRLF and the generator writes LF, so every regenerated file shows as modified whether or not a byte of content changed.
+- To eyeball a generated file (page in a browser, workbook in Excel), use PowerShell `Start-Process <absolute path>`.
 - `gh` is installed and authenticated: `gh run watch <id> --exit-status` follows a workflow run, `gh run view <id> --log` reads one, `gh api repos/<owner>/<repo>/releases/latest --jq .tag_name` gets an action's current major.
 - No YAML parser is installed (Python has no `yaml` module either). Validate workflow edits with `npx --yes js-yaml <file>`, which leaves `package.json` untouched.
 - Before assuming API drift, diff live response keys against `src/types.ts` rather than trusting the docs (their `/players/nfl` size is 3x stale).

@@ -192,6 +192,9 @@ npm run dev -- --generate <season>
 The regenerated file is the only correct answer. A clean `git diff -- output/` afterward is the
 proof.
 
+Workbooks (`*.xlsx`) can't be inspected in a conflict at all. Same fix, and it is exactly correct
+here: the bytes are deterministic, so regenerating reproduces the right file bit for bit.
+
 **A merged feature branch deploys nothing until `output/` is regenerated on `main` and pushed.**
 Cloudflare serves the committed HTML, so a source-only merge changes the site not at all. This is
 the same trap as running a command locally and not pushing (see `RUNBOOK.md`).

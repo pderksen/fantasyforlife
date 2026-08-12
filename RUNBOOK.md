@@ -167,10 +167,10 @@ Both `data/` and `output/` are committed on purpose; only `dist/` and `node_modu
 ## Verifying a run worked
 
 - **Console output** names every file written: `Snapshot saved:`, `Traded picks saved:`,
-  `Trades saved:`, `HTML written:`, `Index written:`.
-- **`git status`** should show the files you expect to have changed. An empty diff after a
-  snapshot run means the capture was identical, which is normal for a re-run, and suspicious
-  after a real change.
+  `Trades saved:`, `HTML written:`, `Excel written:`, `Index written:`.
+- **`git diff`** (not `git status`, which flags every regenerated file over line endings) should
+  show the files you expect to have changed. An empty diff after a snapshot run means the capture
+  was identical, which is normal for a re-run, and suspicious after a real change.
 - **`git diff -- output/`** shows exactly what visitors will see differently.
 - **Page footer** carries a "Data retrieved" timestamp in Pacific time. If it didn't move, the
   page wasn't regenerated.
