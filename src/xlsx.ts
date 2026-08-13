@@ -2,7 +2,7 @@ import { writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
 import type { Snapshot, SnapshotPlayer, TierConfig, ResolvedTradedPick } from "./types.js";
 import { SNAPSHOT_TYPE_LABELS } from "./types.js";
-import { buildRosterGrid, type DraftRoundLookup } from "./roster-grid.js";
+import { buildRosterGrid, columnOrderNote, type DraftRoundLookup } from "./roster-grid.js";
 import { formatPacificDate, formatPacificTime } from "./html.js";
 import { zipSync, type ZipEntry } from "./zip.js";
 
@@ -169,7 +169,8 @@ function buildRosterSheet(
   tiers?: TierConfig,
   draftRounds?: DraftRoundLookup,
 ): SheetSpec {
-  const { rosters, hasRoundColumn, rows: gridRows } = buildRosterGrid(snapshot, ownerOrder, tiers, draftRounds);
+  const grid = buildRosterGrid(snapshot, ownerOrder, tiers, draftRounds);
+  const { rosters, hasRoundColumn, rows: gridRows } = grid;
   const width = rosters.length + (hasRoundColumn ? 1 : 0);
   const rows = new SheetRows();
   const merges: string[] = [];
@@ -199,7 +200,16 @@ function buildRosterSheet(
 
   // No keeper legend here, unlike the page. A stray yellow cell reads as data in a
   // spreadsheet, and the grid is the thing people sort and filter.
+  //
+  // The column-order note does ship, from the same `columnOrderNote()` the page uses — though
+  // the page prints it under the table and this prints it above the timestamp. Once the grid
+  // is downloaded it carries no surrounding text, so nothing else would say the columns are
+  // in pick order.
+  const columnNote = columnOrderNote(snapshot, grid);
   rows.add([]);
+  if (columnNote) {
+    rows.add([{ style: STYLE.FOOTER, value: { text: columnNote } }]);
+  }
   rows.add([{ style: STYLE.FOOTER, value: { text: `Data retrieved ${formatPacificTime(snapshot.capturedAt)}` } }]);
 
   const cols = hasRoundColumn

@@ -3,7 +3,7 @@ import { dirname } from "node:path";
 import type { Snapshot, SnapshotType, SnapshotRoster, SnapshotPlayer, NavLink, TierConfig, ResolvedTradedPick } from "./types.js";
 import { SNAPSHOT_TYPE_LABELS } from "./types.js";
 import type { DraftOrder } from "./tiers.js";
-import { buildRosterGrid, type DraftRoundLookup, type GridRow } from "./roster-grid.js";
+import { buildRosterGrid, columnOrderNote, type DraftRoundLookup, type GridRow } from "./roster-grid.js";
 import { exportFileName } from "./snapshot.js";
 
 // ── Utility helpers ──
@@ -182,23 +182,39 @@ ${rows}
 }
 
 /**
- * Legend for the yellow keeper highlight, shown under the roster table.
+ * Footnotes under the roster table: the keeper legend, then the column-order note.
  *
- * Rendered only when a cell actually carries the class. `.keeper` ships in `ROSTER_STYLES`
- * on every roster page but only pre-draft snapshots set the flag (`snapshot.ts` clears the
- * keeper id set for other types), so keying off the data keeps the legend off pages with
- * nothing highlighted, and picks it up automatically if another type ever flags keepers.
- * The swatch reuses the `.keeper` class rather than repeating the hex. Carries its own leading
- * newline so pages without keepers emit nothing at all, not a blank line.
+ * The legend renders only when a cell actually carries the class. `.keeper` ships in
+ * `ROSTER_STYLES` on every roster page but only pre-draft snapshots set the flag
+ * (`snapshot.ts` clears the keeper id set for other types), so keying off the data keeps the
+ * legend off pages with nothing highlighted, and picks it up automatically if another type
+ * ever flags keepers. The swatch reuses the `.keeper` class rather than repeating the hex.
+ *
+ * The column-order note says what the header row can't: that the owners run in pick order
+ * rather than alphabetically. Both the sentence and the rule for when it applies come from
+ * `columnOrderNote()`, which the Excel export calls too.
+ *
+ * Each note brings its own leading newline, so a page with neither emits nothing at all
+ * rather than a blank line. The first sits `mt-3` off the table and the second tucks `mt-2`
+ * under it, so the two read as one block instead of two loose lines.
  */
-function keeperLegend(rosters: SnapshotRoster[]): string {
-  const hasKeepers = rosters.some((r) => r.players.some((p) => p.keeper));
-  if (!hasKeepers) return "";
-  return `
-  <p class="mt-3 flex items-center gap-2 text-xs text-gray-600">
+function tableNotes(rosters: SnapshotRoster[], columnNote?: string): string {
+  // Each entry takes the margin that puts it in the right place, which depends on whether
+  // anything precedes it — hence the deferred call rather than a list of strings.
+  const notes: ((margin: string) => string)[] = [];
+
+  if (rosters.some((r) => r.players.some((p) => p.keeper))) {
+    notes.push((m) => `<p class="${m} flex items-center gap-2 text-xs text-gray-600">
     <span class="keeper inline-block w-3.5 h-3.5 rounded-sm border border-gray-400"></span>
     Keeper
-  </p>`;
+  </p>`);
+  }
+
+  if (columnNote) {
+    notes.push((m) => `<p class="${m} text-xs text-gray-600">${esc(columnNote)}</p>`);
+  }
+
+  return notes.map((note, i) => `\n  ${note(i === 0 ? "mt-3" : "mt-2")}`).join("");
 }
 
 function tradedPicksSection(tradedPicks?: ResolvedTradedPick[]): string {
@@ -268,7 +284,8 @@ export function generateHtml(
   tradedPicks?: ResolvedTradedPick[],
 ): string {
   const typeLabel = SNAPSHOT_TYPE_LABELS[snapshot.snapshotType] ?? "Rosters";
-  const { rosters, hasRoundColumn, rows } = buildRosterGrid(snapshot, ownerOrder, tiers, draftRounds);
+  const grid = buildRosterGrid(snapshot, ownerOrder, tiers, draftRounds);
+  const { rosters, hasRoundColumn, rows } = grid;
 
   const headerCells = rosters
     .map((r) => `      <th class="${TH}">${esc(r.ownerName)}</th>`)
@@ -303,7 +320,7 @@ ${roundTh}${headerCells}
     </tr>
 ${dataRows.join("\n")}
   </table>
-  </div>${keeperLegend(rosters)}
+  </div>${tableNotes(rosters, columnOrderNote(snapshot, grid))}
 ${tradedPicksSection(tradedPicks)}
   <footer class="mt-8 text-xs text-gray-400">Data retrieved ${esc(formatPacificTime(snapshot.capturedAt))}</footer>
   </div>

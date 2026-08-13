@@ -31,6 +31,13 @@ export interface RosterGrid {
   rosters: SnapshotRoster[];
   /** Post-draft layouts carry a leading "Round" column; the others don't. */
   hasRoundColumn: boolean;
+  /**
+   * True when every column was placed by `ownerOrder` — i.e. the header really is the
+   * season's draft order, and both renderers can say so in their footer. False when no
+   * order was supplied, or when it names only some of the owners and the rest fall
+   * through to the alphabetical tail below, which is no longer a draft order.
+   */
+  columnsInDraftOrder: boolean;
   rows: GridRow[];
 }
 
@@ -187,5 +194,22 @@ export function buildRosterGrid(
       ? buildTieredRows(rosters, tiers!, draftRounds!)
       : buildSequentialRows(rosters, maxPlayers, tiers);
 
-  return { rosters, hasRoundColumn: isPostDraft, rows };
+  const columnsInDraftOrder = !!ownerOrder && rosters.every((r) => ownerOrder.includes(r.ownerName));
+
+  return { rosters, hasRoundColumn: isPostDraft, columnsInDraftOrder, rows };
+}
+
+/**
+ * The footnote naming the draft whose order the columns run in, or undefined when the page
+ * shouldn't claim one. The sentence lives here rather than in either renderer so the page
+ * and its workbook can't word it differently or disagree about when it applies.
+ *
+ * End-of-season is excluded on purpose. Its columns *are* that season's draft order — it
+ * reads the same post-draft snapshot the post-draft page does — but by January that draft is
+ * months gone, and the order anyone reading a final roster has in mind is the next one's. A
+ * true statement that invites the wrong reading is worse than no statement.
+ */
+export function columnOrderNote(snapshot: Snapshot, grid: RosterGrid): string | undefined {
+  if (!grid.columnsInDraftOrder || snapshot.snapshotType === "end-of-season") return undefined;
+  return `Column order is the ${snapshot.season} draft order.`;
 }
