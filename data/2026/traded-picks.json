@@ -1,7 +1,7 @@
 {
   "leagueId": "1331127568820109312",
   "season": "2026",
-  "fetchedAt": "2026-08-12T12:01:35.780Z",
+  "fetchedAt": "2026-08-13T05:14:57.700Z",
   "picks": [
     {
       "round": 3,
@@ -27,6 +27,13 @@
     {
       "round": 5,
       "season": "2026",
+      "originalOwner": "Vancouver Moose Drool",
+      "currentOwner": "Kingsburg Killaz",
+      "tradedOn": "2026-08-13T00:47:21.695Z"
+    },
+    {
+      "round": 5,
+      "season": "2026",
       "originalOwner": "Visalia Viagra Vipers",
       "currentOwner": "Easton Evil Empire",
       "tradedOn": "2025-11-13T01:06:34.941Z"
@@ -37,6 +44,13 @@
       "originalOwner": "Vancouver Moose Drool",
       "currentOwner": "Sanger Squatty Pottys",
       "tradedOn": "2025-11-13T01:30:13.077Z"
+    },
+    {
+      "round": 7,
+      "season": "2026",
+      "originalOwner": "Sanger Squatty Pottys",
+      "currentOwner": "Dinkey Creek Dirt Clods",
+      "tradedOn": "2026-08-13T00:47:27.067Z"
     }
   ],
   "raw": [
@@ -48,11 +62,25 @@
       "previous_owner_id": 1
     },
     {
+      "round": 5,
+      "season": "2026",
+      "roster_id": 3,
+      "owner_id": 6,
+      "previous_owner_id": 3
+    },
+    {
       "round": 6,
       "season": "2026",
       "roster_id": 3,
       "owner_id": 4,
       "previous_owner_id": 3
+    },
+    {
+      "round": 7,
+      "season": "2026",
+      "roster_id": 4,
+      "owner_id": 1,
+      "previous_owner_id": 4
     },
     {
       "round": 5,

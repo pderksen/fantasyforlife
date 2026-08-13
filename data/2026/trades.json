@@ -1,8 +1,67 @@
 {
   "leagueId": "1331127568820109312",
   "season": "2026",
-  "fetchedAt": "2026-08-12T12:01:36.214Z",
+  "fetchedAt": "2026-08-13T05:14:58.148Z",
   "trades": [
+    {
+      "tradedOn": "2026-08-13T00:47:27.067Z",
+      "week": 1,
+      "parties": [
+        {
+          "owner": "Dinkey Creek Dirt Clods",
+          "players": [
+            {
+              "name": "Stafford, Matthew",
+              "position": "QB"
+            }
+          ],
+          "picks": [
+            {
+              "season": "2026",
+              "round": 7,
+              "originalOwner": "Sanger Squatty Pottys"
+            }
+          ]
+        },
+        {
+          "owner": "Sanger Squatty Pottys",
+          "players": [
+            {
+              "name": "Bowers, Brock",
+              "position": "TE"
+            }
+          ],
+          "picks": []
+        }
+      ]
+    },
+    {
+      "tradedOn": "2026-08-13T00:47:21.695Z",
+      "week": 1,
+      "parties": [
+        {
+          "owner": "Vancouver Moose Drool",
+          "players": [
+            {
+              "name": "Olave, Chris",
+              "position": "WR"
+            }
+          ],
+          "picks": []
+        },
+        {
+          "owner": "Kingsburg Killaz",
+          "players": [],
+          "picks": [
+            {
+              "season": "2026",
+              "round": 5,
+              "originalOwner": "Vancouver Moose Drool"
+            }
+          ]
+        }
+      ]
+    },
     {
       "tradedOn": "2026-08-05T15:20:27.698Z",
       "week": 1,
@@ -35,6 +94,82 @@
       "status": "complete",
       "type": "trade",
       "metadata": null,
+      "created": 1786580143206,
+      "settings": {
+        "expires_at": 1787184941
+      },
+      "leg": 1,
+      "draft_picks": [
+        {
+          "round": 7,
+          "season": "2026",
+          "league_id": null,
+          "roster_id": 4,
+          "owner_id": 1,
+          "previous_owner_id": 4
+        }
+      ],
+      "creator": "861091293252689920",
+      "transaction_id": "1393421750758277120",
+      "adds": {
+        "421": 1,
+        "11604": 4
+      },
+      "consenter_ids": [
+        1,
+        4
+      ],
+      "drops": {
+        "421": 4,
+        "11604": 1
+      },
+      "roster_ids": [
+        1,
+        4
+      ],
+      "status_updated": 1786582047067,
+      "waiver_budget": []
+    },
+    {
+      "status": "complete",
+      "type": "trade",
+      "metadata": null,
+      "created": 1786561862071,
+      "settings": null,
+      "leg": 1,
+      "draft_picks": [
+        {
+          "round": 5,
+          "season": "2026",
+          "league_id": null,
+          "roster_id": 3,
+          "owner_id": 6,
+          "previous_owner_id": 3
+        }
+      ],
+      "creator": "470726556075945984",
+      "transaction_id": "1393345074116444160",
+      "adds": {
+        "8144": 3
+      },
+      "consenter_ids": [
+        3,
+        6
+      ],
+      "drops": {
+        "8144": 6
+      },
+      "roster_ids": [
+        3,
+        6
+      ],
+      "status_updated": 1786582041695,
+      "waiver_budget": []
+    },
+    {
+      "status": "complete",
+      "type": "trade",
+      "metadata": null,
       "created": 1785939547305,
       "settings": null,
       "leg": 1,
@@ -45,14 +180,14 @@
         "12481": 2,
         "12517": 6
       },
-      "drops": {
-        "12481": 6,
-        "12517": 2
-      },
       "consenter_ids": [
         2,
         6
       ],
+      "drops": {
+        "12481": 6,
+        "12517": 2
+      },
       "roster_ids": [
         2,
         6

@@ -3,7 +3,7 @@
   "leagueName": "Fantasy For Life (FFL)",
   "season": "2026",
   "snapshotType": "pre-draft",
-  "capturedAt": "2026-08-12T12:01:35.039Z",
+  "capturedAt": "2026-08-13T05:14:57.149Z",
   "rosters": [
     {
       "ownerName": "Clovis Jets",
@@ -92,11 +92,6 @@
           "name": "Loop, Tyler",
           "position": "K",
           "team": "BAL"
-        },
-        {
-          "name": "Jaguars, Jacksonville",
-          "position": "DEF",
-          "team": "JAX"
         }
       ]
     },
@@ -116,18 +111,18 @@
         {
           "name": "Shough, Tyler",
           "position": "QB",
-          "team": "NO",
+          "team": "NO"
+        },
+        {
+          "name": "Stafford, Matthew",
+          "position": "QB",
+          "team": "LAR",
           "keeper": true
         },
         {
           "name": "Allgeier, Tyler",
           "position": "RB",
           "team": "ARI"
-        },
-        {
-          "name": "Carter, Michael",
-          "position": "RB",
-          "team": "TEN"
         },
         {
           "name": "Jacobs, Josh",
@@ -169,11 +164,6 @@
           "name": "Slayton, Darius",
           "position": "WR",
           "team": "NYG"
-        },
-        {
-          "name": "Bowers, Brock",
-          "position": "TE",
-          "team": "LV"
         },
         {
           "name": "Fannin, Harold",
@@ -347,11 +337,6 @@
           "name": "Moore, DJ",
           "position": "WR",
           "team": "BUF"
-        },
-        {
-          "name": "Olave, Chris",
-          "position": "WR",
-          "team": "NO"
         },
         {
           "name": "TeSlaa, Isaac",
@@ -578,11 +563,6 @@
           "team": "DET"
         },
         {
-          "name": "Stafford, Matthew",
-          "position": "QB",
-          "team": "LAR"
-        },
-        {
           "name": "Brown, Chase",
           "position": "RB",
           "team": "CIN"
@@ -636,6 +616,11 @@
           "name": "Watson, Christian",
           "position": "WR",
           "team": "GB"
+        },
+        {
+          "name": "Bowers, Brock",
+          "position": "TE",
+          "team": "LV"
         },
         {
           "name": "Parkinson, Colby",
@@ -769,21 +754,6 @@
           "keeper": true
         },
         {
-          "name": "Sanders, Shedeur",
-          "position": "QB",
-          "team": "CLE"
-        },
-        {
-          "name": "Davis, Malik",
-          "position": "RB",
-          "team": "DAL"
-        },
-        {
-          "name": "Hunt, Kareem",
-          "position": "RB",
-          "team": "FA"
-        },
-        {
           "name": "Irving, Bucky",
           "position": "RB",
           "team": "TB"
@@ -817,8 +787,7 @@
         {
           "name": "Godwin, Chris",
           "position": "WR",
-          "team": "TB",
-          "keeper": true
+          "team": "TB"
         },
         {
           "name": "McLaurin, Terry",
@@ -826,24 +795,15 @@
           "team": "WAS"
         },
         {
-          "name": "Johnson, Juwan",
-          "position": "TE",
-          "team": "NO"
+          "name": "Olave, Chris",
+          "position": "WR",
+          "team": "NO",
+          "keeper": true
         },
         {
           "name": "McBride, Trey",
           "position": "TE",
           "team": "ARI"
-        },
-        {
-          "name": "Fairbairn, Ka'imi",
-          "position": "K",
-          "team": "HOU"
-        },
-        {
-          "name": "Seahawks, Seattle",
-          "position": "DEF",
-          "team": "SEA"
         }
       ]
     },
