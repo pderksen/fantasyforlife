@@ -3,7 +3,7 @@
   "leagueName": "Fantasy For Life (FFL)",
   "season": "2026",
   "snapshotType": "pre-draft",
-  "capturedAt": "2026-08-13T12:02:05.787Z",
+  "capturedAt": "2026-08-14T11:59:28.358Z",
   "rosters": [
     {
       "ownerName": "Clovis Jets",
@@ -650,7 +650,8 @@
         {
           "name": "Darnold, Sam",
           "position": "QB",
-          "team": "SEA"
+          "team": "SEA",
+          "keeper": true
         },
         {
           "name": "Love, Jordan",
@@ -680,7 +681,8 @@
         {
           "name": "McCaffrey, Christian",
           "position": "RB",
-          "team": "SF"
+          "team": "SF",
+          "keeper": true
         },
         {
           "name": "Mixon, Joe",
@@ -690,7 +692,8 @@
         {
           "name": "Skattebo, Cam",
           "position": "RB",
-          "team": "NYG"
+          "team": "NYG",
+          "keeper": true
         },
         {
           "name": "Aiyuk, Brandon",
