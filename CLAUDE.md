@@ -7,6 +7,7 @@ Fantasy football roster viewer for a long-running league. Pulls roster data from
 - `docs/data-capture.md` — traded picks + trade log: dating algorithm, sealing, JSON shapes, what was tried and dropped
 - `docs/excel-export.md` — workbook internals, sheet layout, filename reasoning, format-verification procedure
 - `docs/site-design.md` — site header, index/roster page structure, head metadata, front-end stack calls
+- `docs/photos.md` — photo pipeline: the gitignored inbox, target dimensions per slot, format and naming, the optimize command
 - `RUNBOOK.md` — operational cadence: what to run when, verification steps, yearly calendar
 - `WORKTREES.md` — parallel Claude Code sessions in git worktrees
 - `docs/audit-2026-08-04.md` — **archived** improvement audit (was `RECOMMENDATIONS.md` at the repo root until 2026-08-12). Commit messages cite its item numbers ("Close #14"), so it stays reachable by name. Read it for reasoning behind decisions, especially declined ones, never as a description of current state: a closed item can be reverted afterward without the item being updated. It tracks nothing open.
@@ -125,7 +126,8 @@ Both throw `SnapshotGuardError`, which `index.ts` prints without a stack trace. 
 - `data/<season>/draft-traded-picks.json` — Immutable traded pick data for specific draft
 - `data/<season>/traded-picks.json` — League-level traded picks, unfiltered; re-fetched per command until sealed
 - `data/<season>/trades.json` — Season trade log; re-fetched per command until sealed. Archive only, nothing renders it
-- `assets/` — static files served as-is, mirrored into `output/assets/` by `syncStaticAssets()` on every run. Only `ffl-shield.png` (the site header's mark) belongs here, and it is **not committed yet**
+- `assets/` — static files served as-is, mirrored into `output/assets/` by `syncStaticAssets()` on every run. `ffl-shield.png` (the site header's mark, **not committed yet**) and `photos/`. **Web-ready files only**: `output/` is committed, so anything here is stored twice in git forever, and the refresh workflow's `git add -A` will mirror a committed original into `output/assets/` unattended. Full-res originals stage in the gitignored `photos-inbox/` and are deleted once downscaled. Targets and the optimize command: `docs/photos.md`
+- `photos-inbox/` — gitignored staging for photo originals. Never commit its contents
 - `output/index.html` — Home page
 - `output/history.html` — League History page, served at `/history`. Placeholder content; rewritten by every run
 - `output/assets/` — generated copy of `assets/`. Committed, since Cloudflare serves `output/` directly
