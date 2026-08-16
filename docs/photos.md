@@ -94,9 +94,37 @@ On a machine without ffmpeg, `npx --yes @squoosh/cli --webp '{"quality":80}' --r
 '{"width":2000}' -d assets/photos <file>` is the fallback, but squoosh is archived upstream and
 is not guaranteed to run on Node 24.
 
+Add `-map_metadata -1`. iPhone originals carry an EXIF block with the camera model, the capture
+timestamp, and potentially GPS coordinates, and these files are served publicly. Stripping it
+also shaves a few KB. Nothing on the site reads EXIF, so there is nothing to lose.
+
 Then rename the output, confirm it looks right at full size, and delete the inbox copy. If this
 ever becomes routine rather than a few times a year, the upgrade is a `sharp` devDependency and
 an `--optimize-assets` CLI step; it was not worth the dependency at current volume.
+
+## What is in `assets/photos/` today
+
+Cut 2026-08-16 from two iPhone 15 originals, both shot 2025-08-23 at the 2025 draft.
+
+| File | Size | Bytes | Is |
+|------|------|-------|-----|
+| `2024-champion-toilet-bowl-trophies-1400.webp` | 1400×1168 | 201 KB | The 2024 champion and toilet-bowl trophies, held by their winners |
+| `2024-champion-toilet-bowl-trophies-650.webp` | 650×542 | 54 KB | Same, gallery thumb |
+| `2025-draft-day-league-photo-2000.webp` | 2000×1184 | 219 KB | All ten owners on 2025 draft day, one attending by laptop |
+| `2025-draft-day-league-photo-650.webp` | 650×384 | 41 KB | Same, gallery thumb |
+
+Both are uncropped, at the aspect they were shot. Two calls worth recording:
+
+- **Year prefix is the photo's subject, not its capture date.** Both were taken on the same
+  afternoon, but the trophies are the *2024* season's, awarded at the 2025 draft. A gallery
+  sorted by filename therefore separates them, which is the right answer for a history page
+  and the wrong one for a "draft day 2025" set. Sort by an explicit date field if that
+  second view is ever needed; do not rename the files to fix it.
+- **Two widths, not four.** The wide group shot gets the 2000px full-column cut from the table
+  above; the near-square trophy shot gets 1400, which is 2x of the ~700 CSS px a 1.2:1 photo
+  should actually occupy in a 1016px column — 2000 would render it 848px tall. Both large cuts
+  land within 16px of the same height, so they stack or sit side by side cleanly. The 650 pair
+  is the three-up grid row. Neither slot exists yet; see the warning above the dimensions table.
 
 ## Brand marks
 

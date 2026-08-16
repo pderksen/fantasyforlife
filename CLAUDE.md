@@ -19,7 +19,7 @@ Fantasy football roster viewer for a long-running league. Pulls roster data from
 - Native `fetch` (no HTTP library). **Zero npm runtime dependencies** — hold this line.
 - Tailwind CSS v4 and Schibsted Grotesk both load from CDNs at page view; pages are not self-contained. **v4 has no JS config** — theme lives in the `@theme` block (`THEME` in `html.ts`), never `tailwind.config = {...}`. Requires Safari 16.4+ / Chrome 111+ / Firefox 128+. Rationale, palette token names, and the declined self-hosting proposals: `docs/site-design.md`.
 - All styling: Tailwind utilities + the `@theme` palette + ~10 lines of inline `<style>` for the roster table's own colors (position, tier, round).
-- Four images in `output/assets/`, copied from `assets/` by `syncStaticAssets()` on every run. Only `ffl-avatar-128.png` (the site header's mark) is referenced by a page today; the larger avatar and the two banner cuts are staged for slots not yet built. Ladder and rationale: `docs/photos.md`.
+- Four brand marks in `assets/` plus four photo cuts in `assets/photos/`, mirrored into `output/assets/` by `syncStaticAssets()` on every run. Only `ffl-avatar-128.png` (the site header's mark) is referenced by a page today; the larger avatar, the two banner cuts, and all four photos are staged for slots not yet built. Ladder, photo ledger, and rationale: `docs/photos.md`.
 
 ## Key Concepts
 
@@ -127,7 +127,7 @@ Both throw `SnapshotGuardError`, which `index.ts` prints without a stack trace. 
 - `data/<season>/traded-picks.json` — League-level traded picks, unfiltered; re-fetched per command until sealed
 - `data/<season>/trades.json` — Season trade log; re-fetched per command until sealed. Archive only, nothing renders it
 - `assets/` — static files served as-is, mirrored into `output/assets/` by `syncStaticAssets()` on every run. The brand marks (`ffl-avatar-128.png`, `ffl-avatar-512.webp`, `ffl-logo-1998.webp`, `ffl-logo-999.webp`) and `photos/`. **Web-ready files only**: `output/` is committed, so anything here is stored twice in git forever, and the refresh workflow's `git add -A` will mirror a committed original into `output/assets/` unattended. Full-res originals stage in the gitignored `photos-inbox/` and are deleted once downscaled. Targets, the mark ladder, and the optimize commands: `docs/photos.md`. **`syncStaticAssets()` copies, never deletes** — renaming a file here leaves the old name behind in `output/assets/`, still tracked and still served, so delete the stray in the same commit (the rule the Excel section states for renamed outputs)
-- `photos-inbox/` — gitignored staging for photo and artwork originals. Never commit its contents. Currently holds the two brand masters (`ffl-avatar.png` 1024², `ffl-logo.png` 2172×724); unlike a photo original these are **not** disposable, so archive them off-repo rather than deleting
+- `photos-inbox/` — gitignored staging for photo and artwork originals. Never commit its contents. Currently holds the two brand masters (`ffl-avatar.png` 1024², `ffl-logo.png` 2172×724) plus the two 2025 draft-day originals already cut into `assets/photos/`. Brand masters, unlike a photo original, are **not** disposable — archive them off-repo rather than deleting
 - `output/index.html` — Home page
 - `output/history.html` — League History page, served at `/history`. Placeholder content; rewritten by every run
 - `output/assets/` — generated copy of `assets/`. Committed, since Cloudflare serves `output/` directly
