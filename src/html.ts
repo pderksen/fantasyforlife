@@ -638,6 +638,15 @@ ${cards}
  * A card rather than a bare table because it now shares a row with the photo column, and the
  * gallery's framed images would otherwise sit beside a list floating on the page background.
  * Its height is also what the gallery column stretches to.
+ *
+ * **The card is sized to its longest team name, and the names are the only input.** A row is
+ * `px-5` + an 18px number + `gap-4` + the name, so the card needs `74px + text`. The longest
+ * name today, "South Town Freedom Fighters", measures 210px at 15px Schibsted Grotesk (199px
+ * in the Segoe UI fallback, so the swap can never wrap what the webfont fits) — 286px in all,
+ * which is what sets the 320px floor below and the 1:1.9 split against the gallery. Add a
+ * longer name to `DRAFT_ORDERS` and both numbers have to be re-checked, since nothing here
+ * wraps gracefully: the row has no `nowrap`, so an overlong name silently breaks onto a
+ * second line rather than erroring.
  */
 function draftOrderHtml(draftOrder: DraftOrder | undefined): string {
   if (!draftOrder) return "";
@@ -646,7 +655,7 @@ function draftOrderHtml(draftOrder: DraftOrder | undefined): string {
     .map((owner, i) => `          <div class="flex gap-4 px-5 py-2.5 border-t border-rule text-[15px]"><span class="text-stone w-[18px]">${i + 1}</span>${esc(owner)}</div>`)
     .join("\n");
 
-  return `      <section class="flex-1 ${flexFloor(300)}">
+  return `      <section class="flex-1 ${flexFloor(320)}">
         <h2 class="${SECTION_H2}">${esc(draftOrder.season)} Draft Order</h2>
         <div class="${CARD} overflow-hidden">
           <div class="px-5 py-[9px] bg-shell text-[11px] font-medium tracking-[0.12em] uppercase text-stone">Team</div>
@@ -679,6 +688,11 @@ const GALLERY_MAX_H = "max-h-[620px]";
  *
  * `chrome.base` prefixes the src so the same markup would resolve from a season directory;
  * only the home page uses it today.
+ *
+ * The `flex-[1.9]` is the draft order's number, not this column's: that card is sized to its
+ * longest team name and the row's leftover width has nowhere else to go, so tightening it
+ * necessarily widens the photos. Since `GALLERY_MAX_H` caps the height either way, a wider
+ * column means a tighter crop rather than taller images.
  */
 function galleryHtml(chrome: SiteChrome): string {
   if (GALLERY.length === 0) return "";
@@ -695,7 +709,7 @@ function galleryHtml(chrome: SiteChrome): string {
     })
     .join("\n");
 
-  return `      <section class="flex-[1.4] ${flexFloor(460)} flex flex-col">
+  return `      <section class="flex-[1.9] ${flexFloor(460)} flex flex-col">
         <h2 class="${SECTION_H2}">From the gallery</h2>
         <div class="flex flex-col gap-4 flex-1 ${GALLERY_MAX_H}">
 ${figures}

@@ -49,7 +49,7 @@ const DRAFT_ORDERS: Record<string, string[]> = {
     "Lemoore Liberators",
     "Easton Evil Empire",
     "Clovis Jets",
-    "South Town FF",
+    "South Town Freedom Fighters",
     "Kingsburg Killaz",
     "Riverstone Stoners",
     "Dinkey Creek Dirt Clods",

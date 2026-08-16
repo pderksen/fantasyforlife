@@ -29,9 +29,15 @@ const POS_ORDER: Record<string, number> = {
   QB: 1, RB: 2, WR: 3, TE: 4, K: 5, DEF: 6,
 };
 
-// Sleeper display names that need correction
+// Sleeper display names that need correction.
+//
+// Applied at capture, so the corrected form is what lands in the snapshot JSON and what every
+// downstream join key (DRAFT_ORDERS, column ordering) has to match. Changing an entry here
+// therefore means hand-editing the already-captured files too — a sealed season never
+// re-fetches, so nothing else will ever rewrite them.
 const OWNER_NAME_OVERRIDES: Record<string, string> = {
   ClovisJets: "Clovis Jets",
+  "South Town FF": "South Town Freedom Fighters",
 };
 
 function applyOwnerNameOverride(name: string): string {
