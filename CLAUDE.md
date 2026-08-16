@@ -10,10 +10,12 @@ Fantasy football roster viewer for a long-running league. Pulls roster data from
 - Native `fetch` (no HTTP library)
 - Zero npm runtime dependencies
 - Tailwind CSS v4 via browser CDN (loaded in generated HTML, not installed): `https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4`. The `@4` auto-tracks the latest 4.x, so no repo change is needed to pick up updates.
-  - **v4 has no JS config.** Theme customization goes in `<style type="text/tailwindcss">` with an `@theme { --font-sans: ... }` block in `htmlHead()`. Do not reintroduce `tailwind.config = {...}`; the v4 browser build ignores it.
+  - **v4 has no JS config.** Theme customization goes in `<style type="text/tailwindcss">` with an `@theme` block in `htmlHead()`. Do not reintroduce `tailwind.config = {...}`; the v4 browser build ignores it.
+  - The `@theme` block is the `THEME` constant in `html.ts` and holds the whole site palette as `--color-*` tokens (`forest`, `cream`, `parchment`, `sage`, `moss`, `stone`, `fern`, `line`, `rule`, `brass`, `ink`). Every `bg-forest` / `text-stone` in the file resolves there. Names are deliberately not `green-800`-shaped: a token named `--color-green-800` sits in Tailwind's own namespace and shadows it silently.
   - Requires Safari 16.4+ / Chrome 111+ / Firefox 128+.
-- Inter font via Google Fonts CDN. Self-hosting was weighed and declined (Aug 2026): a dead font CDN falls back to system fonts with the pages still readable, so there is no durability case worth a build step. Same call as the Tailwind CSS inlining decision above.
-- All styling: Tailwind utility classes + ~10 lines of inline `<style>` for custom colors (position, tier, round). Each HTML file carries all its own markup and custom CSS, but is **not** fully self-contained: Tailwind and Inter both load from CDNs at page view. Deliberate — see the two notes above.
+- Schibsted Grotesk via Google Fonts CDN (replaced Inter, Aug 2026, with the site redesign). Self-hosting was weighed and declined (Aug 2026): a dead font CDN falls back to system fonts with the pages still readable, so there is no durability case worth a build step. Same call as the Tailwind CSS inlining decision above.
+- All styling: Tailwind utility classes + the `@theme` palette + ~10 lines of inline `<style>` for the roster table's own colors (position, tier, round). Each HTML file carries all its own markup and custom CSS, but is **not** fully self-contained: Tailwind and the font both load from CDNs at page view. Deliberate — see the two notes above.
+- One image, `output/assets/ffl-shield.png`, the site header's mark. Copied from `assets/` at the repo root by `syncStaticAssets()` on every run. Everything else on the site is markup.
 
 ## Key Concepts
 
@@ -103,7 +105,8 @@ Both throw `SnapshotGuardError`, which `index.ts` prints without a stack trace. 
 - `src/sleeper-api.ts` — Sleeper API fetch wrappers
 - `src/snapshot.ts` — Snapshot capture/save/load, path helpers, draft round lookup, traded picks resolution + display filters (`picksForDraft()`, `picksAwaitingDraft()`, `newestDataSeason()`), trade log resolution/save/load (`resolveTrades()`, `saveTrades()`, `loadTrades()` — `loadTrades()` has no caller since the page was dropped; it is the read half of the archive), page discovery + nav (`discoverPages()`, `pageFileName()`, `exportFileName()`), pre-draft overwrite guard (`preDraftWindowClosed()`, `SnapshotGuardError`). `OWNER_NAME_OVERRIDES`: `ClovisJets` → `Clovis Jets`
 - `src/roster-grid.ts` — the roster table as data, one step short of markup: `buildRosterGrid()` picks the layout (sequential, tiered, post-draft-by-round), sorts the owner columns, and returns `GridRow[]` plus `columnsInDraftOrder`. Also `columnOrderNote()`, the one place the column-order footnote's wording and its per-type rule live. Both renderers build from it, so the page and its workbook cannot drift. `DraftRoundLookup` lives here
-- `src/html.ts` — HTML generation from the grid, plus the index page. Shared constants: `CELL`, `TH`, `TABLE_WRAP`, `PILL_LINK`, `PILL_ACTIVE`, `PILL_EXPORT`, `SECTION_H2`, `TP_TH`, `TP_TD`. Helpers: `htmlHead()`, `navBar()`, `renderGridRows()`, `tableNotes()`, `tradedPicksTable()`, `esc()`
+- `src/html.ts` — HTML generation from the grid, plus the index page. `THEME` holds the palette. Shared constants: `CELL`, `TH`, `TABLE_WRAP`, `PILL_LINK`, `PILL_ACTIVE`, `PILL_LATEST`, `PILL_EXPORT`, `SECTION_H2`, `CARD`, `LINK`, `TP_TH`, `TP_TD`, `LAST_ROW_FLUSH`. Helpers: `htmlHead()`, `siteHeader()`, `navBar()`, `renderGridRows()`, `tableNotes()`, `tradedPicksTable()`, `heroHtml()`, `honorsHtml()`, `draftOrderHtml()`, `prizesHtml()`, `esc()`
+- `src/league-info.ts` — hand-maintained league facts no Sleeper endpoint carries: `SITE` (wordmark, tagline), `SITE_NAV`, `DRAFT_DATES`, `SEASON_HONORS`, `PRIZE_WINNERS`, `ARCHIVE_LINKS`. Same role `tiers.ts` plays for tier boundaries. Keyed by season so old years stay put
 - `src/xlsx.ts` — Excel generation from the same grid (`generateWorkbook()`, `writeWorkbook()`): styles, both sheets, and the OOXML parts
 - `src/zip.ts` — minimal write-only zip (`zipSync()`), the container an `.xlsx` needs. Node's `zlib` does the compressing
 - `src/tiers.ts` — `TIER_CONFIGS` (season:snapshotType → tier boundaries), `DRAFT_ORDERS` (season → owner pick order)
@@ -123,7 +126,9 @@ Both throw `SnapshotGuardError`, which `index.ts` prints without a stack trace. 
 - `data/<season>/draft-traded-picks.json` — Immutable traded pick data for specific draft
 - `data/<season>/traded-picks.json` — League-level traded picks, unfiltered; re-fetched per command until sealed
 - `data/<season>/trades.json` — Season trade log; re-fetched per command until sealed. Archive only, nothing renders it
+- `assets/` — static files served as-is, mirrored into `output/assets/` by `syncStaticAssets()` on every run. Only `ffl-shield.png` (the site header's mark) belongs here, and it is **not committed yet**
 - `output/index.html` — Home page
+- `output/assets/` — generated copy of `assets/`. Committed, since Cloudflare serves `output/` directly
 - `output/<season>/rosters-<type>.html` — Roster pages
 - `output/<season>/rosters-<type>-<season>-ffl.xlsx` — Excel twin of each roster page, rewritten with it
 - `.gitattributes` — marks `*.xlsx` binary so no line-ending filter can corrupt a workbook
@@ -254,32 +259,51 @@ Full-width colored separator rows dividing the table by draft value. Configured 
 ## Draft Order
 Upcoming season's draft order on index page. Configured in `DRAFT_ORDERS` in `src/tiers.ts` (key: season, value: owner names in pick order). `getLatestDraftOrder()` returns most recent. Add new entry each year; previous entries can remain.
 
+## Site Header
+
+The green bar every page opens with, from `siteHeader()` in `html.ts`. Shield, wordmark ("Fantasy for Life" / "est. 2006" from `SITE`), then `SITE_NAV`. Added Aug 2026 with the redesign; before that the home page had a centered title and roster pages had no chrome at all.
+
+Its per-page inputs are a `SiteChrome` object, passed in rather than derived, because two of the three differ per page:
+
+- **`base`** — `""` on the index, `"../"` on a roster page. Prefixes the shield src and the home link.
+- **`hasMark`** — whether `assets/ffl-shield.png` exists (`hasSiteMark()`). The design makes the mark optional, so a missing file renders the wordmark alone rather than a broken image. **The shield is not in the repo yet**; drop it at `assets/ffl-shield.png` and it appears on every page with no code change.
+- **`tiersHref`** — the newest tiers page, from `newestNavLink()` in `snapshot.ts`. The home page's hero card, its dark `PILL_LATEST` chip, and every page's "Current Tiers" nav item all call that one helper, so they cannot disagree.
+- **`fullBleed`** — roster pages only. Roster tables are as wide as ten owners make them and run edge-to-edge, so a header capped at the home page's 1080px measure would float in a narrow column above a much wider table. The gutters match the roster wrapper's so the wordmark lines up with the h1.
+
+**Planned pages render as `span`, not a dimmed `a`.** Five nav items (Prize Tracker, Survivor, Official Rules, History & Records, Photo Gallery) have no page yet. A link that goes nowhere invites the click and then reads as broken. `NavItem.href` in `league-info.ts` is the only switch — fill one in and the item becomes a live link.
+
 ## Index Page UI
-Generated by `generateIndexHtml` in `src/html.ts`. Light mode, Tailwind CDN + Inter font, centered narrow container. Exact classes live in `html.ts`; this section documents structure and intent, not the class strings.
+Generated by `generateIndexHtml` in `src/html.ts`. Light mode, cream body, site header, content held to a 1080px measure. Exact classes live in `html.ts`; this section documents structure and intent, not the class strings.
 
-**Sections**:
-1. **"Tiers"** — Season rows (year left, chip links right), most-recent first. Archive link ("Tiers 2006–2024", `text-sm text-blue-600`) appears below the oldest season row, inside this section.
-2. **"20XX Draft Order"** — Numbered 1–10 list; only latest season shown.
-3. **Traded Picks** — Always shown; table of picks whose draft hasn't happened yet, or "None". Uses shared `tradedPicksTable()`.
-4. **"Past Seasons"** — Two rows: (1) "Seasons 2025+ on Sleeper ↗" link to `https://sleeper.com/leagues`, with navigation instructions (inline cog SVG icon) on the line below it; (2) link to MyFantasyLeague for seasons 2006–2024.
+**Sections**, in order:
+1. **Hero** — two cards. Left: shortcut to the newest tiers (`newestNavLink()`). Right: the next draft's date and a live countdown. Either can be absent and the row carries whichever it has.
+2. **"20XX Season Honors"** — four cards from `SEASON_HONORS`, latest season only. The `headline` entry takes the brass top rule; the rest take sage.
+3. **"20XX Draft Order" + "20XX Prize Winners"** — side by side on wide screens, stacked below ~600px. Draft order from `DRAFT_ORDERS` in `tiers.ts`, prizes from `PRIZE_WINNERS` in `league-info.ts`.
+4. **Traded Picks** — Always shown; table of picks whose draft hasn't happened yet, or "None". Uses shared `tradedPicksTable()`.
+5. **"Tiers by Season"** — Season rows (year left, chip links right), most-recent first. Archive link ("Tiers 2006–2024") appears below the oldest season row, inside this section. This is the full archive; the hero card is only a shortcut to its newest entry.
+6. **"Past Seasons"** — Two rows: (1) "Seasons 2025+ on Sleeper ↗", with navigation instructions (inline cog SVG icon) on the line below it; (2) link to MyFantasyLeague for seasons 2006–2024.
 
-**Throwback Year badge**: Seasons with snapshots but no pre-draft page show a green badge, left-aligned against the chips. Rare (once every 5–10 years).
+**Draft countdown**: the card carries the target as a `data-target` ISO string from `DRAFT_DATES`, and `COUNTDOWN_SCRIPT` (inline vanilla JS, no bundle) fills the days/hours/minutes every 30s. **The date and time above it are rendered server-side in Pacific, not by the script** — it is a league fixture, everyone is in the same zone, and a fixed string keeps `--generate` deterministic. Only the counter reads the viewer's clock, so regenerating produces no diff. With JS off the card still reads as a date, with en dashes where the numbers go. The offset in the ISO string is required: a bare local datetime would mean a different instant per time zone.
+
+**Throwback Year badge**: Seasons with snapshots but no pre-draft page show a forest badge, left-aligned against the chips. Rare (once every 5–10 years).
 
 **Season chips**: labels come from `SNAPSHOT_TYPE_LABELS` with " Rosters" stripped. Season rows wrap, so chips reflow on narrow screens instead of overflowing.
 
 **Chip order**: Within a season, chips run most-recent-first left to right (End-of-Season, Post-Draft, Pre-Draft). Controlled by `discoverPages()` in `snapshot.ts` (ordered by `SNAPSHOT_TYPE_ORDER`), which feeds index chips and every page's nav bar. Every page is a roster snapshot, so `NavLink.page` is a plain `SnapshotType`.
 
-**Latest chip highlight**: exactly one index chip renders dark (`PILL_LATEST`, gray-900 on white) — the newest tiers that exist, i.e. the first chip of the newest season. It follows from the chip order above, so it advances by itself: 2026 Pre-Draft today, 2026 Post-Draft the moment that page is generated. Still a link, unlike `PILL_ACTIVE` on roster-page nav bars, which marks the page you are already on and isn't clickable. Index nav links all carry `current: false`, so the two never collide.
+**Latest chip highlight**: exactly one index chip renders dark (`PILL_LATEST`, parchment on forest) — the newest tiers that exist, i.e. the first chip of the newest season. It advances by itself: 2026 Pre-Draft today, 2026 Post-Draft the moment that page is generated. Still a link, unlike `PILL_ACTIVE` on roster-page nav bars, which marks the page you are already on and isn't clickable. Index nav links all carry `current: false`, so the two never collide.
 
 ## Roster Page UI
-Generated by `generateHtml` in `src/html.ts`. Light mode, gray body, content in a padded wrapper div. Roster table wrapped in `TABLE_WRAP` (scrolls horizontally on mobile by design, and vertically inside a viewport-height cap). Nav wraps. Exact classes live in `html.ts`; the notes below cover the reasoning, which the code does not.
+Generated by `generateHtml` in `src/html.ts`. Light mode, cream body, site header, content in a padded wrapper div. Roster table wrapped in `TABLE_WRAP` (scrolls horizontally on mobile by design, and vertically inside a viewport-height cap). Nav wraps. Exact classes live in `html.ts`; the notes below cover the reasoning, which the code does not.
+
+**The table itself was deliberately left alone by the Aug 2026 redesign.** Position tints, tier bars, keeper yellow, and cell borders are unchanged — they are duplicated into `xlsx.ts`, and the empty workbook diff after the redesign is the proof nothing drifted. Only the chrome around it changed.
 
 **Styling**:
-- Class constants at top of `html.ts` keep markup DRY (`CELL`, `TH`, `TABLE_WRAP`, `PILL_LINK`, `PILL_ACTIVE`, `PILL_EXPORT`, `SECTION_H2`, `TP_TH`, `TP_TD`)
+- Class constants at top of `html.ts` keep markup DRY (`CELL`, `TH`, `TABLE_WRAP`, `PILL_LINK`, `PILL_ACTIVE`, `PILL_LATEST`, `PILL_EXPORT`, `SECTION_H2`, `CARD`, `LINK`, `TP_TH`, `TP_TD`, `LAST_ROW_FLUSH`)
 - **Excel pill**: nav's last item, pushed right with `ml-auto` — a download icon plus "Excel", linking `rosters-<type>-<season>-ffl.xlsx` as a sibling with the `download` attribute. `PILL_EXPORT` shares `PILL_BOX` and `PILL_LINK_COLORS` with the other pills but swaps `inline-block` for `inline-flex` rather than adding it: two `display` utilities on one element resolve by stylesheet order, not attribute order, so the loser would be picked silently
-- **Gotcha**: `SECTION_H2` is used for index page headings; `tradedPicksSection()` on roster pages has its own inline heading style — keep both in sync when changing heading styles
+- `SECTION_H2` is now the *only* section heading style — small uppercase tracked type, used by both the index sections and `tradedPicksSection()` on roster pages. It used to be index-only, with `tradedPicksSection()` carrying a hand-written duplicate that had to be kept in sync; the redesign collapsed the two. Don't reintroduce a second one
 - Inline `<style>` via `ROSTER_STYLES` / `ROUND_COL_STYLE`: position colors (`.pos-qb` etc.), keeper highlight (`.keeper`), sticky-header borders (`th.sticky`), tier colors (`.tier-1` etc.), round label column
-- **Sticky header**: `TH` carries `sticky top-0 z-10`, which works *only* because `TABLE_WRAP` caps the wrapper's height. An overflow container is the scrollport its sticky descendants pin to, so a wrapper that never scrolls vertically means a header that never sticks — dropping the `max-h` silently kills it (that was the original bug). Separately, `border-collapse` hands cell borders to the table, so a pinned `th` loses its own borders mid-scroll; `th.sticky` redraws the right and bottom edges as a box-shadow that travels with the cell. **Expect to see no effect on a desktop monitor** — the roster table renders ~695px tall, so at 1080p and up it fits inside the cap and never scrolls. It engages on short viewports (a 1280×800 laptop gets ~165px of scroll). That is the intended range, not a bug.
+- **Sticky header**: `TH` carries `sticky top-0 z-10`, which works *only* because `TABLE_WRAP` caps the wrapper's height. An overflow container is the scrollport its sticky descendants pin to, so a wrapper that never scrolls vertically means a header that never sticks — dropping the `max-h` silently kills it (that was the original bug). The cap is `100dvh - 15rem`, where 15rem is everything above the table: site header bar, page padding, h1, league name, nav. It was 10rem before the site header existed, so anything that changes the header's height should move it again. Separately, `border-collapse` hands cell borders to the table, so a pinned `th` loses its own borders mid-scroll; `th.sticky` redraws the right and bottom edges as a box-shadow that travels with the cell. **Expect to see no effect on a desktop monitor** — the roster table renders ~695px tall, so at 1080p and up it fits inside the cap and never scrolls. It engages on short viewports (a 1280×800 laptop gets ~165px of scroll). That is the intended range, not a bug.
 - **Keeper highlight**: `.keeper { background: #ffff00 }` (fluorescent yellow) deliberately overrides the position tint — it is declared *after* the `.pos-*` rules and wins on source order, since both are single-class selectors. Keep it there. The position is still spelled out in the cell text, so nothing is lost. `ROSTER_STYLES` is shared, so this rule ships on every roster page; it is inert wherever no cell carries the class.
 - **Table notes**: the footnotes between the roster table and the Traded Picks heading, both emitted by `tableNotes()` in `html.ts`, each conditional and each carrying its own leading newline so a page with neither emits no blank line. Whichever comes first takes `mt-3` off the table and a following one takes `mt-2`, so they read as one block.
 - **Keeper legend**: swatch + "Keeper". Rendered only when a player in that snapshot actually carries `keeper: true`, not by snapshot type, so a throwback year's pages stay legend-free without a special case. `takeSnapshot()` only fills the keeper id set for pre-draft ([snapshot.ts](src/snapshot.ts) `keeperIds`), so today only pre-draft pages qualify. The swatch reuses the `.keeper` class rather than repeating the hex.

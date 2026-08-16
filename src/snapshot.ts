@@ -1,5 +1,5 @@
 import { existsSync, readdirSync } from "node:fs";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, cp } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type {
@@ -641,8 +641,48 @@ export function buildIndexNavLinks(): NavLink[] {
   }));
 }
 
+/**
+ * The newest tiers page that exists: newest season, newest snapshot type within it.
+ *
+ * `discoverPages()` walks seasons oldest-first and types newest-first, so the answer is the
+ * first link belonging to the last season. Both the home page's hero card and every page's
+ * "Current Tiers" nav item point here, and it advances on its own — 2026 Pre-Draft today,
+ * 2026 Post-Draft the moment that page is generated.
+ */
+export function newestNavLink(links: NavLink[]): NavLink | undefined {
+  const newestSeason = links[links.length - 1]?.season;
+  return links.find((l) => l.season === newestSeason);
+}
+
 export function getIndexOutputPath(): string {
   return join(DATA_DIR, "..", "output", "index.html");
+}
+
+// ── Static assets ──
+
+/**
+ * Files served as-is rather than generated: today just the site header's shield.
+ *
+ * They live in `assets/` at the repo root and are copied into `output/assets/` by every run,
+ * because `output/` is what Cloudflare serves and what git archives — an image referenced
+ * from a page has to be in there too. Copying rather than committing only to `output/` keeps
+ * the source of every served file visible outside the generated directory.
+ */
+const ASSETS_SOURCE_DIR = join(DATA_DIR, "..", "assets");
+const SITE_MARK = "ffl-shield.png";
+
+/**
+ * Whether the header shield is available to link. The design treats the mark as optional, so
+ * a missing file renders the wordmark alone instead of a broken image.
+ */
+export function hasSiteMark(): boolean {
+  return existsSync(join(ASSETS_SOURCE_DIR, SITE_MARK));
+}
+
+/** Mirror `assets/` into `output/assets/`. No-op when there is nothing to copy. */
+export async function syncStaticAssets(): Promise<void> {
+  if (!existsSync(ASSETS_SOURCE_DIR)) return;
+  await cp(ASSETS_SOURCE_DIR, join(DATA_DIR, "..", "output", "assets"), { recursive: true });
 }
 
 /**

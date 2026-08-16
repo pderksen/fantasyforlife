@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
-import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, getExportOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft, resolveTrades, saveTrades, preDraftWindowClosed, SnapshotGuardError } from "./snapshot.js";
+import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, getExportOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft, resolveTrades, saveTrades, preDraftWindowClosed, hasSiteMark, syncStaticAssets, newestNavLink, SnapshotGuardError } from "./snapshot.js";
 import { generateHtml, generateIndexHtml, writeHtml, formatPacificDate } from "./html.js";
 import { generateWorkbook, writeWorkbook } from "./xlsx.js";
 import { getLeagueDrafts, getDraftPicks, getDraftTradedPicksRaw, fetchAllPlayers, getLeagueTradedPicks, getPickTrades, getTrades, getLeague } from "./sleeper-api.js";
@@ -95,7 +95,7 @@ async function regenerateIndex(): Promise<void> {
   const upcomingPicks = picksAwaitingDraft(allPicks, lastDraftedSeason);
 
   const draftOrder = getLatestDraftOrder();
-  const html = generateIndexHtml(LEAGUE_NAME, navLinks, upcomingPicks, draftOrder);
+  const html = generateIndexHtml(LEAGUE_NAME, navLinks, upcomingPicks, draftOrder, hasSiteMark());
   const outputPath = getIndexOutputPath();
   await writeHtml(html, outputPath);
   console.log(`Index written: ${outputPath}`);
@@ -118,8 +118,12 @@ async function writeRosterOutputs(snapshot: Snapshot, inputs: RosterPageInputs):
   const { navLinks, ownerOrder, tiers, draftRounds, tradedPicks } = inputs;
   const { season, snapshotType } = snapshot;
 
+  // Roster pages sit one directory down from the output root, so the site header's shield
+  // and "Current Tiers" link need to climb back out.
+  const chrome = { base: "../", hasMark: hasSiteMark(), tiersHref: newestNavLink(navLinks)?.href, fullBleed: true };
+
   const outputPath = getOutputPath(season, snapshotType);
-  await writeHtml(generateHtml(snapshot, navLinks, ownerOrder, tiers, draftRounds, tradedPicks), outputPath);
+  await writeHtml(generateHtml(snapshot, navLinks, ownerOrder, tiers, draftRounds, tradedPicks, chrome), outputPath);
   console.log(`HTML written: ${outputPath}`);
 
   const exportPath = getExportOutputPath(season, snapshotType);
@@ -363,6 +367,10 @@ async function main(): Promise<void> {
     printUsage();
     process.exit(1);
   }
+
+  // Every run mirrors assets/ into output/, so a page that references the shield always has
+  // it beside them. Cheap, and it means dropping a new file in assets/ needs no other step.
+  await syncStaticAssets();
 
   // Always regenerate the index page to pick up any new snapshots
   await regenerateIndex();
