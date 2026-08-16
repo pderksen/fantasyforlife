@@ -658,6 +658,15 @@ export function getIndexOutputPath(): string {
   return join(DATA_DIR, "..", "output", "index.html");
 }
 
+/**
+ * The League History page. A flat file at the output root rather than `history/index.html`,
+ * so Cloudflare Pages serves it at `/history` and the link still resolves over `file://`
+ * during local preview.
+ */
+export function getHistoryOutputPath(): string {
+  return join(DATA_DIR, "..", "output", "history.html");
+}
+
 // ── Static assets ──
 
 /**

@@ -39,7 +39,9 @@ export const SITE_NAV: NavItem[] = [
   { label: "Prize Tracker" },
   { label: "Survivor" },
   { label: "Official Rules" },
-  { label: "History & Records" },
+  // Written to output/history.html, which Cloudflare Pages serves at /history. The link
+  // keeps the extension so it also resolves over file:// during local preview.
+  { label: "League History", href: "history.html" },
   { label: "Photo Gallery" },
   { label: "Sleeper", href: "https://sleeper.com/leagues", pill: true, external: true },
 ];

@@ -59,10 +59,35 @@ differ per page:
   narrow column above a much wider table. The gutters match the roster wrapper's so the
   wordmark lines up with the h1.
 
-**Planned pages render as `span`, not a dimmed `a`.** Five nav items (Prize Tracker, Survivor,
-Official Rules, History & Records, Photo Gallery) have no page yet. A link that goes nowhere
-invites the click and then reads as broken. `NavItem.href` in `league-info.ts` is the only
-switch — fill one in and the item becomes a live link.
+**Planned pages render as `span`, not a dimmed `a`.** Four nav items (Prize Tracker, Survivor,
+Official Rules, Photo Gallery) have no page yet. A link that goes nowhere invites the click and
+then reads as broken. `NavItem.href` in `league-info.ts` is the only switch — fill one in and
+the item becomes a live link.
+
+**A relative `href` names a file at the output root.** `navItemHtml()` prefixes it with
+`chrome.base`, so a single `SITE_NAV` entry resolves from the index (`history.html`) and from a
+season directory (`../history.html`) with no per-page config. Absolute hrefs (the Sleeper pill)
+pass through untouched, and `tiersHref` skips the prefix because the caller already resolved it
+relative to the page being written.
+
+---
+
+## League History Page
+
+`output/history.html`, from `generateHistoryHtml()` in `html.ts`, rewritten by
+`regenerateHistory()` in `index.ts` on every run right after the index.
+
+**The content is a placeholder.** The page was created so the "League History" nav item has
+somewhere to go; its sections get written by hand as the history is settled.
+
+- **A flat file, not `history/index.html`.** Cloudflare Pages serves either at `/history` (and
+  301s `/history.html` to it), but a flat file also opens over `file://`, which is how this
+  project previews pages locally. The nav link keeps the `.html` for that reason.
+- Root-level page, so it takes the index's chrome (`base: ""`, no `fullBleed`) and the same
+  1080px measure.
+- It depends on no snapshot data, so unlike `regenerateIndex()` it writes even before any
+  roster page exists. The only thing it takes from the nav links is where "Current Tiers"
+  points.
 
 ---
 

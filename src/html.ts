@@ -310,8 +310,17 @@ const NAV_LINK = "no-underline text-parchment transition-opacity hover:opacity-7
 const NAV_PLANNED = "text-sage/50 cursor-default";
 const NAV_PILL = "no-underline text-forest bg-parchment rounded-full px-4 py-1.5 font-medium transition-opacity hover:opacity-80";
 
+/** An href that already names its own destination, rather than one relative to the output root. */
+function isAbsoluteHref(href: string): boolean {
+  return /^[a-z][a-z0-9+.-]*:|^\/\//i.test(href) || href.startsWith("/");
+}
+
 function navItemHtml(item: NavItem, chrome: SiteChrome): string {
-  const href = item.tiers ? chrome.tiersHref : item.href;
+  // `tiersHref` is resolved by the caller and already relative to this page; a plain
+  // `href` names a file at the output root, so it needs the prefix back out of a
+  // season directory. Absolute ones (Sleeper) are left alone.
+  const own = item.href && !isAbsoluteHref(item.href) ? `${chrome.base}${item.href}` : item.href;
+  const href = item.tiers ? chrome.tiersHref : own;
   const label = esc(item.label) + (item.external ? " &#8599;" : "");
 
   if (!href) return `<span class="${NAV_PLANNED}" title="Coming soon">${label}</span>`;
@@ -707,6 +716,43 @@ ${seasonRows}
 ${pastSeasonsHtml}
   </main>
 ${COUNTDOWN_SCRIPT}
+</body>
+</html>`;
+}
+
+/**
+ * The League History page, at `output/history.html` (served as `/history`).
+ *
+ * A root-level page like the index, so it takes the same `base: ""` chrome and the same
+ * 1080px measure. The content is a placeholder: the page exists so the nav item has
+ * somewhere to go, and the sections below get written by hand as the history is settled.
+ */
+export function generateHistoryHtml(leagueName: string, navLinks: NavLink[], hasMark = false): string {
+  const chrome: SiteChrome = { base: "", hasMark, tiersHref: newestNavLink(navLinks)?.href };
+
+  return `<!DOCTYPE html>
+<html lang="en">
+${htmlHead({
+    title: `${leagueName} - League History`,
+    ogTitle: "League History",
+    description: "Champions, records, and the long story of the league. Est. 2006.",
+    siteName: leagueName,
+  })}
+<body class="bg-cream text-ink font-sans antialiased">
+${siteHeader(chrome)}
+  <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
+    <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-2">League History</h1>
+    <p class="text-fern mb-12">Champions, records, and the long story of the league since 2006.</p>
+
+    <section class="mb-14">
+      <h2 class="${SECTION_H2}">Coming Soon</h2>
+      <div class="${CARD} p-6">
+        <p class="text-fern m-0">This page is still being written. In the meantime, the
+        <a href="index.html" class="${LINK}">home page</a> carries the current season's tiers,
+        draft order, and prize winners.</p>
+      </div>
+    </section>
+  </main>
 </body>
 </html>`;
 }

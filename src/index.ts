@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
-import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, getExportOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft, resolveTrades, saveTrades, preDraftWindowClosed, hasSiteMark, syncStaticAssets, newestNavLink, SnapshotGuardError } from "./snapshot.js";
-import { generateHtml, generateIndexHtml, writeHtml, formatPacificDate } from "./html.js";
+import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, getExportOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, getHistoryOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft, resolveTrades, saveTrades, preDraftWindowClosed, hasSiteMark, syncStaticAssets, newestNavLink, SnapshotGuardError } from "./snapshot.js";
+import { generateHtml, generateIndexHtml, generateHistoryHtml, writeHtml, formatPacificDate } from "./html.js";
 import { generateWorkbook, writeWorkbook } from "./xlsx.js";
 import { getLeagueDrafts, getDraftPicks, getDraftTradedPicksRaw, fetchAllPlayers, getLeagueTradedPicks, getPickTrades, getTrades, getLeague } from "./sleeper-api.js";
 import { getTierConfig, getLatestDraftOrder } from "./tiers.js";
@@ -99,6 +99,17 @@ async function regenerateIndex(): Promise<void> {
   const outputPath = getIndexOutputPath();
   await writeHtml(html, outputPath);
   console.log(`Index written: ${outputPath}`);
+}
+
+/**
+ * Rewrite the League History page. Unlike the index it depends on no snapshot data, so it is
+ * written on every run regardless of whether any roster page exists yet — the only thing it
+ * takes from the nav links is where "Current Tiers" points.
+ */
+async function regenerateHistory(): Promise<void> {
+  const outputPath = getHistoryOutputPath();
+  await writeHtml(generateHistoryHtml(LEAGUE_NAME, buildIndexNavLinks(), hasSiteMark()), outputPath);
+  console.log(`History written: ${outputPath}`);
 }
 
 interface RosterPageInputs {
@@ -374,6 +385,7 @@ async function main(): Promise<void> {
 
   // Always regenerate the index page to pick up any new snapshots
   await regenerateIndex();
+  await regenerateHistory();
 
   if (openHomePage) {
     const indexPath = getIndexOutputPath();
