@@ -16,7 +16,7 @@ outside this repo.
 
 `syncStaticAssets()` mirrors `assets/` into `output/assets/` on every run, so a file in
 `assets/photos/` needs no other step to be served. Reference it from a page as
-`${chrome.base}assets/photos/<name>.webp`, never a bare relative path: `chrome.base` is what
+`${chrome.base}assets/photos/<name>.jpg`, never a bare relative path: `chrome.base` is what
 makes one href resolve from both the output root and a season directory.
 
 ## Why originals must never be committed
@@ -57,46 +57,56 @@ twelve go in a three-up grid on the history page" is what turns the 650px row in
 
 ## Format
 
-**WebP, quality 80.** Photographic content, universally supported by the browser baseline this
-site already requires (Tailwind v4 needs Safari 16.4+ / Chrome 111+ / Firefox 128+), and no
-`<picture>` fallback to maintain.
+**Native formats: JPEG for photographs, PNG for the brand marks.** Ten people look at this
+site a few times a year. Squeezing the last 40% off a 400 KB file buys nothing that justifies
+carrying a second format to reason about, and both of these open in anything, including the
+image tools on the dev machine.
 
-AVIF is roughly 30% smaller again and clears the same baseline, but encodes slowly and buys
-little at these dimensions. Worth reaching for only on a single large hero. Keep PNG for
-graphics with flat color and hard edges, like the header mark; it is the wrong format for a
-photograph.
+The photo setting is ffmpeg's `-q:v 2` (roughly JPEG quality 93). Measured 2026-08-16 against
+the WebP quality-80 cuts it replaced: about 2x the bytes, and visually indistinguishable at
+1:1 — on the 2025 group shot the JPEG is marginally *crisper* on the fine magazine text.
 
-That PNG rule has one loud exception, measured below: **flat art carrying a grain or paper
-texture behaves like a photograph to a compressor**, and PNG prices it as one. See Brand marks.
+This was WebP until 2026-08-16, chosen for bytes. The bytes were never the constraint at this
+traffic level, so it was traded away for formats that need no thought.
+
+Format choice still has teeth in exactly one place: **flat art carrying a grain or paper
+texture behaves like a photograph to a compressor**, and PNG prices it as one. That is what
+decides how far the banner ladder goes. See Brand marks.
 
 ## Naming
 
 Lowercase, hyphenated, dated or seasoned where it helps sorting:
-`2019-draft-table.webp`, `2024-champion-trophy.webp`, `owner-clovis-jets.webp`. The name ships
+`2019-draft-table.jpg`, `2024-champion-trophy.jpg`, `owner-clovis-jets.jpg`. The name ships
 in the URL and never changes without breaking a link, so pick it at optimize time rather than
 renaming later.
 
 ## Optimizing
 
 The project holds zero runtime dependencies and there is no image build step, so this is a
-manual pass. **ffmpeg is installed on the dev machine** (winget, `Gyan.FFmpeg`) and its
-`libwebp` encoder is what these assets were cut with:
+manual pass. **ffmpeg is installed on the dev machine** (winget, `Gyan.FFmpeg`) and is what
+these assets were cut with:
 
 ```
 ffmpeg -y -i photos-inbox/IMG_4417.jpg -vf "scale=2000:-2:flags=lanczos" \
-  -c:v libwebp -preset picture -quality 80 -compression_level 6 assets/photos/2019-draft-table.webp
+  -map_metadata -1 -c:v mjpeg -q:v 2 assets/photos/2019-draft-table.jpg
 ```
 
-`flags=lanczos` matters: ffmpeg's default `bicubic` softens hard edges noticeably on a big
-downscale. `-preset picture` tunes libwebp for stills rather than the default photo profile.
+Three parts of that are load-bearing:
 
-On a machine without ffmpeg, `npx --yes @squoosh/cli --webp '{"quality":80}' --resize
-'{"width":2000}' -d assets/photos <file>` is the fallback, but squoosh is archived upstream and
-is not guaranteed to run on Node 24.
+- **`flags=lanczos`** — ffmpeg's default `bicubic` softens hard edges noticeably on a big
+  downscale.
+- **`-q:v 2`** — the mjpeg scale runs 1–31 and is *inverted*, so 2 is near the top. 1 costs
+  bytes for no visible gain.
+- **`-map_metadata -1`** — iPhone originals carry an EXIF block with the camera model, the
+  capture timestamp, and potentially GPS coordinates, and these files are served publicly.
+  Stripping it also shaves a few KB. Nothing on the site reads EXIF, so there is nothing to
+  lose.
 
-Add `-map_metadata -1`. iPhone originals carry an EXIF block with the camera model, the capture
-timestamp, and potentially GPS coordinates, and these files are served publicly. Stripping it
-also shaves a few KB. Nothing on the site reads EXIF, so there is nothing to lose.
+`-huffman optimal` is not worth adding: measured 2026-08-16 on the 2000px cut, it changed the
+file size by zero bytes.
+
+`-2` in the scale filter (rather than `-1`) keeps the derived dimension even, which some
+encoders require and none object to.
 
 Then rename the output, confirm it looks right at full size, and delete the inbox copy. If this
 ever becomes routine rather than a few times a year, the upgrade is a `sharp` devDependency and
@@ -108,10 +118,10 @@ Cut 2026-08-16 from two iPhone 15 originals, both shot 2025-08-23 at the 2025 dr
 
 | File | Size | Bytes | Is |
 |------|------|-------|-----|
-| `2024-champion-toilet-bowl-trophies-1400.webp` | 1400×1168 | 201 KB | The 2024 champion and toilet-bowl trophies, held by their winners |
-| `2024-champion-toilet-bowl-trophies-650.webp` | 650×542 | 54 KB | Same, gallery thumb |
-| `2025-draft-day-league-photo-2000.webp` | 2000×1184 | 219 KB | All ten owners on 2025 draft day, one attending by laptop |
-| `2025-draft-day-league-photo-650.webp` | 650×384 | 41 KB | Same, gallery thumb |
+| `2024-champion-toilet-bowl-trophies-1400.jpg` | 1400×1168 | 379 KB | The 2024 champion and toilet-bowl trophies, held by their winners |
+| `2024-champion-toilet-bowl-trophies-650.jpg` | 650×542 | 101 KB | Same, gallery thumb |
+| `2025-draft-day-league-photo-2000.jpg` | 2000×1184 | 453 KB | All ten owners on 2025 draft day, one attending by laptop |
+| `2025-draft-day-league-photo-650.jpg` | 650×384 | 76 KB | Same, gallery thumb |
 
 Both are uncropped, at the aspect they were shot. Two calls worth recording:
 
@@ -144,30 +154,38 @@ deleting the inbox copies.
 
 | File | Size | Bytes | Slot |
 |------|------|-------|------|
-| `assets/ffl-avatar-128.png` | 128×128 | 17.7 KB | The site header mark, rendered at 42 CSS px |
-| `assets/ffl-avatar-512.webp` | 512×512 | 13.8 KB | Social card, `og:image`, re-uploading the Sleeper avatar |
-| `assets/ffl-logo-1998.webp` | 1998×666 | 36.3 KB | Banner at full column width, 2x |
-| `assets/ffl-logo-999.webp` | 999×333 | 14.8 KB | Same banner, 1x, or half-column at 2x |
+| `assets/ffl-avatar-128.png` | 128×128 | 17.3 KB | The site header mark, rendered at 42 CSS px |
+| `assets/ffl-avatar-512.png` | 512×512 | 329 KB | Social card, `og:image`, re-uploading the Sleeper avatar |
+| `assets/ffl-logo-999.png` | 999×333 | 331 KB | Banner at full column width, 1x |
 
-82 KB in total, down from 3.2 MB of masters. That figure is the point of the exercise:
-`output/` is committed and `assets/` is mirrored into it, so every byte here is stored **twice**
-in git forever.
+677 KB in total, down from 3.2 MB of masters. `output/` is committed and `assets/` is mirrored
+into it, so every byte here is stored **twice** in git forever — which is the only real argument
+against the format, since nobody is waiting on the download.
 
-Four decisions worth not re-litigating:
+Only `ffl-avatar-128.png` is referenced by a page today. The other two are staged.
 
-- **WebP everywhere except the header mark.** The grain texture is what settles this. At 512×512
-  the square is 321 KB as PNG and 13.8 KB as WebP, a 23x difference, because PNG's filters have
-  nothing to predict against per-pixel noise. The header mark stays PNG anyway: at 128px the
-  format costs 14 KB, and `SITE_MARK` in [snapshot.ts](../src/snapshot.ts) plus the `<img src>`
-  in [html.ts](../src/html.ts) would both need editing to serve a `.webp`. Those two are the
-  filename contract, so **renaming any header mark means changing both**.
+Five decisions worth not re-litigating:
+
+- **PNG, knowing the grain makes it expensive.** At 512×512 the square is 329 KB as PNG and
+  13.8 KB as WebP, a 24x difference, because PNG's filters have nothing to predict against
+  per-pixel noise. Paid deliberately on 2026-08-16 for a native format at a site nobody is
+  waiting on. See Format.
+- **The header mark's filename is a contract.** `SITE_MARK` in [snapshot.ts](../src/snapshot.ts)
+  and the `<img src>` in [html.ts](../src/html.ts) must name the same file, so **renaming any
+  header mark means changing both**. A mismatch does not error — `hasSiteMark()` goes false and
+  the header quietly degrades to wordmark-only, which is a designed state and so looks
+  intentional.
+- **No 2x banner cut.** `ffl-logo-1998` was 1.27 MB as PNG, two thirds of the entire ladder, for
+  a slot no page has. Dropped 2026-08-16 rather than paid for on spec. Re-cut it from the master
+  when a full-width banner slot actually gets built, and weigh JPEG for that one file at that
+  point: it is the only asset here big enough for the format to matter.
 - **128px, not 84.** The slot is 42 CSS px, so 84 would be the exact 2x. 128 covers 3x phones
   and, more importantly, 1024/128 is a clean integer 8, where 1024/84 is 12.19 and resamples
   slightly soft.
-- **Banner widths divisible by 3.** The master is exactly 3:1, so 2000 wide (the full-column
-  target in the table above) lands on a fractional 666.67 height and the 1x and 2x cuts end up
-  at 666 and 334, not proportional. A `srcset` pairing those two shifts layout by a pixel when
-  the browser swaps sources. 1998 and 999 are exact and the 2px shortfall is invisible.
+- **999 wide, not 1000.** The master is exactly 3:1, so a width divisible by 3 gives an exact
+  integer height (333) instead of 333.33. This matters the day a 2x partner is cut: a `srcset`
+  pairing 1000 and 2000 lands on heights 333 and 667, not proportional, and shifts layout by a
+  pixel when the browser swaps sources. 999/1998 are exact and the 1px shortfall is invisible.
 - **Neither master has an alpha channel.** Both are 24-bit RGB with an opaque background, and
   the background is *not* `--color-forest` (`#183f24`): the square sits on roughly `#0a2e14` and
   the banner vignettes to near-black at its edges. So the avatar reads as a deliberate darker
@@ -180,9 +198,14 @@ Four decisions worth not re-litigating:
 
 ```
 ffmpeg -y -i photos-inbox/ffl-logo.png -vf "scale=999:333:flags=lanczos" \
-  -c:v libwebp -preset picture -quality 85 -compression_level 6 assets/ffl-logo-999.webp
+  -c:v png -compression_level 100 assets/ffl-logo-999.png
 ```
 
-Quality 85 rather than the photo default of 80: the wordmark has hard cream-on-green edges that
-show ringing sooner than a photograph does. Verify by cropping a region at 1:1 and looking at
-it, never by trusting the byte count.
+No `-map_metadata -1` needed — the masters are artwork exports and carry no EXIF to strip.
+`-compression_level 100` is zlib effort only; PNG is lossless either way, so this trades encode
+time for bytes and nothing else.
+
+If a cut ever does go to JPEG, the wordmark's hard cream-on-green edges show ringing sooner than
+a photograph does, so verify by cropping a region and magnifying it with `flags=neighbor`, never
+by trusting the byte count. Checked at `-q:v 2` on 2026-08-16: a faint halo at 1.6x, invisible
+at display size.
