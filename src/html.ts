@@ -277,14 +277,14 @@ function tradedPicksSection(tradedPicks?: ResolvedTradedPick[]): string {
  * Where a page sits relative to the output root, and what the site header can show from there.
  *
  * Every page carries the same header, but the index sits at `output/` and roster pages sit a
- * directory down, so the shield and the "Current Tiers" link need a prefix that differs per
+ * directory down, so the avatar and the "Current Tiers" link need a prefix that differs per
  * page. Passing it in beats guessing from the season, and keeps `generateIndexHtml` pure.
  */
 export interface SiteChrome {
   /** Prefix from this page back to `output/`: "" for the index, "../" for a season page. */
   base: string;
   /**
-   * Whether the shield asset is on disk to be linked. The design makes the mark optional
+   * Whether the avatar asset is on disk to be linked. The design makes the mark optional
    * (its `showMark` toggle), so a missing file degrades to the wordmark on its own rather
    * than to a broken image.
    */
@@ -330,14 +330,14 @@ function navItemHtml(item: NavItem, chrome: SiteChrome): string {
 }
 
 /**
- * The green bar every page opens with: shield, wordmark, and the site nav.
+ * The green bar every page opens with: avatar, wordmark, and the site nav.
  *
  * Full-bleed background with the contents held to the same 1080px measure the page body uses,
  * so the bar spans the viewport while its text lines up with everything below it.
  */
 function siteHeader(chrome: SiteChrome): string {
   const mark = chrome.hasMark
-    ? `<img src="${esc(chrome.base)}assets/ffl-shield.png" alt="" width="42" height="42" class="w-[42px] h-[42px] rounded-lg">\n        `
+    ? `<img src="${esc(chrome.base)}assets/ffl-avatar-128.png" alt="" width="42" height="42" class="w-[42px] h-[42px] rounded-lg">\n        `
     : "";
 
   const items = SITE_NAV.map((item) => navItemHtml(item, chrome)).join("\n        ");

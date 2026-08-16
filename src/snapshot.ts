@@ -670,7 +670,8 @@ export function getHistoryOutputPath(): string {
 // ── Static assets ──
 
 /**
- * Files served as-is rather than generated: today just the site header's shield.
+ * Files served as-is rather than generated: the brand marks, of which only the header's
+ * avatar is referenced by a page today.
  *
  * They live in `assets/` at the repo root and are copied into `output/assets/` by every run,
  * because `output/` is what Cloudflare serves and what git archives — an image referenced
@@ -678,10 +679,10 @@ export function getHistoryOutputPath(): string {
  * the source of every served file visible outside the generated directory.
  */
 const ASSETS_SOURCE_DIR = join(DATA_DIR, "..", "assets");
-const SITE_MARK = "ffl-shield.png";
+const SITE_MARK = "ffl-avatar-128.png";
 
 /**
- * Whether the header shield is available to link. The design treats the mark as optional, so
+ * Whether the header avatar is available to link. The design treats the mark as optional, so
  * a missing file renders the wordmark alone instead of a broken image.
  */
 export function hasSiteMark(): boolean {

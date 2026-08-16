@@ -32,25 +32,28 @@ shape of call as leaving Tailwind on its CDN.
 custom CSS, but Tailwind and the font both load from CDNs at page view. That's deliberate, not
 an oversight to fix.
 
-**One image on the whole site**, `output/assets/ffl-shield.png`, the header's mark. Everything
-else is markup.
+**One image on the whole site**, `output/assets/ffl-avatar-128.png`, the header's mark.
+Everything else is markup. Three further brand cuts sit in `output/assets/` unreferenced,
+staged for slots not yet built; the ladder is in `docs/photos.md`.
 
 ---
 
 ## Site Header
 
-The green bar every page opens with, from `siteHeader()` in `html.ts`. Shield, wordmark
+The green bar every page opens with, from `siteHeader()` in `html.ts`. Avatar, wordmark
 ("Fantasy for Life" / "est. 2006" from `SITE`), then `SITE_NAV`.
 
 Its per-page inputs are a `SiteChrome` object, passed in rather than derived, because they
 differ per page:
 
-- **`base`** — `""` on the index, `"../"` on a roster page. Prefixes the shield src and the
+- **`base`** — `""` on the index, `"../"` on a roster page. Prefixes the avatar src and the
   home link.
-- **`hasMark`** — whether `assets/ffl-shield.png` exists (`hasSiteMark()`). The design makes the
-  mark optional, so a missing file renders the wordmark alone rather than a broken image.
-  **The shield is not in the repo yet**; drop it at `assets/ffl-shield.png` and it appears on
-  every page with no code change.
+- **`hasMark`** — whether `assets/ffl-avatar-128.png` exists (`hasSiteMark()`). The design makes
+  the mark optional, so a missing file renders the wordmark alone rather than a broken image.
+  The file landed on 2026-08-16 and the mark now renders on every page; before that the header
+  ran wordmark-only, which is what the toggle is for. The filename is a contract between
+  `SITE_MARK` in `snapshot.ts` and the `<img src>` in `html.ts`, so renaming the asset means
+  editing both.
 - **`tiersHref`** — the newest tiers page, from `newestNavLink()` in `snapshot.ts`. The home
   page's hero card, its dark `PILL_LATEST` chip, and every page's "Current Tiers" nav item all
   call that one helper, so they cannot disagree.

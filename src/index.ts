@@ -129,7 +129,7 @@ async function writeRosterOutputs(snapshot: Snapshot, inputs: RosterPageInputs):
   const { navLinks, ownerOrder, tiers, draftRounds, tradedPicks } = inputs;
   const { season, snapshotType } = snapshot;
 
-  // Roster pages sit one directory down from the output root, so the site header's shield
+  // Roster pages sit one directory down from the output root, so the site header's avatar
   // and "Current Tiers" link need to climb back out.
   const chrome = { base: "../", hasMark: hasSiteMark(), tiersHref: newestNavLink(navLinks)?.href, fullBleed: true };
 
@@ -379,7 +379,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // Every run mirrors assets/ into output/, so a page that references the shield always has
+  // Every run mirrors assets/ into output/, so a page that references the avatar always has
   // it beside them. Cheap, and it means dropping a new file in assets/ needs no other step.
   await syncStaticAssets();
 

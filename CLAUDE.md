@@ -19,7 +19,7 @@ Fantasy football roster viewer for a long-running league. Pulls roster data from
 - Native `fetch` (no HTTP library). **Zero npm runtime dependencies** — hold this line.
 - Tailwind CSS v4 and Schibsted Grotesk both load from CDNs at page view; pages are not self-contained. **v4 has no JS config** — theme lives in the `@theme` block (`THEME` in `html.ts`), never `tailwind.config = {...}`. Requires Safari 16.4+ / Chrome 111+ / Firefox 128+. Rationale, palette token names, and the declined self-hosting proposals: `docs/site-design.md`.
 - All styling: Tailwind utilities + the `@theme` palette + ~10 lines of inline `<style>` for the roster table's own colors (position, tier, round).
-- One image, `output/assets/ffl-shield.png`, the site header's mark. Copied from `assets/` by `syncStaticAssets()` on every run.
+- Four images in `output/assets/`, copied from `assets/` by `syncStaticAssets()` on every run. Only `ffl-avatar-128.png` (the site header's mark) is referenced by a page today; the larger avatar and the two banner cuts are staged for slots not yet built. Ladder and rationale: `docs/photos.md`.
 
 ## Key Concepts
 
@@ -126,8 +126,8 @@ Both throw `SnapshotGuardError`, which `index.ts` prints without a stack trace. 
 - `data/<season>/draft-traded-picks.json` — Immutable traded pick data for specific draft
 - `data/<season>/traded-picks.json` — League-level traded picks, unfiltered; re-fetched per command until sealed
 - `data/<season>/trades.json` — Season trade log; re-fetched per command until sealed. Archive only, nothing renders it
-- `assets/` — static files served as-is, mirrored into `output/assets/` by `syncStaticAssets()` on every run. `ffl-shield.png` (the site header's mark, **not committed yet**) and `photos/`. **Web-ready files only**: `output/` is committed, so anything here is stored twice in git forever, and the refresh workflow's `git add -A` will mirror a committed original into `output/assets/` unattended. Full-res originals stage in the gitignored `photos-inbox/` and are deleted once downscaled. Targets and the optimize command: `docs/photos.md`
-- `photos-inbox/` — gitignored staging for photo originals. Never commit its contents
+- `assets/` — static files served as-is, mirrored into `output/assets/` by `syncStaticAssets()` on every run. The brand marks (`ffl-avatar-128.png`, `ffl-avatar-512.webp`, `ffl-logo-1998.webp`, `ffl-logo-999.webp`) and `photos/`. **Web-ready files only**: `output/` is committed, so anything here is stored twice in git forever, and the refresh workflow's `git add -A` will mirror a committed original into `output/assets/` unattended. Full-res originals stage in the gitignored `photos-inbox/` and are deleted once downscaled. Targets, the mark ladder, and the optimize commands: `docs/photos.md`. **`syncStaticAssets()` copies, never deletes** — renaming a file here leaves the old name behind in `output/assets/`, still tracked and still served, so delete the stray in the same commit (the rule the Excel section states for renamed outputs)
+- `photos-inbox/` — gitignored staging for photo and artwork originals. Never commit its contents. Currently holds the two brand masters (`ffl-avatar.png` 1024², `ffl-logo.png` 2172×724); unlike a photo original these are **not** disposable, so archive them off-repo rather than deleting
 - `output/index.html` — Home page
 - `output/history.html` — League History page, served at `/history`. Placeholder content; rewritten by every run
 - `output/assets/` — generated copy of `assets/`. Committed, since Cloudflare serves `output/` directly
@@ -205,6 +205,7 @@ Structure, section order, and layout reasoning for all three page parts (site he
 - **`PILL_EXPORT` swaps `inline-block` for `inline-flex`, never adds it.** Two `display` utilities on one element resolve by stylesheet order, not attribute order, so the loser is picked silently.
 - **`SECTION_H2` is the only section heading style.** Both the index sections and `tradedPicksSection()` use it. A hand-written duplicate existed once and had to be kept in sync; don't reintroduce a second one.
 - **Planned nav items render as `span`, not a dimmed `a`.** `NavItem.href` in `league-info.ts` is the only switch. A relative `href` names a file at the **output root** — `navItemHtml()` prefixes it with `chrome.base` so one entry resolves from both the root and a season directory. Absolute hrefs (Sleeper) pass through untouched.
+- **The header mark's filename is a contract between two files.** `SITE_MARK` in [snapshot.ts](src/snapshot.ts) and the `<img src>` in [html.ts](src/html.ts) must name the same file in `assets/`. A mismatch does not error: `hasSiteMark()` goes false and the header degrades to wordmark-only, which is a designed state and so looks intentional. Currently `ffl-avatar-128.png`.
 - **Root-level pages are flat files, not directories.** `output/history.html` rather than `history/index.html`: Cloudflare Pages serves it at `/history` either way, but a flat file also opens over `file://` during local preview, which is how this project is previewed. Nav links keep the `.html`.
 - **`noindex` without a `robots.txt` `Disallow`.** Disallowing blocks the fetch, so the crawler never reads the `noindex`. Staying crawlable is what makes the directive work.
 - **The roster table itself was left alone by the Aug 2026 redesign.** Position tints, tier bars, keeper yellow, and cell borders are duplicated into `xlsx.ts` — changing one means changing both.
@@ -251,4 +252,5 @@ Snapshot JSON files are human-readable and editable. Regenerate the pages and th
 - To eyeball a generated file (page in a browser, workbook in Excel), use PowerShell `Start-Process <absolute path>`.
 - `gh` is installed and authenticated: `gh run watch <id> --exit-status` follows a workflow run, `gh run view <id> --log` reads one, `gh api repos/<owner>/<repo>/releases/latest --jq .tag_name` gets an action's current major.
 - No YAML parser is installed (Python has no `yaml` module either). Validate workflow edits with `npx --yes js-yaml <file>`, which leaves `package.json` untouched.
+- `ffmpeg`/`ffprobe` are installed (winget `Gyan.FFmpeg`) and are the only image tooling: resize with `-vf "scale=W:H:flags=lanczos"`, encode with `-c:v libwebp`. Read dimensions with `ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=p=0` — PowerShell's `System.Drawing` reads PNG but throws on WebP. The Read tool renders PNG, so check a downscale by blowing it back up with `flags=neighbor` and looking at it.
 - Before assuming API drift, diff live response keys against `src/types.ts` rather than trusting the docs (their `/players/nfl` size is 3x stale).
