@@ -78,24 +78,18 @@ async function fetchAndSaveTrades(leagueId: string, season: string, playerDb?: P
   }
 }
 
+/**
+ * Rewrite the home page. Reads only what is already on disk, so `--generate` stays offline
+ * and deterministic.
+ *
+ * It no longer loads traded picks: the Aug 2026 gallery pass dropped the home page's traded
+ * picks table, and the hero card now points at the roster page that carries one.
+ */
 async function regenerateIndex(): Promise<void> {
   const navLinks = buildIndexNavLinks();
   if (navLinks.length === 0) return;
 
-  // Latest saved capture wins — no live fetch here, so --generate stays offline.
-  const latestSeason = navLinks[navLinks.length - 1].season;
-  const allPicks = (await loadTradedPicks(latestSeason)) ?? [];
-
-  // The latest season has drafted once it has any snapshot beyond pre-draft. Until then
-  // its own picks are still upcoming and belong on the home page alongside future years.
-  const latestHasDrafted = navLinks.some(
-    (l) => l.season === latestSeason && (l.page === "post-draft" || l.page === "end-of-season"),
-  );
-  const lastDraftedSeason = latestHasDrafted ? latestSeason : String(Number(latestSeason) - 1);
-  const upcomingPicks = picksAwaitingDraft(allPicks, lastDraftedSeason);
-
-  const draftOrder = getLatestDraftOrder();
-  const html = generateIndexHtml(LEAGUE_NAME, navLinks, upcomingPicks, draftOrder, hasSiteMark());
+  const html = generateIndexHtml(LEAGUE_NAME, navLinks, getLatestDraftOrder(), hasSiteMark());
   const outputPath = getIndexOutputPath();
   await writeHtml(html, outputPath);
   console.log(`Index written: ${outputPath}`);

@@ -32,9 +32,10 @@ shape of call as leaving Tailwind on its CDN.
 custom CSS, but Tailwind and the font both load from CDNs at page view. That's deliberate, not
 an oversight to fix.
 
-**One image on the whole site**, `output/assets/ffl-avatar-128.png`, the header's mark.
-Everything else is markup. Three further brand cuts sit in `output/assets/` unreferenced,
-staged for slots not yet built; the ladder is in `docs/photos.md`.
+**Three images on the whole site**: `output/assets/ffl-avatar-128.png` (the header's mark, on
+every page) and the two large photo cuts in the home page's gallery column. Everything else is
+markup. The larger avatar, the banner cut, and the two 650px thumbs sit in `output/assets/`
+unreferenced, staged for slots not yet built; the ladder is in `docs/photos.md`.
 
 ---
 
@@ -101,22 +102,59 @@ held to a 1080px measure. Exact classes live in `html.ts`; this documents struct
 
 **Sections**, in order:
 
-1. **Hero** — two cards. Left: shortcut to the newest tiers (`newestNavLink()`). Right: the
+1. **"20XX Season Honors"** — cards from `SEASON_HONORS`, latest season only, each an icon disc
+   over a label and a winner. Below them, a centred pointer to the full prize table.
+2. **Hero** — two cards. Left: shortcut to the newest tiers (`newestNavLink()`). Right: the
    next draft's date and a live countdown. Either can be absent and the row carries whichever
    it has.
-2. **"20XX Season Honors"** — four cards from `SEASON_HONORS`, latest season only. The
-   `headline` entry takes the brass top rule; the rest take sage.
-3. **"20XX Draft Order" + "20XX Prize Winners"** — side by side on wide screens, stacked below
-   ~600px. Draft order from `DRAFT_ORDERS` in `tiers.ts`, prizes from `PRIZE_WINNERS` in
+3. **"20XX Draft Order" + "From the gallery"** — side by side on wide screens, stacked below
+   ~900px. Draft order from `DRAFT_ORDERS` in `tiers.ts`, photos from `GALLERY` in
    `league-info.ts`.
-4. **Traded Picks** — always shown; table of picks whose draft hasn't happened yet, or "None".
-   Uses the shared `tradedPicksTable()`.
-5. **"Tiers by Season"** — season rows (year left, chip links right), most-recent first.
-   Archive link ("Tiers 2006–2024") appears below the oldest season row, inside this section.
-   This is the full archive; the hero card is only a shortcut to its newest entry.
-6. **"Past Seasons"** — two rows: (1) "Seasons 2025+ on Sleeper ↗", with navigation
-   instructions (inline cog SVG icon) on the line below it; (2) link to MyFantasyLeague for
-   seasons 2006–2024.
+4. **Closing link rows** — "Tiers history" (every tiers page the hero card isn't already
+   showing, newest first, then the 2006–2024 sheet) and "Past seasons" (Sleeper, where its
+   previous-leagues menu is, and MyFantasyLeague).
+
+**Honors lead, navigation follows.** The order above inverts what the Aug 2026 redesign shipped,
+where the hero cards came first. A finished season's champion is the thing worth opening on; the
+hero cards are wayfinding, and wayfinding reads fine in second position, especially when the
+green countdown card pulls the eye down to it anyway.
+
+**Honor card tones.** `HONOR_TONES` in `html.ts`, keyed by `Honor.tone`: `champion` is the forest
+card with a brass disc, `toilet` the clay card at the other end of the season, and an absent tone
+is the plain white card. A tone, not a boolean, because only one of each belongs in a season.
+Both the disc and the label carry a text colour and the glyph inherits it through `currentColor`,
+so a card's colour is set in one place. Glyphs are Lucide paths in `HONOR_ICONS`, keyed by the
+`HonorIcon` union in `league-info.ts` so a card naming a missing glyph fails to compile.
+
+The grid auto-fits at `minmax(230px, 1fr)` rather than sitting on a fixed four-column track: a
+season could record three honors or five, and auto-fit reflows either without a breakpoint per
+count.
+
+**The gallery column crops to a cap.** Photos are `object-cover` in `min-h-0` flex children
+dividing the column by weight, which does nothing at all unless something bounds the height —
+otherwise the images' intrinsic heights set it and the column runs about twice the draft order
+card beside it. `GALLERY_MAX_H` is that bound, and `GalleryPhoto.focus` only bites because of it.
+620px is a balance rather than a match: the ten-owner card is ~443px, and capping to that
+letterboxes a group shot into a 3:1 strip with heads out of frame.
+
+Two photos, not a feed. A third would squeeze all three into strips; more photos go on the
+gallery page.
+
+**What the closing rows replaced.** A "Tiers by Season" chip grid and a "Past Seasons" section,
+which between them took a third of the page to say what two rows of links say. Gone with them:
+the `PILL_LATEST` dark chip (the hero card was already the newest-tiers shortcut, so it was
+saying the same thing twice) and the **Throwback Year badge**. Nothing on the site marks a
+throwback year now — worth knowing, since the next one is 2030.
+
+**Two destinations are inert.** "All 20XX prize winners" under the honors and "More in the Photo
+Gallery" under the photos are `PLANNED` spans, the body-copy twin of `NAV_PLANNED`: the Prize
+Tracker and Photo Gallery pages don't exist, and a link that goes nowhere invites the click and
+then reads as broken. The prize table itself was on this page until the gallery pass; the data
+stays in `PRIZE_WINNERS` waiting for the page, since it is hand-settled and in no API.
+
+**Traded picks are not on this page.** They were, until the gallery pass. The hero card's eyebrow
+now reads "Current Tiers & Traded Picks" and points at the roster page that carries the table, so
+`regenerateIndex()` loads no pick data at all.
 
 **Draft countdown.** The card carries the target as a `data-target` ISO string from
 `DRAFT_DATES`, and `COUNTDOWN_SCRIPT` (inline vanilla JS, no bundle) fills the days/hours/
@@ -128,22 +166,17 @@ deterministic — only the counter reads the viewer's clock, so regenerating pro
 With JS off the card still reads as a date, with en dashes where the numbers go. The offset in
 the ISO string is required: a bare local datetime would mean a different instant per time zone.
 
-**Throwback Year badge.** Seasons with snapshots but no pre-draft page show a forest badge,
-left-aligned against the chips. Rare (once every 5–10 years).
+**Tiers history order.** Newest season first, and within a season newest type first
+(End-of-Season, Post-Draft, Pre-Draft). The within-season half comes free from `discoverPages()`
+in `snapshot.ts` (ordered by `SNAPSHOT_TYPE_ORDER`), which walks seasons *oldest*-first, so
+`siteLinksHtml()` groups and reverses by season rather than reversing the flat list — that would
+flip the type order too. Labels are `<season> <chip>`, the chip being `SNAPSHOT_TYPE_LABELS`
+with " Rosters" stripped. Every page is a roster snapshot, so `NavLink.page` is a plain
+`SnapshotType`.
 
-**Season chips.** Labels come from `SNAPSHOT_TYPE_LABELS` with " Rosters" stripped. Season rows
-wrap, so chips reflow on narrow screens instead of overflowing.
-
-**Chip order.** Within a season, chips run most-recent-first left to right (End-of-Season,
-Post-Draft, Pre-Draft). Controlled by `discoverPages()` in `snapshot.ts` (ordered by
-`SNAPSHOT_TYPE_ORDER`), which feeds index chips and every page's nav bar. Every page is a
-roster snapshot, so `NavLink.page` is a plain `SnapshotType`.
-
-**Latest chip highlight.** Exactly one index chip renders dark (`PILL_LATEST`, parchment on
-forest): the newest tiers that exist, i.e. the first chip of the newest season. It advances by
-itself — 2026 Pre-Draft today, 2026 Post-Draft the moment that page is generated. Still a link,
-unlike `PILL_ACTIVE` on roster-page nav bars, which marks the page you are already on and isn't
-clickable. Index nav links all carry `current: false`, so the two never collide.
+The row drops whichever link the hero card is already showing, by identity against
+`newestNavLink()`. So it advances by itself: 2026 Pre-Draft is the hero today and absent from
+the row, and it joins the row the moment 2026 Post-Draft is generated and takes the card.
 
 ---
 

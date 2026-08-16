@@ -61,26 +61,44 @@ export function getDraftDate(season: string): string | undefined {
   return DRAFT_DATES[season];
 }
 
+/**
+ * Glyph in an honor card's circle. The paths live in `HONOR_ICONS` in `html.ts`; naming the
+ * keys here rather than there makes a typo or a missing glyph a compile error.
+ */
+export type HonorIcon = "trophy" | "medal" | "trend" | "plunger";
+
 /** A headline result from a completed season, shown as a card on the home page. */
 export interface Honor {
   label: string;
   winner: string;
-  /** Supporting number, e.g. a point total. */
+  /** Supporting number, e.g. a point total. Rendered on the label line after a middot. */
   detail?: string;
-  /** The season's top result. Takes the brass rule and heavier weight. */
-  headline?: boolean;
+  icon: HonorIcon;
+  /**
+   * Card treatment. Omitted is the plain white card; `champion` is the forest card with the
+   * brass disc, `toilet` the clay card at the other end of the season. Only one of each
+   * belongs in a season, which is why this is a tone and not a boolean.
+   */
+  tone?: "champion" | "toilet";
 }
 
 export const SEASON_HONORS: Record<string, Honor[]> = {
   "2025": [
-    { label: "Finalist Champion", winner: "Visalia", headline: true },
-    { label: "Finalist Runner-Up", winner: "Sanger" },
-    { label: "Total Points", winner: "Sanger", detail: "2,602.3" },
-    { label: "Survivor Round 1", winner: "Riverstone" },
+    { label: "League Champion", winner: "Visalia Viagra Vipers", icon: "trophy", tone: "champion" },
+    { label: "Runner-Up", winner: "Sanger Squatty Pottys", icon: "medal" },
+    { label: "Total Points", detail: "2,602.3", winner: "Sanger Squatty Pottys", icon: "trend" },
+    { label: "Toilet Bowl Champ", winner: "South Town Freedom Fighters", icon: "plunger", tone: "toilet" },
   ],
 };
 
-/** One line of a season's prize payout table. */
+/**
+ * One line of a season's prize payout table.
+ *
+ * Nothing renders this today. The home page carried the full table until the Aug 2026 gallery
+ * pass replaced it with the "All 20XX prize winners" link under the honor cards, and that link
+ * is inert until a Prize Tracker page exists. The record is kept here, not deleted: it is
+ * hand-settled in the league chat and exists in no API, so losing it loses it for good.
+ */
 export interface Prize {
   label: string;
   /** Qualifier shown small next to the label, e.g. "(10 players, 2 strikes each)". */
@@ -122,6 +140,47 @@ export function getLatestPrizes(): { season: string; prizes: Prize[] } | undefin
   const season = Object.keys(PRIZE_WINNERS).sort().reverse()[0];
   return season ? { season, prizes: PRIZE_WINNERS[season] } : undefined;
 }
+
+/**
+ * A photo in the home page's gallery column.
+ *
+ * Files live in `assets/photos/` and are mirrored into `output/assets/` by every run, so
+ * adding one here needs no other step. Cutting and naming rules: `docs/photos.md`.
+ */
+export interface GalleryPhoto {
+  /** File name within `assets/photos/`. The renderer supplies the directory and the base prefix. */
+  file: string;
+  alt: string;
+  caption: string;
+  /**
+   * `object-position` for the `cover` crop, when centring puts the subject in the wrong half.
+   * Underscores, not spaces — this goes into a Tailwind arbitrary value.
+   */
+  focus?: string;
+  /** Share of the column's height relative to its siblings. Defaults to an equal split. */
+  weight?: number;
+}
+
+/**
+ * The two photos beside the draft order. The column stretches to the draft order card's
+ * height and the figures divide it, so this is a fixed pair rather than a feed — adding a
+ * third would squeeze all three into letterbox strips. The gallery page is where more go.
+ */
+export const GALLERY: GalleryPhoto[] = [
+  {
+    file: "2025-draft-day-league-photo-2000.jpg",
+    alt: "The league's ten owners on 2025 draft day, one attending by laptop",
+    caption: "Draft day, 2025",
+    weight: 1.1,
+  },
+  {
+    file: "2024-champion-toilet-bowl-trophies-1400.jpg",
+    alt: "The 2024 champion and Toilet Bowl trophies, held by their winners",
+    caption: "2024 champ & Toilet Bowl winner",
+    // The trophies sit high in an uncropped 1.2:1 frame; centring cuts their tops off.
+    focus: "50%_20%",
+  },
+];
 
 /** Where the pre-Sleeper seasons live. Referenced from the home page footer. */
 export const ARCHIVE_LINKS = {

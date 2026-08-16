@@ -9,9 +9,10 @@ import {
   SITE,
   SITE_NAV,
   ARCHIVE_LINKS,
+  GALLERY,
   getDraftDate,
   getLatestHonors,
-  getLatestPrizes,
+  type HonorIcon,
   type NavItem,
 } from "./league-info.js";
 
@@ -67,11 +68,6 @@ const PILL_LINK_COLORS = "text-ink bg-white border border-line transition-colors
 const PILL_LINK = `${PILL} ${PILL_LINK_COLORS}`;
 const PILL_ACTIVE = `${PILL} text-parchment bg-forest border border-forest`;
 /**
- * Index-page chip for the newest tiers that exist. Still a link (unlike `PILL_ACTIVE`,
- * which marks the page you are already on), so it needs a hover state.
- */
-const PILL_LATEST = `${PILL} text-parchment bg-forest border border-forest transition-colors hover:bg-moss hover:border-moss no-underline`;
-/**
  * The Excel export pill. `inline-flex` replaces `inline-block` rather than joining it — two
  * `display` utilities on one element resolve by stylesheet order, not attribute order, so
  * whichever Tailwind emits last would win silently.
@@ -82,8 +78,23 @@ const PILL_EXPORT = `inline-flex items-center gap-1.5 ${PILL_BOX} ${PILL_LINK_CO
  * a heavier heading — the tables and cards below carry the weight, so the labels stay out of
  * the way. Also used, unchanged, for the roster page's own headings.
  */
-const SECTION_H2 = "text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0";
-const CARD = "bg-white border border-line rounded-xl";
+const LABEL_TYPE = "text-xs font-medium tracking-[0.14em] uppercase text-stone";
+const SECTION_H2 = `${LABEL_TYPE} mb-3.5 mt-0`;
+/** The same treatment with no margins, for a label sitting inline at the head of a link row. */
+const ROW_LABEL = `${LABEL_TYPE} w-[130px]`;
+/**
+ * Card surface without a radius, so a caller that wants a different one can set it alone. Two
+ * `border-radius` utilities on one element resolve by stylesheet order, not attribute order —
+ * the same trap `PILL_EXPORT` documents for `display`.
+ */
+const CARD_BASE = "bg-white border border-line";
+const CARD = `${CARD_BASE} rounded-xl`;
+/**
+ * A destination that hasn't been built yet, in body copy. Same call as `NAV_PLANNED` in the
+ * site nav: an inert span rather than a link to nowhere, so it never invites a dead click.
+ * Both places it appears today point at pages `SITE_NAV` also lists as planned.
+ */
+const PLANNED = "text-stone cursor-default";
 const TP_TH = "text-left text-xs font-medium uppercase tracking-wide text-stone px-3 pb-2.5 border-b border-line";
 const TP_TD = "px-3 py-2.5 border-b border-rule text-ink";
 /**
@@ -118,6 +129,10 @@ const THEME = `    @theme {
       --color-line: #d8d6cc;       /* card and table borders */
       --color-rule: #e9e7dd;       /* hairline row dividers */
       --color-brass: #c9a53c;      /* the season's top honor */
+      --color-shell: #eeece2;      /* neutral fill: honor icon discs, table header strips */
+      --color-clay: #f0ead8;       /* toilet-bowl honor card: fill */
+      --color-clay-line: #ddd3b8;  /* toilet-bowl honor card: border */
+      --color-clay-ink: #8a7a4a;   /* toilet-bowl honor card: label and glyph */
     }
 `;
 
@@ -465,22 +480,38 @@ ${tradedPicksSection(tradedPicks)}
 
 /** Eyebrow label inside a card. Smaller and wider-tracked than `SECTION_H2`. */
 const EYEBROW = "block text-[11px] font-medium tracking-[0.16em] uppercase mb-1";
-const ROW_CELL = "py-2.5 border-b border-rule";
+/**
+ * Width a flexed column refuses to go below before it wraps to its own row.
+ *
+ * `min(x, 100%)` rather than a bare `x`: a plain `min-width` is a floor the box cannot shrink
+ * past even once it is the only thing on the row, so on a viewport narrower than the floor the
+ * column pushes the whole page into horizontal scroll. Capping it at the container's own width
+ * keeps the wrap behaviour on desktop and lets it collapse on a phone.
+ */
+function flexFloor(px: number): string {
+  return `min-w-[min(${px}px,100%)]`;
+}
+
+/** Hero cards take a slightly softer corner than the 12px `CARD` used everywhere else. */
+const HERO_CARD = `flex-1 ${flexFloor(340)} rounded-[14px] px-6 py-4 flex items-center justify-between gap-4`;
 
 /**
- * The two cards at the top: a shortcut to the newest tiers, and the countdown to the next
- * draft. Either can be absent — a fresh season with no pages yet has no tiers to link, and a
- * season whose draft isn't scheduled has no date in `DRAFT_DATES` — and the row simply
+ * The two cards below the honors: a shortcut to the newest tiers, and the countdown to the
+ * next draft. Either can be absent — a fresh season with no pages yet has no tiers to link,
+ * and a season whose draft isn't scheduled has no date in `DRAFT_DATES` — and the row simply
  * carries whichever it has.
+ *
+ * The tiers card names traded picks as well as tiers because the home page no longer carries a
+ * traded-picks table of its own; that card is now the only route to one.
  */
 function heroHtml(latest: NavLink | undefined, draftSeason: string | undefined): string {
   const cards: string[] = [];
 
   if (latest) {
-    cards.push(`      <a href="${esc(latest.href)}" class="flex-1 min-w-[300px] no-underline text-ink ${CARD} px-6 py-4 flex items-center justify-between gap-4 transition-colors hover:border-moss">
+    cards.push(`      <a href="${esc(latest.href)}" class="no-underline text-ink ${CARD_BASE} ${HERO_CARD} transition-colors hover:border-moss">
         <span>
-          <span class="${EYEBROW} text-stone">Current Tiers</span>
-          <span class="block text-xl font-bold tracking-tight">${esc(latest.season)} ${esc(latest.chip)}</span>
+          <span class="${EYEBROW} text-stone">Current Tiers &amp; Traded Picks</span>
+          <span class="block text-[21px] font-bold tracking-[-0.02em]">${esc(latest.season)} ${esc(latest.chip)}</span>
         </span>
         <span class="text-sm font-medium text-moss whitespace-nowrap">View tiers &#8594;</span>
       </a>`);
@@ -504,13 +535,13 @@ function heroHtml(latest: NavLink | undefined, draftSeason: string | undefined):
     const unit = (key: string, label: string) =>
       `<span class="text-center"><span class="block text-xl font-bold tabular-nums" data-cd="${key}">&ndash;</span><span class="block text-[10px] tracking-[0.1em] text-sage">${label}</span></span>`;
 
-    cards.push(`      <div id="draft-countdown" data-target="${esc(draftIso)}" class="flex-1 min-w-[300px] bg-forest text-parchment rounded-xl px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
+    cards.push(`      <div id="draft-countdown" data-target="${esc(draftIso)}" class="bg-forest text-parchment ${HERO_CARD} flex-wrap">
         <span>
           <span class="${EYEBROW} text-sage">${esc(draftSeason)} Draft</span>
-          <span class="block text-xl font-bold tracking-tight">${esc(date)}</span>
+          <span class="block text-[21px] font-bold tracking-[-0.02em]">${esc(date)}</span>
           <span class="block text-sm text-sage mt-0.5">${esc(time)}</span>
         </span>
-        <span class="flex gap-5">${unit("days", "DAYS")}${unit("hours", "HRS")}${unit("mins", "MINS")}</span>
+        <span class="flex gap-[18px]">${unit("days", "DAYS")}${unit("hours", "HRS")}${unit("mins", "MINS")}</span>
       </div>`);
   }
 
@@ -540,180 +571,215 @@ const COUNTDOWN_SCRIPT = `  <script>
     })();
   </script>`;
 
-/** The season's headline results, as a row of cards. */
+/**
+ * Lucide glyphs for the honor cards, inlined — the project ships no icon font or sprite.
+ *
+ * Stroked in `currentColor`, so each card's tone sets the glyph colour along with its label
+ * in one place instead of hard-coding a hex per icon. Keys come from `HonorIcon`, so a card
+ * naming a glyph that isn't here fails to compile.
+ */
+const HONOR_ICONS: Record<HonorIcon, string> = {
+  trophy: `<path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>`,
+  medal: `<path d="M7.21 15 2.66 7.14a2 2 0 0 1 .13-2.2L4.4 2.8A2 2 0 0 1 6 2h12a2 2 0 0 1 1.6.8l1.6 2.14a2 2 0 0 1 .14 2.2L16.79 15"/><path d="M11 12 5.12 2.2"/><path d="m13 12 5.88-9.8"/><path d="M8 7h8"/><circle cx="12" cy="17" r="5"/><path d="M12 18v-2h-.5"/>`,
+  trend: `<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>`,
+  plunger: `<path d="M7 12h13a1 1 0 0 1 1 1 5 5 0 0 1-5 5h-.598a.5.5 0 0 0-.424.765l1.544 2.47a.5.5 0 0 1-.424.765H5.402a.5.5 0 0 1-.424-.765L7 18"/><path d="M8 18a5 5 0 0 1-5-5V4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v8"/>`,
+};
+
+/**
+ * Card treatments, keyed by `Honor.tone` with `default` standing in for an absent one.
+ *
+ * `disc` and `label` both carry a text colour: the glyph inherits it through `currentColor`,
+ * so the disc's entry colours the icon and the label's entry colours the words above the name.
+ */
+const HONOR_TONES: Record<"default" | "champion" | "toilet", { card: string; disc: string; label: string }> = {
+  default: { card: CARD, disc: "bg-shell text-fern", label: "text-stone font-medium" },
+  champion: { card: "bg-forest text-parchment rounded-xl", disc: "bg-brass text-forest", label: "text-brass font-semibold" },
+  toilet: { card: "bg-clay border border-clay-line rounded-xl", disc: "bg-white text-clay-ink", label: "text-clay-ink font-semibold" },
+};
+
+/**
+ * The season's headline results, as a row of cards, and the pointer to the full prize table.
+ *
+ * The cards auto-fit rather than sitting on a fixed 4-column grid: a season could record three
+ * honors or five, and `minmax(230px, 1fr)` reflows either without a breakpoint per count.
+ */
 function honorsHtml(): string {
   const latest = getLatestHonors();
   if (!latest) return "";
 
   const cards = latest.honors
     .map((h) => {
-      const detail = h.detail
-        ? ` <span class="text-[13px] font-normal text-stone">${esc(h.detail)}</span>`
-        : "";
-      return `        <div class="${CARD} border-t-[3px] ${h.headline ? "border-t-brass" : "border-t-sage"} px-5 py-4">
-          <div class="text-[11px] tracking-[0.12em] uppercase text-stone mb-1.5">${esc(h.label)}</div>
-          <div class="text-lg ${h.headline ? "font-bold" : "font-semibold"}">${esc(h.winner)}${detail}</div>
+      const tone = HONOR_TONES[h.tone ?? "default"];
+      const label = h.detail ? `${h.label} · ${h.detail}` : h.label;
+      return `        <div class="${tone.card} px-[22px] pt-[22px] pb-5">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center mb-3.5 ${tone.disc}"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${HONOR_ICONS[h.icon]}</svg></div>
+          <div class="text-[11px] tracking-[0.12em] uppercase mb-1.5 ${tone.label}">${esc(label)}</div>
+          <div class="text-[19px] font-bold leading-[1.25]">${esc(h.winner)}</div>
         </div>`;
     })
     .join("\n");
 
   return `
-    <section class="mb-12">
+    <section class="mb-10">
       <h2 class="${SECTION_H2}">${esc(latest.season)} Season Honors</h2>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(230px,1fr))]">
 ${cards}
+      </div>
+      <div class="text-center mt-[18px] text-sm font-medium">
+        <span class="${PLANNED}" title="Coming soon">All ${esc(latest.season)} prize winners &#8594;</span>
       </div>
     </section>
 `;
 }
 
-/** Numbered pick order for the upcoming draft. */
+/**
+ * Numbered pick order for the upcoming draft, as a bordered card with a header strip.
+ *
+ * A card rather than a bare table because it now shares a row with the photo column, and the
+ * gallery's framed images would otherwise sit beside a list floating on the page background.
+ * Its height is also what the gallery column stretches to.
+ */
 function draftOrderHtml(draftOrder: DraftOrder | undefined): string {
   if (!draftOrder) return "";
 
   const rows = draftOrder.order
-    .map((owner, i) => `            <tr>
-              <td class="${ROW_CELL} text-stone w-6">${i + 1}</td>
-              <td class="${ROW_CELL} pl-4">${esc(owner)}</td>
-            </tr>`)
+    .map((owner, i) => `          <div class="flex gap-4 px-5 py-2.5 border-t border-rule text-[15px]"><span class="text-stone w-[18px]">${i + 1}</span>${esc(owner)}</div>`)
     .join("\n");
 
-  return `      <section class="flex-1 min-w-[280px]">
+  return `      <section class="flex-1 ${flexFloor(300)}">
         <h2 class="${SECTION_H2}">${esc(draftOrder.season)} Draft Order</h2>
-        <table class="w-full text-[15px]">
-          <tbody class="${LAST_ROW_FLUSH}">
+        <div class="${CARD} overflow-hidden">
+          <div class="px-5 py-[9px] bg-shell text-[11px] font-medium tracking-[0.12em] uppercase text-stone">Team</div>
 ${rows}
-          </tbody>
-        </table>
-      </section>`;
-}
-
-/** Who won what, and for how much. Hand-maintained in `league-info.ts`. */
-function prizesHtml(): string {
-  const latest = getLatestPrizes();
-  if (!latest) return "";
-
-  const rows = latest.prizes
-    .map((p) => {
-      const note = p.note ? ` <span class="text-[13px] text-stone">${esc(p.note)}</span>` : "";
-      return `            <tr>
-              <td class="${ROW_CELL} pr-5 text-fern">${esc(p.label)}${note}</td>
-              <td class="${ROW_CELL} pr-5 ${p.headline ? "font-bold" : "font-medium"}">${esc(p.winner)}</td>
-              <td class="${ROW_CELL} pr-5 text-stone text-right whitespace-nowrap">${esc(p.stat ?? "")}</td>
-              <td class="${ROW_CELL} text-right whitespace-nowrap">${esc(p.amount)}</td>
-            </tr>`;
-    })
-    .join("\n");
-
-  return `      <section class="flex-[1.4] min-w-[320px]">
-        <h2 class="${SECTION_H2}">${esc(latest.season)} Prize Winners</h2>
-        <div class="overflow-x-auto">
-        <table class="w-full text-[15px]">
-          <tbody class="${LAST_ROW_FLUSH}">
-${rows}
-          </tbody>
-        </table>
         </div>
       </section>`;
 }
 
-export function generateIndexHtml(
-  leagueName: string,
-  navLinks: NavLink[],
-  futureTradedPicks?: ResolvedTradedPick[],
-  draftOrder?: DraftOrder,
-  hasMark = false,
-): string {
-  // Group by season (most recent first)
-  const seasons = new Map<string, NavLink[]>();
-  for (const link of navLinks) {
-    const group = seasons.get(link.season) ?? [];
-    group.push(link);
-    seasons.set(link.season, group);
-  }
-  const sortedSeasons = [...seasons.keys()].sort().reverse();
+/**
+ * Height the stack of figures is allowed to reach.
+ *
+ * The photos are `object-cover` inside `min-h-0` flex children, so they fill whatever height
+ * this leaves and crop to it — which does nothing at all unless something caps the column,
+ * since otherwise the images' own intrinsic heights set it and the gallery runs roughly twice
+ * the draft order card's length beside it.
+ *
+ * 620px is a balance, not a match. The ten-owner card is ~443px, and capping to that would
+ * letterbox a group shot into a 3:1 strip with heads out of frame. At 620 the two photos land
+ * near 260 and 290px, which crops each by well under a third and leaves the columns close
+ * enough in length to read as a pair.
+ */
+const GALLERY_MAX_H = "max-h-[620px]";
 
-  // The newest tiers published. Same helper the roster pages use for their header link, so
-  // the hero card, the dark chip below, and every page's "Current Tiers" agree by construction.
-  const latest = newestNavLink(navLinks);
-  const chrome: SiteChrome = { base: "", hasMark, tiersHref: latest?.href };
+/**
+ * The photo column beside the draft order.
+ *
+ * The figures divide the capped column height by weight and crop to fill, so the pair always
+ * bottoms out in the same place no matter what aspect the source files are — which is what
+ * lets `docs/photos.md` keep cutting photos uncropped at their native aspect.
+ *
+ * `chrome.base` prefixes the src so the same markup would resolve from a season directory;
+ * only the home page uses it today.
+ */
+function galleryHtml(chrome: SiteChrome): string {
+  if (GALLERY.length === 0) return "";
 
-  const seasonRows = sortedSeasons
-    .map((season) => {
-      const links = seasons.get(season)!;
-      const hasPreDraft = links.some((l) => l.page === "pre-draft");
-
-      const pills = links
-        .map((l) => `<a href="${esc(l.href)}" class="${l === latest ? PILL_LATEST : PILL_LINK}">${esc(l.chip)}</a>`)
-        .join("\n            ");
-
-      const throwback = !hasPreDraft
-        ? `\n          <span class="text-xs font-medium bg-forest text-parchment rounded px-1.5 py-0.5 mr-auto ml-3">Throwback</span>`
-        : "";
-
-      const archiveLink = sortedSeasons.indexOf(season) === sortedSeasons.length - 1
-        ? `\n        <div class="pt-3.5">
-          <a href="${ARCHIVE_LINKS.tiersSheet}" target="_blank" rel="noopener noreferrer" class="text-sm ${LINK}">Tiers 2006&ndash;2024 &#x2197;</a>
-        </div>`
-        : "";
-
-      return `        <div class="flex flex-wrap items-center gap-y-2 py-3.5 border-b border-rule">
-          <span class="text-lg font-semibold min-w-[72px]">${esc(season)}</span>${throwback}
-          <div class="flex gap-2 flex-wrap ml-auto">
-            ${pills}
-          </div>
-        </div>${archiveLink}`;
+  const figures = GALLERY
+    .map((photo) => {
+      // Framing only bites because the image is cropped to a height it did not choose; a
+      // photo left at its natural aspect ignores object-position entirely.
+      const focus = photo.focus ? ` [object-position:${photo.focus}]` : "";
+      return `          <figure class="m-0 flex-[${photo.weight ?? 1}] flex flex-col gap-2 min-h-0">
+            <img src="${esc(chrome.base)}assets/photos/${esc(photo.file)}" alt="${esc(photo.alt)}" loading="lazy" decoding="async" class="w-full flex-1 min-h-0 object-cover${focus} rounded-xl border border-line box-border">
+            <figcaption class="text-[13px] text-fern">${esc(photo.caption)}</figcaption>
+          </figure>`;
     })
     .join("\n");
 
-  // Draft order and prize table share a row on wide screens and stack on narrow ones.
+  return `      <section class="flex-[1.4] ${flexFloor(460)} flex flex-col">
+        <h2 class="${SECTION_H2}">From the gallery</h2>
+        <div class="flex flex-col gap-4 flex-1 ${GALLERY_MAX_H}">
+${figures}
+        </div>
+        <div class="mt-3 text-[13px]">
+          <span class="${PLANNED}" title="Coming soon">More in the Photo Gallery &#8594;</span>
+        </div>
+      </section>`;
+}
+
+/**
+ * The link rows the page closes on: every tiers page that isn't already the hero card, then
+ * where the pre-Sleeper seasons live.
+ *
+ * This replaced the "Tiers by Season" chip grid and the "Past Seasons" section, which between
+ * them took a third of the page to say what two rows of links say. The consequence to know: the
+ * Throwback badge went with them, and nothing else on the site marks a throwback year.
+ */
+function siteLinksHtml(navLinks: NavLink[], latest: NavLink | undefined): string {
+  // Newest season first, keeping `discoverPages()`' newest-type-first order within each one,
+  // and dropping whichever link the hero card is already showing.
+  const bySeason = new Map<string, NavLink[]>();
+  for (const link of navLinks) {
+    bySeason.set(link.season, [...(bySeason.get(link.season) ?? []), link]);
+  }
+  const history = [...bySeason.keys()].sort().reverse()
+    .flatMap((season) => bySeason.get(season)!)
+    .filter((l) => l !== latest);
+
+  const tiers = [
+    ...history.map((l) => `<a href="${esc(l.href)}" class="${LINK}">${esc(l.season)} ${esc(l.chip)}</a>`),
+    `<a href="${ARCHIVE_LINKS.tiersSheet}" target="_blank" rel="noopener noreferrer" class="${LINK}">2006&ndash;2024 archive &#x2197;</a>`,
+  ].join("\n        ");
+
+  return `    <div class="mt-16 border-t border-line pt-5 pb-12 text-sm flex flex-col gap-3.5">
+      <div class="flex gap-6 flex-wrap items-baseline">
+        <span class="${ROW_LABEL}">Tiers history</span>
+        ${tiers}
+      </div>
+      <div class="flex gap-6 flex-wrap items-baseline">
+        <span class="${ROW_LABEL}">Past seasons</span>
+        <a href="${ARCHIVE_LINKS.sleeper}" target="_blank" rel="noopener noreferrer" class="${LINK}">2025+ on Sleeper &#x2197;</a>
+        <span class="text-stone">Settings &rsaquo; League History &rsaquo; Previous Leagues</span>
+        <a href="${ARCHIVE_LINKS.myFantasyLeague}" target="_blank" rel="noopener noreferrer" class="${LINK}">2006&ndash;2024 on MyFantasyLeague &#x2197;</a>
+      </div>
+    </div>`;
+}
+
+/**
+ * The home page.
+ *
+ * Sections, in order: the season's honors, the two hero cards, the draft order beside the
+ * photo gallery, then the closing link rows. Honors lead because a finished season is the
+ * thing worth opening on; the hero cards are navigation, and navigation reads fine second.
+ */
+export function generateIndexHtml(
+  leagueName: string,
+  navLinks: NavLink[],
+  draftOrder?: DraftOrder,
+  hasMark = false,
+): string {
+  // The newest tiers published. Same helper the roster pages use for their header link, so
+  // the hero card, the closing link rows, and every page's "Current Tiers" agree by construction.
+  const latest = newestNavLink(navLinks);
+  const chrome: SiteChrome = { base: "", hasMark, tiersHref: latest?.href };
+
+  // Draft order and gallery share a row on wide screens and stack on narrow ones.
   const columnsHtml = `
-    <div class="flex gap-10 lg:gap-16 flex-wrap mb-14">
-${[draftOrderHtml(draftOrder), prizesHtml()].filter(Boolean).join("\n")}
+    <div class="flex gap-10 lg:gap-18 flex-wrap mb-14">
+${[draftOrderHtml(draftOrder), galleryHtml(chrome)].filter(Boolean).join("\n")}
     </div>
 `;
-
-  // Traded picks section — always rendered, "None" when nothing is outstanding
-  const tradedPicksBody = futureTradedPicks && futureTradedPicks.length > 0
-    ? tradedPicksTable(futureTradedPicks)
-    : `      <p class="text-sm text-fern">None</p>`;
-  const tradedPicksHtml = `
-    <section class="mb-14">
-      <h2 class="${SECTION_H2}">Traded Picks</h2>
-${tradedPicksBody}
-    </section>
-`;
-
-  const pastSeasonsHtml = `
-    <section class="border-t border-line pt-8">
-      <h2 class="${SECTION_H2}">Past Seasons</h2>
-      <div class="py-3 border-y border-rule">
-        <a href="${ARCHIVE_LINKS.sleeper}" target="_blank" rel="noopener noreferrer" class="text-sm ${LINK}">Seasons 2025+ on Sleeper &#x2197;</a>
-        <div class="mt-1 text-sm text-fern">Go to Settings&nbsp;<svg xmlns="http://www.w3.org/2000/svg" class="inline w-4 h-4 align-text-bottom text-stone" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>&nbsp;&rsaquo; League History and Previous Leagues</div>
-      </div>
-      <div class="py-3">
-        <a href="${ARCHIVE_LINKS.myFantasyLeague}" target="_blank" rel="noopener noreferrer" class="text-sm ${LINK}">Seasons 2006&ndash;2024 on MyFantasyLeague &#x2197;</a>
-      </div>
-    </section>`;
 
   return `<!DOCTYPE html>
 <html lang="en">
 ${htmlHead({
     title: leagueName,
-    description: "Season-by-season roster tiers, draft order, prize winners, and traded picks. Est. 2006.",
+    description: "Season honors, roster tiers, draft order, and photos from the league. Est. 2006.",
     siteName: leagueName,
   })}
 <body class="bg-cream text-ink font-sans antialiased">
 ${siteHeader(chrome)}
-  <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
-${heroHtml(latest, draftOrder?.season)}${honorsHtml()}${columnsHtml}${tradedPicksHtml}
-    <section class="mb-14">
-      <h2 class="${SECTION_H2}">Tiers by Season</h2>
-      <div class="border-t border-rule">
-${seasonRows}
-      </div>
-    </section>
-${pastSeasonsHtml}
+  <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14">
+${honorsHtml()}${heroHtml(latest, draftOrder?.season)}${columnsHtml}${siteLinksHtml(navLinks, latest)}
   </main>
 ${COUNTDOWN_SCRIPT}
 </body>

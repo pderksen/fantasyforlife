@@ -42,6 +42,7 @@ displays.
 | Slot | CSS width | Export width |
 |------|-----------|--------------|
 | Full width of the column (hero, banner) | ~1016px | **2000px** |
+| Home page gallery column | ~550px | **1400px** |
 | Two side by side | ~496px | **1000px** |
 | Three-up gallery grid | ~323px | **650px** |
 | Inline portrait or avatar | 128px | **256px** |
@@ -51,9 +52,16 @@ Height follows from the crop, which follows from the slot: a hero wants somethin
 uncropped and as large as they come. Downscaling and cropping are lossless decisions to defer;
 they cannot be undone once the original is gone.
 
-**A slot has to exist before a target is real.** No page currently renders a photo. The numbers
-above are what the current layout implies, not a spec anything is built against. Deciding "these
-twelve go in a three-up grid on the history page" is what turns the 650px row into the answer.
+**A slot has to exist before a target is real.** One does now: the home page's gallery column,
+listed above at ~550 CSS px, holding the two large cuts. Everything else in the table is what the
+current layout implies, not a spec anything is built against. Deciding "these twelve go in a
+three-up grid on the history page" is what turns the 650px row into the answer.
+
+**The gallery slot crops rather than fits.** Its two figures divide a capped column height and
+sit `object-cover`, so a file's own aspect never sets the layout — see `galleryHtml()` in
+`html.ts`. That is what lets the rule above (cut uncropped, at native aspect) stay true for
+photos that ship into it. What the crop *shows* is `GalleryPhoto.focus`, an `object-position`,
+which is a page decision and not something to bake into a file.
 
 ## Format
 
@@ -133,8 +141,9 @@ Both are uncropped, at the aspect they were shot. Two calls worth recording:
 - **Two widths, not four.** The wide group shot gets the 2000px full-column cut from the table
   above; the near-square trophy shot gets 1400, which is 2x of the ~700 CSS px a 1.2:1 photo
   should actually occupy in a 1016px column — 2000 would render it 848px tall. Both large cuts
-  land within 16px of the same height, so they stack or sit side by side cleanly. The 650 pair
-  is the three-up grid row. Neither slot exists yet; see the warning above the dimensions table.
+  land within 16px of the same height, so they stack or sit side by side cleanly. Both are what
+  the home page's gallery column now serves, at roughly 2.5x the ~550 CSS px it renders them
+  into. The 650 pair is the three-up grid row, whose slot still does not exist.
 
 ## Brand marks
 
