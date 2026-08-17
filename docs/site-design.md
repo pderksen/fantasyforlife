@@ -120,8 +120,7 @@ hero cards are wayfinding, and wayfinding reads fine in second position, especia
 green countdown card pulls the eye down to it anyway.
 
 **Honor card tones.** `HONOR_TONES` in `html.ts`, keyed by `Honor.tone`: `champion` is the forest
-card with a brass disc, `toilet` its deliberate mirror at the other end of the season (a dark loam
-card with a clay disc, the joke stated in colour), and an absent tone
+card with a brass disc, `toilet` the clay card at the other end of the season, and an absent tone
 is the plain white card. A tone, not a boolean, because only one of each belongs in a season.
 Both the disc and the label carry a text colour and the glyph inherits it through `currentColor`,
 so a card's colour is set in one place. Glyphs are Lucide paths in `HONOR_ICONS`, keyed by the

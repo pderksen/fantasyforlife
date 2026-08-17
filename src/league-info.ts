@@ -76,7 +76,7 @@ export interface Honor {
   icon: HonorIcon;
   /**
    * Card treatment. Omitted is the plain white card; `champion` is the forest card with the
-   * brass disc, `toilet` its dark-brown mirror at the other end of the season. Only one of each
+   * brass disc, `toilet` the clay card at the other end of the season. Only one of each
    * belongs in a season, which is why this is a tone and not a boolean.
    */
   tone?: "champion" | "toilet";
