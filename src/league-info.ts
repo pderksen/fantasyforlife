@@ -91,6 +91,47 @@ export const SEASON_HONORS: Record<string, Honor[]> = {
   ],
 };
 
+/** The league's first season, and the far end of the history table's "still being compiled" note. */
+export const LEAGUE_FIRST_SEASON = "2006";
+
+/** One season's one-line result, as a row of the full league history table. */
+export interface SeasonResult {
+  season: string;
+  /** Left blank (rendered as a dash) for a season whose result hasn't been dug up yet. */
+  champion?: string;
+  runnerUp?: string;
+  toiletBowl?: string;
+}
+
+/**
+ * Every season's headline result, one row each, oldest-first in the source and rendered newest-first.
+ *
+ * Deliberately separate from `SEASON_HONORS` rather than derived from it. Honors are a season's
+ * free-form highlight reel (a year might record three cards or five, with labels chosen to suit),
+ * while this is a fixed four-column spine that has to line up down twenty years. Matching a card
+ * by its label string to fill this table would break the day a label is reworded.
+ *
+ * The cost is that a season with both records names its champion twice, so **change the two
+ * together.** A row may leave any name blank; only the pre-Sleeper seasons should need to.
+ */
+export const LEAGUE_HISTORY: SeasonResult[] = [
+  // 2006–2023 are still to be filled in. Nothing in this repo or the Sleeper API records them:
+  // those seasons ran on MyFantasyLeague, whose archive carries rosters rather than results.
+  {
+    season: "2024",
+    // The champion and Toilet Bowl winner are the two owners in the trophy photo on the home
+    // page; the runner-up isn't recorded anywhere yet.
+    champion: "Easton Evil Empire",
+    toiletBowl: "Clovis Jets",
+  },
+  {
+    season: "2025",
+    champion: "Visalia Viagra Vipers",
+    runnerUp: "Sanger Squatty Pottys",
+    toiletBowl: "South Town Freedom Fighters",
+  },
+];
+
 /**
  * One line of a season's prize payout table.
  *

@@ -10,8 +10,12 @@ import {
   SITE_NAV,
   ARCHIVE_LINKS,
   GALLERY,
+  SEASON_HONORS,
+  LEAGUE_HISTORY,
+  LEAGUE_FIRST_SEASON,
   getDraftDate,
   getLatestHonors,
+  type Honor,
   type HonorIcon,
   type NavItem,
 } from "./league-info.js";
@@ -96,7 +100,19 @@ const CARD = `${CARD_BASE} rounded-xl`;
  */
 const PLANNED = "text-stone cursor-default";
 const TP_TH = "text-left text-xs font-medium uppercase tracking-wide text-stone px-3 pb-2.5 border-b border-line";
-const TP_TD = "px-3 py-2.5 border-b border-rule text-ink";
+/** Cell geometry with no color, so a cell that needs a different one can take it without a conflict. */
+const TP_TD_BOX = "px-3 py-2.5 border-b border-rule";
+const TP_TD = `${TP_TD_BOX} text-ink`;
+/**
+ * The cell for a fact that isn't recorded, carrying the em dash that stands in for it.
+ *
+ * A separate constant rather than `${TP_TD} text-gray-400` appended at the call site: two color
+ * utilities on one element resolve by stylesheet order, not attribute order, so which of the two
+ * won would be Tailwind's decision rather than this file's — the same trap `PILL_EXPORT` and
+ * `CARD_BASE` document for `display` and `border-radius`. Muted in the site's own `stone` too,
+ * rather than a Tailwind default gray that belongs to no palette here.
+ */
+const TP_TD_MUTED = `${TP_TD_BOX} text-stone`;
 /**
  * Drops the trailing hairline so a list of rows ends flush instead of underlined. Goes on the
  * `tbody`, since the rule lives on each `td` and only the last row's should go.
@@ -226,7 +242,7 @@ function tradedPicksTable(picks: ResolvedTradedPick[]): string {
       if (showTradedOn) {
         cells.push(p.tradedOn
           ? `<td class="${TP_TD} whitespace-nowrap">${esc(formatPacificDate(p.tradedOn))}</td>`
-          : `<td class="${TP_TD} text-gray-400">&mdash;</td>`);
+          : `<td class="${TP_TD_MUTED}">&mdash;</td>`);
       }
       return `      <tr>${cells.join("")}</tr>`;
     })
@@ -597,16 +613,19 @@ const HONOR_TONES: Record<"default" | "champion" | "toilet", { card: string; dis
 };
 
 /**
- * The season's headline results, as a row of cards, and the pointer to the full prize table.
+ * One season's headline results, as a row of cards.
  *
  * The cards auto-fit rather than sitting on a fixed 4-column grid: a season could record three
  * honors or five, and `minmax(230px, 1fr)` reflows either without a breakpoint per count.
+ *
+ * Shared by the home page (newest season only, with the prize-table pointer as its `footer`)
+ * and the League History page (every recorded season, each an anchor target for its year pill),
+ * so the two can never drift into two different-looking honor rows. `id` is what separates the
+ * two calls: it brings `scroll-mt` with it, since a bare anchor jump lands the heading flush
+ * against the top of the viewport.
  */
-function honorsHtml(): string {
-  const latest = getLatestHonors();
-  if (!latest) return "";
-
-  const cards = latest.honors
+function honorsSection(season: string, honors: Honor[], opts: { id?: string; footer?: string } = {}): string {
+  const cards = honors
     .map((h) => {
       const tone = HONOR_TONES[h.tone ?? "default"];
       const label = h.detail ? `${h.label} · ${h.detail}` : h.label;
@@ -618,17 +637,30 @@ function honorsHtml(): string {
     })
     .join("\n");
 
+  const anchor = opts.id ? ` id="${esc(opts.id)}"` : "";
+  const scrollMargin = opts.id ? " scroll-mt-6" : "";
+
   return `
-    <section class="mb-10">
-      <h2 class="${SECTION_H2}">${esc(latest.season)} Season Honors</h2>
+    <section${anchor} class="mb-10${scrollMargin}">
+      <h2 class="${SECTION_H2}">${esc(season)} Season Honors</h2>
       <div class="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(230px,1fr))]">
 ${cards}
-      </div>
-      <div class="text-center mt-[18px] text-sm font-medium">
-        <span class="${PLANNED}" title="Coming soon">All ${esc(latest.season)} prize winners &#8594;</span>
-      </div>
+      </div>${opts.footer ?? ""}
     </section>
 `;
+}
+
+/** The home page's honors row: the newest season, plus the pointer to the full prize table. */
+function honorsHtml(): string {
+  const latest = getLatestHonors();
+  if (!latest) return "";
+
+  return honorsSection(latest.season, latest.honors, {
+    footer: `
+      <div class="text-center mt-[18px] text-sm font-medium">
+        <span class="${PLANNED}" title="Coming soon">All ${esc(latest.season)} prize winners &#8594;</span>
+      </div>`,
+  });
 }
 
 /**
@@ -871,14 +903,100 @@ ${LIGHTBOX_SCRIPT}
 }
 
 /**
+ * The League History page's own sub-nav: the all-time table, then one pill per recorded season.
+ *
+ * Anchors within the page rather than a file per season. Every season's block is a heading and
+ * four cards, so twenty of them still make a page shorter than one roster table, and a single
+ * file means a new year costs a `SEASON_HONORS` entry and nothing else.
+ *
+ * Newest season first, and that ordering is the point: a year appended on the right would push
+ * the season people actually want further along the row every August, and wrap to a second line
+ * somewhere in the 2030s. Here the current year is always the second pill.
+ *
+ * Sits below the h1 rather than at the top of the page so it reads as a switch within League
+ * History instead of a second site nav competing with the green bar above it.
+ */
+function historyNavHtml(seasons: string[]): string {
+  const years = seasons
+    .map((s) => `      <a href="#s${esc(s)}" class="${PILL_LINK}">${esc(s)}</a>`)
+    .join("\n");
+
+  return `    <nav class="flex flex-wrap items-center gap-2 mb-12">
+      <a href="#all-time" class="${PILL_LINK}">Full league history</a>
+${years}
+    </nav>`;
+}
+
+/**
+ * Every season on one line: champion, runner-up, Toilet Bowl.
+ *
+ * Rendered newest-first, against a source list kept oldest-first, so `LEAGUE_HISTORY` reads as a
+ * timeline while the page opens on the seasons anyone remembers. A row may name nobody at all,
+ * which is the state most of the pre-Sleeper seasons are in — hence the dash for a blank cell
+ * and the note under the table, which keeps an incomplete record from reading as a complete one.
+ */
+function leagueHistoryTableHtml(): string {
+  if (LEAGUE_HISTORY.length === 0) return "";
+
+  const rows = [...LEAGUE_HISTORY]
+    .sort((a, b) => b.season.localeCompare(a.season))
+    .map((r) => {
+      const cells = [r.champion, r.runnerUp, r.toiletBowl].map((v) => v
+        ? `<td class="${TP_TD}">${esc(v)}</td>`
+        : `<td class="${TP_TD_MUTED}">&mdash;</td>`);
+      return `      <tr><td class="${TP_TD} font-medium">${esc(r.season)}</td>${cells.join("")}</tr>`;
+    })
+    .join("\n");
+
+  // The gap between the league's first season and the oldest row on the table. Derived rather
+  // than written out, so filling in an older season shortens the sentence on its own.
+  const earliest = [...LEAGUE_HISTORY].sort((a, b) => a.season.localeCompare(b.season))[0].season;
+  const missing = Number(earliest) > Number(LEAGUE_FIRST_SEASON)
+    ? `\n    <p class="text-sm text-stone mt-3">${esc(LEAGUE_FIRST_SEASON)}&ndash;${esc(String(Number(earliest) - 1))} are still being compiled.</p>`
+    : "";
+
+  const headers = ["Season", "Champion", "Runner-Up", "Toilet Bowl"]
+    .map((h) => `<th class="${TP_TH}">${h}</th>`)
+    .join("");
+
+  return `  <div class="overflow-x-auto -mx-1">
+  <table class="text-sm w-auto">
+    <thead><tr>${headers}</tr></thead>
+    <tbody class="${LAST_ROW_FLUSH}">
+${rows}
+    </tbody>
+  </table>
+  </div>${missing}`;
+}
+
+/**
  * The League History page, at `output/history.html` (served as `/history`).
  *
- * A root-level page like the index, so it takes the same `base: ""` chrome and the same
- * 1080px measure. The content is a placeholder: the page exists so the nav item has
- * somewhere to go, and the sections below get written by hand as the history is settled.
+ * A root-level page like the index, so it takes the same `base: ""` chrome and the same 1080px
+ * measure. Sections, in order: the sub-nav, the newest season's honors (the same four cards the
+ * home page opens on, from the same renderer), the all-time table, then each earlier season.
+ *
+ * The all-time table sits second rather than last so it holds its place as seasons accumulate;
+ * were it below them it would sink another screen every August. The newest season stays above it
+ * because a finished season is the thing worth opening on, which is the home page's reasoning too.
  */
 export function generateHistoryHtml(leagueName: string, navLinks: NavLink[], hasMark = false): string {
   const chrome: SiteChrome = { base: "", hasMark, tiersHref: newestNavLink(navLinks)?.href };
+
+  const seasons = Object.keys(SEASON_HONORS).sort().reverse();
+  const [newest, ...earlier] = seasons;
+
+  const honorBlocks = (s: string) => honorsSection(s, SEASON_HONORS[s], { id: `s${s}` });
+  const table = leagueHistoryTableHtml();
+
+  const allTime = table
+    ? `
+    <section id="all-time" class="mb-14 scroll-mt-6">
+      <h2 class="${SECTION_H2}">Full League History</h2>
+${table}
+    </section>
+`
+    : "";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -892,17 +1010,9 @@ ${htmlHead({
 ${siteHeader(chrome)}
   <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
     <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-2">League History</h1>
-    <p class="text-fern mb-12">Champions, records, and the long story of the league since 2006.</p>
-
-    <section class="mb-14">
-      <h2 class="${SECTION_H2}">Coming Soon</h2>
-      <div class="${CARD} p-6">
-        <p class="text-fern m-0">This page is still being written. In the meantime, the
-        <a href="index.html" class="${LINK}">home page</a> carries the current season's tiers,
-        draft order, and prize winners.</p>
-      </div>
-    </section>
-  </main>
+    <p class="text-fern mb-8">Champions, records, and the long story of the league since ${esc(LEAGUE_FIRST_SEASON)}.</p>
+${historyNavHtml(seasons)}
+${newest ? honorBlocks(newest) : ""}${allTime}${earlier.map(honorBlocks).join("")}  </main>
 </body>
 </html>`;
 }
