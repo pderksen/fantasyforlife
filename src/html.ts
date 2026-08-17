@@ -130,9 +130,8 @@ const THEME = `    @theme {
       --color-rule: #e9e7dd;       /* hairline row dividers */
       --color-brass: #c9a53c;      /* the season's top honor */
       --color-shell: #eeece2;      /* neutral fill: honor icon discs, table header strips */
-      --color-clay: #f0ead8;       /* toilet-bowl honor card: fill */
-      --color-clay-line: #ddd3b8;  /* toilet-bowl honor card: border */
-      --color-clay-ink: #8a7a4a;   /* toilet-bowl honor card: label and glyph */
+      --color-loam: #453019;       /* toilet-bowl honor card: fill */
+      --color-clay: #cbab7d;       /* the season's bottom honor, brass's counterpart */
     }
 `;
 
@@ -594,7 +593,7 @@ const HONOR_ICONS: Record<HonorIcon, string> = {
 const HONOR_TONES: Record<"default" | "champion" | "toilet", { card: string; disc: string; label: string }> = {
   default: { card: CARD, disc: "bg-shell text-fern", label: "text-stone font-medium" },
   champion: { card: "bg-forest text-parchment rounded-xl", disc: "bg-brass text-forest", label: "text-brass font-semibold" },
-  toilet: { card: "bg-clay border border-clay-line rounded-xl", disc: "bg-white text-clay-ink", label: "text-clay-ink font-semibold" },
+  toilet: { card: "bg-loam text-parchment rounded-xl", disc: "bg-clay text-loam", label: "text-clay font-semibold" },
 };
 
 /**
