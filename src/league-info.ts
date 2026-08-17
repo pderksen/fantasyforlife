@@ -232,7 +232,7 @@ export const GALLERY: GalleryPhoto[] = [
     alt: "The 2024 champion and Toilet Bowl trophies, held by their winners",
     // Plain text, not an entity: the renderer runs every caption through `esc()`, so an `&amp;`
     // written here would ship as a literal "&amp;".
-    caption: "2024 Champ (Easton) & Toilet Bowl winner (Clovis)",
+    caption: "2024 Champ (Easton) & Toilet Bowl champ (Clovis)",
     // Nearly square, with a hat brim at the very top edge and the engraved plaques at the very
     // bottom, so there is almost nothing to spare either way — hence the heavier weight, which
     // buys it a crop of a few per cent, and the near-top focus that spends those on the piano.
