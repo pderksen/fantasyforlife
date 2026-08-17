@@ -42,7 +42,7 @@ displays.
 | Slot | CSS width | Export width |
 |------|-----------|--------------|
 | Full width of the column (hero, banner) | ~1016px | **2000px** |
-| Home page gallery column | ~550px | **1400px** |
+| Home page gallery column | ~618px | **900px** |
 | Two side by side | ~496px | **1000px** |
 | Three-up gallery grid | ~323px | **650px** |
 | Inline portrait or avatar | 128px | **256px** |
@@ -52,10 +52,16 @@ Height follows from the crop, which follows from the slot: a hero wants somethin
 uncropped and as large as they come. Downscaling and cropping are lossless decisions to defer;
 they cannot be undone once the original is gone.
 
-**A slot has to exist before a target is real.** One does now: the home page's gallery column,
-listed above at ~550 CSS px, holding the two large cuts. Everything else in the table is what the
-current layout implies, not a spec anything is built against. Deciding "these twelve go in a
-three-up grid on the history page" is what turns the 650px row into the answer.
+**A slot has to exist before a target is real.** Two do now: the home page's gallery column,
+listed above at ~618 CSS px, and the lightbox behind it, which takes the full-column 2000px row
+because it renders to the viewport. Everything else in the table is what the current layout
+implies, not a spec anything is built against. Deciding "these twelve go in a three-up grid on
+the history page" is what turns the 650px row into the answer.
+
+**The doubling in that table is a ceiling, not a floor.** The gallery row is 900 against ~618,
+about 1.45x rather than 2x, because a photograph resampled by ffmpeg holds up at 1.5x far better
+than the same photo left to the browser to squeeze from 3x. Match the slot first; buy retina
+headroom with what is left.
 
 **The gallery slot crops rather than fits.** Its two figures divide a capped column height and
 sit `object-cover`, so a file's own aspect never sets the layout — see `galleryHtml()` in
@@ -126,9 +132,11 @@ Cut 2026-08-16 from two iPhone 15 originals, both shot 2025-08-23 at the 2025 dr
 
 | File | Size | Bytes | Is |
 |------|------|-------|-----|
-| `2024-champion-toilet-bowl-trophies-1400.jpg` | 1400×1168 | 379 KB | The 2024 champion and toilet-bowl trophies, held by their winners |
+| `2024-champion-toilet-bowl-trophies-1400.jpg` | 1400×1168 | 379 KB | The 2024 champion and toilet-bowl trophies, held by their winners. The home page lightbox |
+| `2024-champion-toilet-bowl-trophies-900.jpg` | 900×750 | 179 KB | Same, what the home page column renders |
 | `2024-champion-toilet-bowl-trophies-650.jpg` | 650×542 | 101 KB | Same, gallery thumb |
-| `2025-draft-day-league-photo-2000.jpg` | 2000×1184 | 453 KB | All ten owners on 2025 draft day, one attending by laptop |
+| `2025-draft-day-league-photo-2000.jpg` | 2000×1184 | 453 KB | All ten owners on 2025 draft day, one attending by laptop. The home page lightbox |
+| `2025-draft-day-league-photo-900.jpg` | 900×532 | 130 KB | Same, what the home page column renders |
 | `2025-draft-day-league-photo-650.jpg` | 650×384 | 76 KB | Same, gallery thumb |
 
 Both are uncropped, at the aspect they were shot. Two calls worth recording:
@@ -141,9 +149,15 @@ Both are uncropped, at the aspect they were shot. Two calls worth recording:
 - **Two widths, not four.** The wide group shot gets the 2000px full-column cut from the table
   above; the near-square trophy shot gets 1400, which is 2x of the ~700 CSS px a 1.2:1 photo
   should actually occupy in a 1016px column — 2000 would render it 848px tall. Both large cuts
-  land within 16px of the same height, so they stack or sit side by side cleanly. Both are what
-  the home page's gallery column now serves, at roughly 2.5x the ~550 CSS px it renders them
-  into. The 650 pair is the three-up grid row, whose slot still does not exist.
+  land within 16px of the same height, so they stack or sit side by side cleanly. The 650 pair is
+  the three-up grid row, whose slot still does not exist.
+- **Then a third width, because oversampling is not free.** Added 2026-08-16: the home page
+  column is ~618 CSS px wide, and serving the 2000px file into it meant the *browser* did a 3.2x
+  downscale on every page view, which reads harsh next to an ffmpeg lanczos cut. The 900px pair
+  is what the column renders now — 1.45x the slot, so it still has headroom on a 1.25x or 1.5x
+  Windows display, at under a third of the pixels. The large cuts stay in the ladder as what the
+  lightbox opens, which is a slot that genuinely wants them: it renders at whatever the viewport
+  gives it, and nothing loads it until a photo is clicked.
 
 ## Brand marks
 

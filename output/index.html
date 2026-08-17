@@ -123,15 +123,19 @@
         </div>
       </section>
       <section class="flex-[1.9] min-w-[min(460px,100%)] flex flex-col">
-        <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">From the gallery</h2>
-        <div class="flex flex-col gap-4 flex-1 max-h-[620px]">
-          <figure class="m-0 flex-[1.1] flex flex-col gap-2 min-h-0">
-            <img src="assets/photos/2025-draft-day-league-photo-2000.jpg" alt="The league's ten owners on 2025 draft day, one attending by laptop" loading="lazy" decoding="async" class="w-full flex-1 min-h-0 object-cover rounded-xl border border-line box-border">
-            <figcaption class="text-[13px] text-fern">Draft day, 2025</figcaption>
-          </figure>
+        <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">League Photos</h2>
+        <div class="flex flex-col gap-4 flex-1 max-h-[860px]">
           <figure class="m-0 flex-[1] flex flex-col gap-2 min-h-0">
-            <img src="assets/photos/2024-champion-toilet-bowl-trophies-1400.jpg" alt="The 2024 champion and Toilet Bowl trophies, held by their winners" loading="lazy" decoding="async" class="w-full flex-1 min-h-0 object-cover [object-position:50%_20%] rounded-xl border border-line box-border">
-            <figcaption class="text-[13px] text-fern">2024 champ &amp; Toilet Bowl winner</figcaption>
+            <a href="assets/photos/2025-draft-day-league-photo-2000.jpg" data-lightbox data-caption="Draft Day 2025" class="flex-1 min-h-0 block rounded-xl overflow-hidden cursor-zoom-in focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fern">
+              <img src="assets/photos/2025-draft-day-league-photo-900.jpg" alt="The league's ten owners on 2025 draft day, one attending by laptop" loading="lazy" decoding="async" class="w-full h-full object-cover [object-position:50%_18%] rounded-xl border border-line box-border">
+            </a>
+            <figcaption class="text-[13px] text-fern">Draft Day 2025</figcaption>
+          </figure>
+          <figure class="m-0 flex-[1.55] flex flex-col gap-2 min-h-0">
+            <a href="assets/photos/2024-champion-toilet-bowl-trophies-1400.jpg" data-lightbox data-caption="2024 Champ (Easton) &amp; Toilet Bowl winner (Clovis)" class="flex-1 min-h-0 block rounded-xl overflow-hidden cursor-zoom-in focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fern">
+              <img src="assets/photos/2024-champion-toilet-bowl-trophies-900.jpg" alt="The 2024 champion and Toilet Bowl trophies, held by their winners" loading="lazy" decoding="async" class="w-full h-full object-cover [object-position:50%_10%] rounded-xl border border-line box-border">
+            </a>
+            <figcaption class="text-[13px] text-fern">2024 Champ (Easton) &amp; Toilet Bowl winner (Clovis)</figcaption>
           </figure>
         </div>
         <div class="mt-3 text-[13px]">
@@ -154,6 +158,13 @@
       </div>
     </div>
   </main>
+  <dialog id="lightbox" class="p-0 m-0 w-full h-full max-w-none max-h-none border-0 bg-transparent backdrop:bg-ink/90">
+    <div class="w-full h-full flex flex-col items-center justify-center gap-3 p-4 sm:p-8 cursor-zoom-out">
+      <img id="lightbox-image" src="" alt="" class="flex-1 min-h-0 max-w-full object-contain">
+      <p id="lightbox-caption" class="m-0 shrink-0 text-sm text-parchment"></p>
+    </div>
+    <button type="button" aria-label="Close" class="absolute top-3 right-4 bg-transparent border-0 p-2 leading-none text-3xl text-sage hover:text-parchment cursor-pointer">&times;</button>
+  </dialog>
   <script>
     (function () {
       var box = document.getElementById("draft-countdown");
@@ -172,6 +183,29 @@
       }
       tick();
       setInterval(tick, 30000);
+    })();
+  </script>
+  <script>
+    (function () {
+      var dlg = document.getElementById("lightbox");
+      if (!dlg || typeof dlg.showModal !== "function") return;
+      var img = document.getElementById("lightbox-image");
+      var caption = document.getElementById("lightbox-caption");
+      var links = document.querySelectorAll("a[data-lightbox]");
+      for (var i = 0; i < links.length; i++) {
+        links[i].addEventListener("click", function (e) {
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+          e.preventDefault();
+          var thumb = this.querySelector("img");
+          img.src = this.href;
+          img.alt = thumb ? thumb.alt : "";
+          caption.textContent = this.dataset.caption || "";
+          dlg.showModal();
+        });
+      }
+      dlg.addEventListener("click", function (e) {
+        if (e.target !== img) dlg.close();
+      });
     })();
   </script>
 </body>

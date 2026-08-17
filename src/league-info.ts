@@ -148,8 +148,17 @@ export function getLatestPrizes(): { season: string; prizes: Prize[] } | undefin
  * adding one here needs no other step. Cutting and naming rules: `docs/photos.md`.
  */
 export interface GalleryPhoto {
-  /** File name within `assets/photos/`. The renderer supplies the directory and the base prefix. */
+  /**
+   * The cut the column renders, within `assets/photos/` — the renderer supplies the directory
+   * and the base prefix. Sized for the slot (~618 CSS px), not for the archive: a file three
+   * times the box gets resampled by the browser rather than by ffmpeg, and reads harsh.
+   */
   file: string;
+  /**
+   * The cut the lightbox opens, same directory. Where the detail lives, since it renders at
+   * whatever the viewport gives it. Nothing loads this until the photo is clicked.
+   */
+  full: string;
   alt: string;
   caption: string;
   /**
@@ -168,17 +177,26 @@ export interface GalleryPhoto {
  */
 export const GALLERY: GalleryPhoto[] = [
   {
-    file: "2025-draft-day-league-photo-2000.jpg",
+    file: "2025-draft-day-league-photo-900.jpg",
+    full: "2025-draft-day-league-photo-2000.jpg",
     alt: "The league's ten owners on 2025 draft day, one attending by laptop",
-    caption: "Draft day, 2025",
-    weight: 1.1,
+    caption: "Draft Day 2025",
+    // The wide frame is the one with room to lose: below the shoes is rug, above the heads is
+    // barely a hand's width of wall. So it takes the smaller share and crops from the floor up.
+    focus: "50%_18%",
   },
   {
-    file: "2024-champion-toilet-bowl-trophies-1400.jpg",
+    file: "2024-champion-toilet-bowl-trophies-900.jpg",
+    full: "2024-champion-toilet-bowl-trophies-1400.jpg",
     alt: "The 2024 champion and Toilet Bowl trophies, held by their winners",
-    caption: "2024 champ & Toilet Bowl winner",
-    // The trophies sit high in an uncropped 1.2:1 frame; centring cuts their tops off.
-    focus: "50%_20%",
+    // Plain text, not an entity: the renderer runs every caption through `esc()`, so an `&amp;`
+    // written here would ship as a literal "&amp;".
+    caption: "2024 Champ (Easton) & Toilet Bowl winner (Clovis)",
+    // Nearly square, with a hat brim at the very top edge and the engraved plaques at the very
+    // bottom, so there is almost nothing to spare either way — hence the heavier weight, which
+    // buys it a crop of a few per cent, and the near-top focus that spends those on the piano.
+    weight: 1.55,
+    focus: "50%_10%",
   },
 ];
 

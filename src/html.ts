@@ -672,12 +672,20 @@ ${rows}
  * since otherwise the images' own intrinsic heights set it and the gallery runs roughly twice
  * the draft order card's length beside it.
  *
- * 620px is a balance, not a match. The ten-owner card is ~443px, and capping to that would
- * letterbox a group shot into a 3:1 strip with heads out of frame. At 620 the two photos land
- * near 260 and 290px, which crops each by well under a third and leaves the columns close
- * enough in length to read as a pair.
+ * 860px is what it takes to keep faces in frame, and the number is derived, not chosen. At the
+ * 1080px shell the column measures ~618px wide, where the two files stand uncropped at 366px
+ * (2000x1184) and 516px (1400x1168) — 952px once the captions and the gap are added, which is
+ * where the cap would stop binding altogether. 860 leaves the near-square trophy photo almost
+ * whole and spends the difference on the group shot, which is the one with floor to give:
+ * `GalleryPhoto.weight` is what makes that split uneven, and `focus` aims each crop at the
+ * bottom, since both photos hold their subjects in the top third.
+ *
+ * The earlier 620 was picked to pair with the ten-owner draft order card (~443px) and cost the
+ * trophy photo half its height, taking the tops of both heads with it. Matching the card is
+ * the thing that gave way: the column now runs nearly twice its neighbour and leaves white
+ * space beside it, which is the cheaper of the two prices.
  */
-const GALLERY_MAX_H = "max-h-[620px]";
+const GALLERY_MAX_H = "max-h-[860px]";
 
 /**
  * The photo column beside the draft order.
@@ -693,6 +701,10 @@ const GALLERY_MAX_H = "max-h-[620px]";
  * longest team name and the row's leftover width has nowhere else to go, so tightening it
  * necessarily widens the photos. Since `GALLERY_MAX_H` caps the height either way, a wider
  * column means a tighter crop rather than taller images.
+ *
+ * **Each figure is a link to its own full-size file, and that is the whole no-JS story.** The
+ * lightbox is an enhancement layered on top by `LIGHTBOX_SCRIPT`; with the script blocked or
+ * `<dialog>` unsupported, a click still opens the photo, just in a plain browser tab.
  */
 function galleryHtml(chrome: SiteChrome): string {
   if (GALLERY.length === 0) return "";
@@ -702,15 +714,19 @@ function galleryHtml(chrome: SiteChrome): string {
       // Framing only bites because the image is cropped to a height it did not choose; a
       // photo left at its natural aspect ignores object-position entirely.
       const focus = photo.focus ? ` [object-position:${photo.focus}]` : "";
+      // The caption rides along in a data attribute so the overlay can repeat it under the
+      // full-size photo; reading it back out of the DOM would tie the two layouts together.
       return `          <figure class="m-0 flex-[${photo.weight ?? 1}] flex flex-col gap-2 min-h-0">
-            <img src="${esc(chrome.base)}assets/photos/${esc(photo.file)}" alt="${esc(photo.alt)}" loading="lazy" decoding="async" class="w-full flex-1 min-h-0 object-cover${focus} rounded-xl border border-line box-border">
+            <a href="${esc(chrome.base)}assets/photos/${esc(photo.full)}" data-lightbox data-caption="${esc(photo.caption)}" class="flex-1 min-h-0 block rounded-xl overflow-hidden cursor-zoom-in focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fern">
+              <img src="${esc(chrome.base)}assets/photos/${esc(photo.file)}" alt="${esc(photo.alt)}" loading="lazy" decoding="async" class="w-full h-full object-cover${focus} rounded-xl border border-line box-border">
+            </a>
             <figcaption class="text-[13px] text-fern">${esc(photo.caption)}</figcaption>
           </figure>`;
     })
     .join("\n");
 
   return `      <section class="flex-[1.9] ${flexFloor(460)} flex flex-col">
-        <h2 class="${SECTION_H2}">From the gallery</h2>
+        <h2 class="${SECTION_H2}">League Photos</h2>
         <div class="flex flex-col gap-4 flex-1 ${GALLERY_MAX_H}">
 ${figures}
         </div>
@@ -719,6 +735,59 @@ ${figures}
         </div>
       </section>`;
 }
+
+/**
+ * The overlay the gallery photos open into, and the script that drives it.
+ *
+ * A native `<dialog>` rather than a hand-built overlay: `showModal()` brings the backdrop, the
+ * Escape key, the focus trap, and the inert background with it, none of which is worth
+ * re-implementing. Both parts render only on the home page, and only when there are photos.
+ *
+ * **The links work without any of this.** `galleryHtml()` wraps each photo in a plain anchor to
+ * its full-size file, so the script's job is to intercept that click, not to create it — which
+ * is why it bails out early rather than falling back to anything when `<dialog>` is missing.
+ * Modified clicks (a middle click, a ctrl/cmd click) fall through deliberately, so "open in a
+ * new tab" keeps working on an element that looks like a link because it is one.
+ *
+ * Closing on any click that isn't the photo covers the backdrop, the margins, and the × button
+ * in one rule, so the button needs no handler and no enclosing form.
+ */
+function lightboxHtml(): string {
+  if (GALLERY.length === 0) return "";
+
+  return `  <dialog id="lightbox" class="p-0 m-0 w-full h-full max-w-none max-h-none border-0 bg-transparent backdrop:bg-ink/90">
+    <div class="w-full h-full flex flex-col items-center justify-center gap-3 p-4 sm:p-8 cursor-zoom-out">
+      <img id="lightbox-image" src="" alt="" class="flex-1 min-h-0 max-w-full object-contain">
+      <p id="lightbox-caption" class="m-0 shrink-0 text-sm text-parchment"></p>
+    </div>
+    <button type="button" aria-label="Close" class="absolute top-3 right-4 bg-transparent border-0 p-2 leading-none text-3xl text-sage hover:text-parchment cursor-pointer">&times;</button>
+  </dialog>`;
+}
+
+/** Opens a gallery photo in the `<dialog>` above. Vanilla and inline — the project ships no JS bundle. */
+const LIGHTBOX_SCRIPT = `  <script>
+    (function () {
+      var dlg = document.getElementById("lightbox");
+      if (!dlg || typeof dlg.showModal !== "function") return;
+      var img = document.getElementById("lightbox-image");
+      var caption = document.getElementById("lightbox-caption");
+      var links = document.querySelectorAll("a[data-lightbox]");
+      for (var i = 0; i < links.length; i++) {
+        links[i].addEventListener("click", function (e) {
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+          e.preventDefault();
+          var thumb = this.querySelector("img");
+          img.src = this.href;
+          img.alt = thumb ? thumb.alt : "";
+          caption.textContent = this.dataset.caption || "";
+          dlg.showModal();
+        });
+      }
+      dlg.addEventListener("click", function (e) {
+        if (e.target !== img) dlg.close();
+      });
+    })();
+  </script>`;
 
 /**
  * The link rows the page closes on: every tiers page that isn't already the hero card, then
@@ -795,7 +864,9 @@ ${siteHeader(chrome)}
   <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14">
 ${honorsHtml()}${heroHtml(latest, draftOrder?.season)}${columnsHtml}${siteLinksHtml(navLinks, latest)}
   </main>
+${lightboxHtml()}
 ${COUNTDOWN_SCRIPT}
+${LIGHTBOX_SCRIPT}
 </body>
 </html>`;
 }

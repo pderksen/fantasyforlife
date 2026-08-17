@@ -134,11 +134,28 @@ count.
 dividing the column by weight, which does nothing at all unless something bounds the height —
 otherwise the images' intrinsic heights set it and the column runs about twice the draft order
 card beside it. `GALLERY_MAX_H` is that bound, and `GalleryPhoto.focus` only bites because of it.
-620px is a balance rather than a match: the ten-owner card is ~443px, and capping to that
-letterboxes a group shot into a 3:1 strip with heads out of frame.
+
+860px is set by the photos, not by the column beside them. At the 1080px shell the gallery is
+~618px wide, where the two files stand uncropped at 366px and 516px, so 952px is the height at
+which the cap stops binding at all. The cap sat at 620 until Aug 16, 2026, chosen to pair with
+the ten-owner draft order card (~443px), and that pairing cost the trophy photo half its height
+and both subjects the tops of their heads. Matching the card is what gave way. The column now
+runs nearly twice its neighbour, and `weight` sends most of the remaining crop to the group
+shot, which has floor below the shoes to spend where the near-square trophy frame has nothing
+above the hat brim or below the plaques.
 
 Two photos, not a feed. A third would squeeze all three into strips; more photos go on the
 gallery page.
+
+**Each photo is a link to its own full-size file; the lightbox is layered on top of that.** The
+column renders a 900px cut sized for the slot, and the anchor points at the 2000px or 1400px
+original, so with JavaScript blocked a click still opens the photo in a tab. `LIGHTBOX_SCRIPT`
+intercepts the click and hands it to a native `<dialog>` instead, which brings the backdrop, the
+Escape key, the focus trap, and the inert background for free — and bails out untouched if
+`showModal` is missing, leaving the plain link behind. Modified clicks (ctrl, cmd, middle) fall
+through on purpose: the element looks like a link, so "open in a new tab" has to work on it.
+Closing on any click that is not the photo covers the backdrop, the margins, and the × in one
+rule, which is why that button carries no handler and needs no form.
 
 **What the closing rows replaced.** A "Tiers by Season" chip grid and a "Past Seasons" section,
 which between them took a third of the page to say what two rows of links say. Gone with them:
