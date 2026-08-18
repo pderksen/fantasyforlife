@@ -81,12 +81,12 @@ relative to the page being written.
 `regenerateHistory()` in `index.ts` on every run right after the index.
 
 **Sections**, in order: the sub-nav, the newest season's honor cards from the same
-`honorsSection()` the home page uses, the all-time table, then each earlier season's cards, and a
-"Back to top" link closing the page. Content is hand-written in `league-info.ts` as the history is
-settled, which is why most of it is still blank.
+`honorsSection()` the home page uses, the all-time table, then each earlier season's cards, then
+Past Leagues, and a "Back to top" link closing the page. Content is hand-written in
+`league-info.ts` as the history is settled, which is why most of it is still blank.
 
 **The sub-nav lists the page's sections, not its seasons.** `HISTORY_SECTIONS` in `html.ts` is the
-list: Full League History, Records, League Sites. It carried a pill per recorded season until Aug
+list: Full League History, Records, Past Leagues. It carried a pill per recorded season until Aug
 2026, which was dropped because a row that grows by one every August wraps to a second line in the
 2030s while saying nothing a reader scrolling the page can't already see. A section that doesn't
 exist yet still gets a tab, inert and carrying a small `TAB_SOON` tag, so the shape of the page is
@@ -108,6 +108,35 @@ this page), then a plain middot-separated text row, which had nothing for the h1
 - **Tabs are `whitespace-nowrap`,** so a narrow phone drops a whole label to a second line rather
   than breaking one. `gap-y-0` keeps the two lines tight enough to still read as one bar, with the
   live tab's underline on the upper line and the row's rule under the lower.
+
+**Past Leagues closes the page**, from `pastLeaguesHtml()`. One card, two labelled blocks: Sleeper
+from `SLEEPER_FIRST_SEASON` on, then one `YEAR_TILE` per MyFantasyLeague season in
+`MFL_SEASONS`, newest first.
+
+- **Neither host hands you a season, and the copy says so.** Sleeper mints a new league per year
+  and exposes no route to an old one (`previous_league_id` is an API field, not a URL), so the
+  Sleeper block links the league list and spells out the Settings path through the app. MFL does
+  have per-season URLs, but they are per-season *ids* with nothing chaining them, which is why
+  `MFL_SEASONS` records each year by hand.
+- **`mflHomeUrl()` builds every link on the bare `www` host.** MFL serves each league off a
+  numbered box (`www42`, `www46`, ...) and which box holds a season is not stable, so a hard-coded
+  number rots; `www.myfantasyleague.com` redirects to whichever one currently has it.
+- **The years are unannotated on purpose.** 2006–2014 open under "Keeper Alliance Network", the
+  conference the league played in then, and 2015's title records the split. A `formerName` field
+  and a derived footnote saying so were built and dropped: it is a list of years, and a note about
+  a conference that folded a decade ago is more than the list is worth. The fact is kept in the
+  `MFL_SEASONS` doc comment, where it belongs to whoever verifies the next id.
+- **Both range labels are derived from the data, never typed.** Pointing an id at a year outside
+  its own range lands on a stranger's league rather than a 404, so a typed "2006-2024" over a list
+  that only reaches 2015 would read as correct and link to nothing. Filling a gap in
+  `MFL_SEASONS` moves the heading with it.
+- **Tiles, not a table and no longer a comma list.** One link per row is four words of content in
+  a five-column frame, and the all-time table above already carries the page's tabular weight. The
+  years ran as a comma-separated line first: at nineteen of them that reads as prose and gives the
+  eye nothing to land on. `YEAR_TILE` is `PILL`'s geometry with a `bg-shell` fill, because a white
+  pill inside this white card is a border and nothing else.
+- **It sits last, matching its place in the sub-nav.** It is where to go when the page doesn't
+  have what you came for, so it reads as the exit rather than as another record.
 
 **The all-time table is the draft order card in table form.** `leagueHistoryTableHtml()` borrows
 `draftOrderHtml()`'s treatment wholesale — bordered card, `bg-shell` header strip, 15px rows split

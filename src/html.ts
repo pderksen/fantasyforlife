@@ -10,6 +10,9 @@ import {
   SITE_NAV,
   SURVIVOR,
   ARCHIVE_LINKS,
+  MFL_SEASONS,
+  SLEEPER_FIRST_SEASON,
+  mflHomeUrl,
   GALLERY,
   SEASON_HONORS,
   LEAGUE_HISTORY,
@@ -77,6 +80,13 @@ const PILL = `inline-block ${PILL_BOX}`;
 const PILL_LINK_COLORS = "text-ink bg-white border border-line transition-colors hover:border-moss hover:text-moss no-underline";
 const PILL_LINK = `${PILL} ${PILL_LINK_COLORS}`;
 const PILL_ACTIVE = `${PILL} text-parchment bg-forest border border-forest`;
+/**
+ * A year in the Past Leagues list. `PILL`'s geometry with a `bg-shell` fill instead of white,
+ * because these sit inside a white card and a white pill there is a border and nothing else.
+ * Nineteen of them wrap to three rows in the card's measure, which is the point: a comma list
+ * of that length reads as prose and gives the eye nothing to land on.
+ */
+const YEAR_TILE = `${PILL} bg-shell border border-line text-ink no-underline transition-colors hover:border-moss hover:text-moss`;
 /**
  * The Excel export pill. `inline-flex` replaces `inline-block` rather than joining it — two
  * `display` utilities on one element resolve by stylesheet order, not attribute order, so
@@ -1001,7 +1011,7 @@ const TAB_SOON = `<span class="text-[10px] font-semibold tracking-[0.12em] upper
 const HISTORY_SECTIONS: { label: string; href?: string }[] = [
   { label: "Full League History", href: "#all-time" },
   { label: "Records" },
-  { label: "League Sites" },
+  { label: "Past Leagues", href: "#past-leagues" },
 ];
 
 function historyNavHtml(): string {
@@ -1242,6 +1252,64 @@ ${tableRows}
 }
 
 /**
+ * Where every season the league has played actually lives, on the two hosts it has used.
+ *
+ * The point of the section is that neither host hands you a season directly. Sleeper mints a
+ * new league per year and exposes no URL for an old one — `previous_league_id` is an API field,
+ * not a route — so the only way in is the app's own Previous Leagues screen, and the copy has to
+ * say that rather than pretend a link exists. MyFantasyLeague does have per-season URLs, but
+ * they are per-season *ids* with no chain between them, so `MFL_SEASONS` records each one by
+ * hand and this renders each as its own `YEAR_TILE`, newest first.
+ *
+ * Tiles and not a table: one link per row is four words of content in a five-column frame, and
+ * the History table above is already carrying the page's tabular weight. They were a
+ * comma-separated line first, which at nineteen years reads as prose and gives the eye nothing
+ * to land on; the tiles wrap to three rows in the card and stay scannable as the list grows.
+ *
+ * The range in each label is derived, never typed. Filling a gap in `MFL_SEASONS` is then the
+ * whole edit — the heading moves with the data instead of quietly claiming a year that has no
+ * link under it.
+ */
+function pastLeaguesHtml(): string {
+  const byNewest = [...MFL_SEASONS].sort((a, b) => b.season.localeCompare(a.season));
+  const mflSpan = byNewest.length
+    ? `${esc(byNewest[byNewest.length - 1].season)}&ndash;${esc(byNewest[0].season)}`
+    : "";
+  const mflLinks = byNewest
+    .map(({ season, id }) =>
+      `            <a href="${esc(mflHomeUrl(season, id))}" target="_blank" rel="noopener noreferrer" class="${YEAR_TILE}">${esc(season)}</a>`,
+    )
+    .join("\n");
+
+  // Sleeper's first season, so the label stays right the year a third host shows up.
+  const sleeperFrom = SLEEPER_FIRST_SEASON;
+
+  const mfl = byNewest.length
+    ? `
+        <div class="border-t border-rule pt-5">
+          <div class="${LABEL_TYPE} mb-2.5">${mflSpan} &middot; MyFantasyLeague</div>
+          <div class="flex flex-wrap gap-2">
+${mflLinks}
+          </div>
+        </div>`
+    : "";
+
+  return `    <section id="past-leagues" class="mb-14 scroll-mt-6">
+      <h2 class="${SECTION_H2}">Past Leagues</h2>
+      <div class="${CARD} px-5 py-5 max-w-[720px] flex flex-col gap-5">
+        <div>
+          <div class="${LABEL_TYPE} mb-2.5">${esc(sleeperFrom)}&ndash;present &middot; Sleeper</div>
+          <p class="text-[15px] leading-relaxed">
+            <a href="${ARCHIVE_LINKS.sleeper}" target="_blank" rel="noopener noreferrer" class="${LINK}">On Sleeper &#x2197;</a><span class="text-stone">,
+            go to Settings &rsaquo; League History &rsaquo; Previous Leagues.</span>
+          </p>
+        </div>${mfl}
+      </div>
+    </section>
+`;
+}
+
+/**
  * The League History page, at `output/history.html` (served as `/history`).
  *
  * A root-level page like the index, so it takes the same `base: ""` chrome and the same 1080px
@@ -1251,6 +1319,10 @@ ${tableRows}
  * The all-time table sits second rather than last so it holds its place as seasons accumulate;
  * were it below them it would sink another screen every August. The newest season stays above it
  * because a finished season is the thing worth opening on, which is the home page's reasoning too.
+ *
+ * Past Leagues closes the page, below the oldest season's cards, matching its place in the
+ * sub-nav: it is where to go when this page does not have what you came for, so it reads as the
+ * exit rather than as another record.
  */
 export function generateHistoryHtml(leagueName: string, navLinks: NavLink[], hasMark = false): string {
   const chrome: SiteChrome = { base: "", hasMark, tiersHref: newestNavLink(navLinks)?.href };
@@ -1286,7 +1358,7 @@ ${siteHeader(chrome)}
   <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
     <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-8">League History</h1>
 ${historyNavHtml()}
-${newest ? honorBlocks(newest) : ""}${allTime}${earlier.map(honorBlocks).join("")}${BACK_TO_TOP}
+${newest ? honorBlocks(newest) : ""}${allTime}${earlier.map(honorBlocks).join("")}${pastLeaguesHtml()}${BACK_TO_TOP}
   </main>
 </body>
 </html>`;

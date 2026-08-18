@@ -464,6 +464,65 @@ export const GALLERY: GalleryPhoto[] = [
   },
 ];
 
+/**
+ * The first season played on Sleeper. Hand-kept rather than derived from `MFL_SEASONS`' newest
+ * entry: the two only line up because the move happened once, and inferring one from the other
+ * would silently mislabel the League History section the day a third host or a gap year lands.
+ */
+export const SLEEPER_FIRST_SEASON = "2025";
+
+/**
+ * The league's MyFantasyLeague seasons, oldest first, by MFL league id.
+ *
+ * MFL numbers a league per *season*, not per league, so there is no single URL that walks
+ * backwards the way Sleeper's `previous_league_id` chain does — every year is its own id and
+ * has to be recorded by hand. Only 2016 on reuses one (`30136`); every year before that is
+ * unique, and pointing an id at a year outside its own range lands on a stranger's league
+ * rather than a 404, which is why every season below was opened and its title checked rather
+ * than inferred from a neighbour.
+ *
+ * The titles these open under are not all the league's own name, which is expected and not a
+ * sign of a wrong id: 2006–2014 run as the Keeper Alliance Network, the conference the league
+ * played in then, and 2015 records the split in its own title ("FFL (Fantasy for Life, formerly
+ * of the KAN)"). The page deliberately does not explain that — it is a list of years, and a
+ * footnote about a conference that folded a decade ago is more than the list is worth. Verify a
+ * new id against the title anyway; a *stranger's* league is what a wrong year looks like.
+ *
+ * `mflHomeUrl()` builds the link. Only the League History page renders these.
+ */
+export const MFL_SEASONS: { season: string; id: string }[] = [
+  { season: "2006", id: "81405" },
+  { season: "2007", id: "28572" },
+  { season: "2008", id: "34931" },
+  { season: "2009", id: "47437" },
+  { season: "2010", id: "23675" },
+  { season: "2011", id: "49538" },
+  { season: "2012", id: "36515" },
+  { season: "2013", id: "18086" },
+  { season: "2014", id: "41092" },
+  { season: "2015", id: "31292" },
+  { season: "2016", id: "30136" },
+  { season: "2017", id: "30136" },
+  { season: "2018", id: "30136" },
+  { season: "2019", id: "30136" },
+  { season: "2020", id: "30136" },
+  { season: "2021", id: "30136" },
+  { season: "2022", id: "30136" },
+  { season: "2023", id: "30136" },
+  { season: "2024", id: "30136" },
+];
+
+/**
+ * An MFL season's home page.
+ *
+ * The bare `www` host is deliberate: MFL serves each league from a numbered box (`www42`,
+ * `www46`, ...) and which box a season sits on is not stable, so a hard-coded number rots.
+ * `www.myfantasyleague.com` redirects to whichever one currently holds it.
+ */
+export function mflHomeUrl(season: string, id: string): string {
+  return `https://www.myfantasyleague.com/${season}/home/${id}`;
+}
+
 /** Where the pre-Sleeper seasons live. Referenced from the home page footer. */
 export const ARCHIVE_LINKS = {
   tiersSheet: "https://docs.google.com/spreadsheets/d/16rS1aBhJR0xg7xzCQGEzE2_-8_wO9F1MFlMVSGpS4g8/pubhtml",
@@ -475,6 +534,7 @@ export const ARCHIVE_LINKS = {
    * page's honors footer instead.
    */
   prizeSheet: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTK8Z1nYo4iLi97t49Nxgdn6m6dSBQo_OyXw3IXe1FTN8KLiPSFBQICBKvdqv-U1CtLieOB9GIvvpAf/pubhtml",
-  myFantasyLeague: "https://www42.myfantasyleague.com/2024/home/30136",
+  /** Newest MFL season, the one the home page's single archive link points at. */
+  myFantasyLeague: mflHomeUrl("2024", "30136"),
   sleeper: "https://sleeper.com/leagues",
 } as const;
