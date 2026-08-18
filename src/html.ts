@@ -19,6 +19,8 @@ import {
   LEAGUE_FIRST_SEASON,
   type SeasonResult,
   TEAM_CITIES,
+  TEAM_ALIASES,
+  ACTIVE_TEAMS,
   PRIZE_SEASONS,
   getDraftDate,
   getLatestHonors,
@@ -74,6 +76,70 @@ const TH = `${CELL} bg-forest text-parchment sticky top-0 z-10`;
  * box runs to the bottom of the viewport. Horizontal scrolling on mobile is unchanged.
  */
 const TABLE_WRAP = "overflow-auto max-h-[calc(100dvh_-_15rem)]";
+
+/**
+ * The one rule on this site that Tailwind utilities genuinely cannot state, and the reason every
+ * scrolling table on every page shares a stylesheet block.
+ *
+ * `.tbl-scroll` is the classic scroll shadow: two page-colored covers pinned to the *content*
+ * with `background-attachment: local`, and two dark edge fades pinned to the *viewport* with
+ * `scroll`. The covers travel with the table, so a fade shows only on a side that still has table
+ * left, and the whole thing disappears at a width where nothing overflows. That self-hiding is why
+ * it beats an absolutely positioned gradient, which would sit over the last column once you
+ * reached the end, and it is why the same class is safe to hang on a table that never overflows:
+ * it costs nothing until one does.
+ *
+ * **The cover color is a variable because not every table sits on white.** A table inside a `CARD`
+ * gets the `#fff` default; the roster pages' traded-picks table sits straight on the cream page
+ * body and sets `--tbl-bg` through `TBL_ON_CREAM`. Get this wrong and the fade reads as two pale
+ * rectangles parked over the first and last columns, which is exactly what a cover is supposed to
+ * prevent.
+ *
+ * The frozen column's seam is NOT here. It was `.hist-freeze` while one table had one, but the
+ * breakpoint where a table stops overflowing is per-table, so it belongs at the call site as a
+ * utility. See `FREEZE_SEAM`.
+ */
+const TABLE_SCROLL_STYLES = `    .tbl-scroll {
+      --tbl-bg: #fff;
+      background:
+        linear-gradient(to right, var(--tbl-bg) 40%, transparent) left center,
+        linear-gradient(to left, var(--tbl-bg) 40%, transparent) right center,
+        radial-gradient(farthest-side at 0 50%, #16211a24, #16211a00) left center,
+        radial-gradient(farthest-side at 100% 50%, #16211a24, #16211a00) right center;
+      background-repeat: no-repeat;
+      background-size: 34px 100%, 34px 100%, 13px 100%, 13px 100%;
+      background-attachment: local, local, scroll, scroll;
+    }
+`;
+
+/**
+ * The wrapper every scrolling table on the site takes: the fade plus the scroll container it
+ * paints on. One constant so a new table cannot get the affordance half-applied.
+ */
+const TBL_SCROLL = "tbl-scroll overflow-x-auto";
+
+/**
+ * The fade's cover color for a table that sits on the page body rather than inside a white card.
+ * Only the roster pages' traded-picks table needs it today.
+ */
+const TBL_ON_CREAM = "[--tbl-bg:var(--color-cream)]";
+
+/**
+ * The hairline beside a frozen first column, marking the seam the rest of the table slides under.
+ *
+ * A `box-shadow` and not a `border-r`, so it adds no width to a column whose width is the thing
+ * being conserved. A utility and not a CSS class, because **the width at which a table stops
+ * overflowing is a property of that table**: below it the seam is doing real work, above it it is
+ * a stray rule beside the first column. `FREEZE_SEAM_TO_LG` is the measured answer for the three
+ * History-page tables, which all fit their container at `lg`; the all-time winnings table takes
+ * the bare seam because it grows a column a year and has no width where it settles.
+ *
+ * `lg:shadow-none` beats the base utility because Tailwind sorts variants after their unprefixed
+ * forms — the one place two utilities for one property are safe together, unlike the
+ * `PILL_EXPORT` / `CARD` traps where both are unprefixed.
+ */
+const FREEZE_SEAM = "shadow-[1px_0_0_0_var(--color-rule)]";
+const FREEZE_SEAM_TO_LG = `${FREEZE_SEAM} lg:shadow-none`;
 const PILL_BOX = "px-3.5 py-1.5 text-sm font-medium rounded-lg";
 const PILL = `inline-block ${PILL_BOX}`;
 /** Colors only, so a pill that needs a different `display` can borrow them without a conflict. */
@@ -265,7 +331,21 @@ function renderGridRows(rows: GridRow[], colSpan: number, hasRoundColumn: boolea
   });
 }
 
-// ── Traded picks table (shared by roster pages and index page) ──
+// ── Traded picks table (roster pages only; the index dropped its copy in Aug 2026) ──
+
+/**
+ * Five columns, two of them full team names, on the one page whose body is cream rather than a
+ * white card — hence `TBL_ON_CREAM` on the wrapper, without which the fade's covers paint white
+ * rectangles over the first and last columns.
+ *
+ * **No frozen column, deliberately.** A row's identity here is Season *and* Round together, and
+ * pinning Season alone would hold four characters on screen while the half of the row that
+ * identifies it scrolls away. The fade carries the whole "more this way" signal instead.
+ *
+ * `w-auto` stays: the table sizes to its content rather than the page, which is what lets it
+ * overflow at all. A `w-full` table squeezes its columns to the container and leaves the browser
+ * nothing to scroll, the same trap the History table's `w-max min-w-full` avoids.
+ */
 
 function tradedPicksTable(picks: ResolvedTradedPick[]): string {
   // Captures taken before trade dates were tracked have none at all — drop the column
@@ -287,7 +367,7 @@ function tradedPicksTable(picks: ResolvedTradedPick[]): string {
       return `      <tr>${cells.join("")}</tr>`;
     })
     .join("\n");
-  return `  <div class="overflow-x-auto -mx-1">
+  return `  <div class="${TBL_SCROLL} ${TBL_ON_CREAM} -mx-1">
   <table class="text-sm w-auto">
     <thead><tr>${headers}</tr></thead>
     <tbody class="${LAST_ROW_FLUSH}">
@@ -498,7 +578,7 @@ export function generateHtml(
   // Sibling file, written by the same run that writes this page.
   const navHtml = navBar(navLinks, snapshot.season, exportFileName(snapshot.season, snapshot.snapshotType));
 
-  const styles = ROSTER_STYLES + (hasRoundColumn ? ROUND_COL_STYLE : "");
+  const styles = TABLE_SCROLL_STYLES + ROSTER_STYLES + (hasRoundColumn ? ROUND_COL_STYLE : "");
   const roundTh = hasRoundColumn ? `      <th class="${TH}">Round</th>\n` : "";
 
   return `<!DOCTYPE html>
@@ -1021,21 +1101,20 @@ const TAB_SOON = `<span class="text-[10px] font-semibold tracking-[0.12em] upper
  * legible before it's finished; giving one an `href` is the whole edit that turns it live.
  *
  * An underlined tab bar rather than the `PILL_LINK` row the Prize Tracker uses, which is the
- * one place the two pages deliberately differ. Three pills give equal weight to three items
- * when only one of them goes anywhere, and pills are what the roster pages use for *cross-page*
- * chips, so borrowing them here blurs a page switch and a jump down this page. The rule also
+ * one place the two pages deliberately differ. Pills are what the roster pages use for
+ * *cross-page* chips, so borrowing them here blurs a page switch and a jump down this page, and
+ * they gave equal weight to three items back when only one of them went anywhere. The rule also
  * gives the h1 above it something to sit on, which a bare row of links did not.
  *
- * The live tab is underlined because it is the one that works, not because it tracks scroll
- * position — nothing here observes the sections, so a second live section would simply be a
- * second underlined tab.
+ * Every tab is underlined because underline means "this one works", not "you are here" — nothing
+ * observes the sections, so all three light up now that all three exist.
  *
  * Sits below the h1 rather than at the top of the page so it reads as a switch within League
  * History instead of a second site nav competing with the green bar above it.
  */
 const HISTORY_SECTIONS: { label: string; href?: string }[] = [
   { label: "Full League History", href: "#all-time" },
-  { label: "Records" },
+  { label: "Records", href: "#records" },
   { label: "Past Leagues", href: "#past-leagues" },
 ];
 
@@ -1063,47 +1142,29 @@ ${items}
  * rule under the header strip and leaves the card's own border to close the bottom.
  */
 const HIST_EDGE = "px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5";
-const HIST_TH = `${HIST_EDGE} py-[9px] text-left text-[11px] font-medium tracking-[0.12em] uppercase text-stone whitespace-nowrap`;
+/**
+ * The header cell without an alignment, so a caller can set one. The Trophy Case's count columns
+ * are right-aligned, and appending `text-right` to a `HIST_TH` that already says `text-left` is
+ * two `text-align` utilities on one element: they resolve by stylesheet order, not attribute
+ * order, so the loser is picked silently. Same trap `PILL_EXPORT` swaps rather than adds for.
+ */
+const HIST_TH_BASE = `${HIST_EDGE} py-[9px] text-[11px] font-medium tracking-[0.12em] uppercase text-stone whitespace-nowrap`;
+const HIST_TH = `${HIST_TH_BASE} text-left`;
 const HIST_TD = `${HIST_EDGE} py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap`;
 
 /**
- * The Season column, frozen at the left edge so the year stays put while the names scroll under it.
+ * The frozen first column: the year on the League History table, the team on the Trophy Case
+ * tables, pinned to the left edge so the thing a row is about stays put while the rest scrolls
+ * under it. Named for the column it was built for, and kept that way because CLAUDE.md and
+ * `docs/site-design.md` both name it.
  *
  * Both cells need their own opaque fill: a sticky cell slides over the rows beside it, and the
- * `<tr>` background does not travel with it. `hist-freeze` is the hairline that marks the seam,
- * and it takes itself off at `sm`, where nothing scrolls under anything.
+ * `<tr>` background does not travel with it. `FREEZE_SEAM_TO_LG` is the hairline that marks the seam,
+ * and it takes itself off at `lg`, where these three tables fit their container and nothing
+ * scrolls under anything.
  */
-const HIST_TH_SEASON = `${HIST_TH} sticky left-0 z-20 bg-shell hist-freeze`;
-const HIST_TD_SEASON = `${HIST_TD} sticky left-0 z-10 bg-white font-medium hist-freeze`;
-
-/**
- * The two League History rules Tailwind utilities can't state, passed to `htmlHead()` as the
- * history page's `extraStyles` (the roster pages' `ROSTER_STYLES` is the same arrangement).
- *
- * `.hist-scroll` is the classic scroll shadow: two white covers pinned to the *content* with
- * `background-attachment: local`, and two dark edge fades pinned to the *viewport* with
- * `scroll`. The covers travel with the table, so a fade shows only on a side that still has
- * table left, and the whole thing disappears at a width where nothing overflows. That
- * self-hiding is why it beats an absolutely positioned gradient, which would sit over the last
- * column once you reached the end.
- *
- * `.hist-freeze` is the seam beside the frozen Season column, dropped at `lg` where the table
- * fits its container and nothing slides under anything. It is a `box-shadow` rather than a `border-r` so it adds no width
- * to a column whose width is the thing being conserved.
- */
-const HISTORY_STYLES = `    .hist-scroll {
-      background:
-        linear-gradient(to right, #fff 40%, #ffffff00) left center,
-        linear-gradient(to left, #fff 40%, #ffffff00) right center,
-        radial-gradient(farthest-side at 0 50%, #16211a24, #16211a00) left center,
-        radial-gradient(farthest-side at 100% 50%, #16211a24, #16211a00) right center;
-      background-repeat: no-repeat;
-      background-size: 34px 100%, 34px 100%, 13px 100%, 13px 100%;
-      background-attachment: local, local, scroll, scroll;
-    }
-    .hist-freeze { box-shadow: 1px 0 0 0 var(--color-rule); }
-    @media (min-width: 64rem) { .hist-freeze { box-shadow: none; } }
-`;
+const HIST_TH_SEASON = `${HIST_TH} sticky left-0 z-20 bg-shell ${FREEZE_SEAM_TO_LG}`;
+const HIST_TD_SEASON = `${HIST_TD} sticky left-0 z-10 bg-white font-medium ${FREEZE_SEAM_TO_LG}`;
 
 /**
  * Names shortened for the League History table only, where four columns of team names have to
@@ -1150,9 +1211,15 @@ function shortenForHistory(name: string): string {
  *
  * A name identical at both lengths renders once — a team `TEAM_CITIES` doesn't know has nothing
  * shorter to show, and duplicating it would only pad the HTML.
+ *
+ * **`abbreviate: false` skips `HISTORY_SHORT_NAMES` and spells the wide form out in full.** That
+ * map exists to buy width for the History table's five name columns; the Trophy Case has one name
+ * column beside four narrow counts and about 340px of slack at `lg`, so it can afford "South Town
+ * Freedom Fighters" written the way the league writes it. The phone tier is unaffected: below `lg`
+ * both tables still drop to the city word.
  */
-function historyNameHtml(name: string): string {
-  const wide = esc(shortenForHistory(name));
+function historyNameHtml(name: string, { abbreviate = true } = {}): string {
+  const wide = esc(abbreviate ? shortenForHistory(name) : name);
   const narrow = esc(cityWords(name));
   if (wide === narrow) return wide;
   return `<span class="lg:hidden">${narrow}</span><span class="hidden lg:inline">${wide}</span>`;
@@ -1229,7 +1296,7 @@ const HISTORY_COLUMNS: HistoryColumn[] = [
  * - The Season column is frozen (`HIST_TD_SEASON`), so on the phone widths that do still scroll
  *   the year you are reading stays on screen. That matters more than the scrollbar does: the bar
  *   sits under twenty rows of table, out of reach until you have scrolled past the whole thing,
- *   which is why the fade in `HISTORY_STYLES` carries the "there is more this way" signal instead.
+ *   which is why the fade in `TABLE_SCROLL_STYLES` carries the "there is more this way" signal instead.
  */
 function leagueHistoryTableHtml(): string {
   if (LEAGUE_HISTORY.length === 0) return "";
@@ -1260,7 +1327,7 @@ function leagueHistoryTableHtml(): string {
     .join("");
 
   return `      <div class="${CARD} overflow-hidden">
-        <div class="hist-scroll overflow-x-auto">
+        <div class="${TBL_SCROLL}">
           <table class="w-max min-w-full text-left border-separate border-spacing-0">
             <thead><tr class="bg-shell">${headers}</tr></thead>
             <tbody>
@@ -1269,6 +1336,228 @@ ${tableRows}
           </table>
         </div>
       </div>${missing}`;
+}
+
+/**
+ * A sub-heading inside a section, for the one section that has more than one thing in it.
+ *
+ * Every other section on these pages is a `SECTION_H2` eyebrow over a single card, so a second
+ * heading level never came up. Records holds two tables and will hold more, and three identical
+ * uppercase eyebrows would flatten them into one another. Sentence case at 17px bold reads as
+ * the name of the table directly beneath it while staying plainly subordinate to the h1.
+ */
+const SUB_H3 = "text-[17px] font-bold tracking-tight text-ink mt-0 mb-3";
+
+/** One team's line in the Trophy Case: a name and one count per `HISTORY_COLUMNS` entry. */
+interface TrophyRow {
+  team: string;
+  counts: number[];
+}
+
+/**
+ * Every finish in `LEAGUE_HISTORY` tallied per team, counted straight off `HISTORY_COLUMNS`.
+ *
+ * Driving the count from that list rather than from a second list of its own is the point: the
+ * Trophy Case counts exactly the columns the table above it shows, so adding Best Record back to
+ * `HISTORY_COLUMNS` adds a Trophy Case column in the same edit and the two can never disagree
+ * about what a finish is.
+ *
+ * Two adjustments the raw rows need:
+ * - **A renamed team is one team.** `TEAM_ALIASES` folds the old name into the current one before
+ *   the count, so an owner who renamed does not appear twice with their record split in half.
+ *   The history rows themselves keep the name that team played under, which is what makes the
+ *   fold necessary here rather than a rewrite of the data.
+ * - **A tie names two teams in one cell** (` & `), and both earned it, so both are counted.
+ *
+ * Every team in `ACTIVE_TEAMS` gets a row whether or not the history ever names them: a current
+ * owner missing from the table reads as an oversight, while a row of dashes reads as a record.
+ * Retired teams get no such floor — they are only here at all because they won something.
+ *
+ * `rawNames` is what the history actually said, before aliasing, so the footnote below the table
+ * can name a former name only while that name is still on the page.
+ */
+function trophyCounts(): { rows: TrophyRow[]; rawNames: Set<string> } {
+  const counts = new Map<string, number[]>();
+  const rawNames = new Set<string>();
+  const zero = () => HISTORY_COLUMNS.map(() => 0);
+
+  for (const r of LEAGUE_HISTORY) {
+    HISTORY_COLUMNS.forEach((c, i) => {
+      const v = c.value(r);
+      if (!v) return;
+      for (const name of v.split(" & ")) {
+        rawNames.add(name);
+        const team = TEAM_ALIASES[name] ?? name;
+        const row = counts.get(team) ?? zero();
+        row[i] += 1;
+        counts.set(team, row);
+      }
+    });
+  }
+  for (const team of ACTIVE_TEAMS) if (!counts.has(team)) counts.set(team, zero());
+
+  const rows = [...counts]
+    .map(([team, c]) => ({ team, counts: c }))
+    // Champions first, runners-up to break it, then the name so the order is stable rather than
+    // whatever insertion order happened to produce. Toilet Bowls deliberately rank nobody.
+    .sort((a, b) => b.counts[0] - a.counts[0] || b.counts[1] - a.counts[1] || a.team.localeCompare(b.team));
+
+  return { rows, rawNames };
+}
+
+/**
+ * The `HISTORY_COLUMNS` indexes a Trophy Case table actually renders: every column some row in it
+ * has a count in.
+ *
+ * The Retired Owners table is the reason this exists. Total Points has only been recorded since
+ * 2023 and every retired team left before then, so that column is structurally empty there, and a
+ * column of nothing but dashes is width spent claiming a record was kept when it wasn't. Derived
+ * rather than a hard-coded "retired tables show three columns", so the column comes back on its
+ * own the day a retired team turns out to have won one.
+ */
+function scoredColumns(rows: TrophyRow[]): number[] {
+  return HISTORY_COLUMNS.map((_, i) => i).filter((i) => rows.some((r) => r.counts[i] > 0));
+}
+
+/**
+ * The superscript tying a team's line to a numbered note under the table.
+ *
+ * `font-normal` against the `font-medium` name it hangs off, and `text-stone` against the ink, so
+ * it reads as an annotation rather than as part of the team's name. The cell is `whitespace-nowrap`
+ * already, so it can never wrap away from the name it marks.
+ */
+const HIST_FOOTMARK = "text-[10px] font-normal text-stone";
+
+/**
+ * One Trophy Case table: a team column and one count column per entry in `columnIndexes`.
+ *
+ * Styled as the League History table and reusing its cells outright — same card, same `bg-shell`
+ * header strip, same hairline rows, the same frozen first column and the same `TBL_SCROLL` edge
+ * fade. It is the same list of names read the other way round, so the two should look like one
+ * object seen twice, not two tables that happen to share a page.
+ *
+ * The team column takes `historyNameHtml()` for the same reason the table above does: full names
+ * at `lg` and up, city words below it, so the count columns don't get pushed off a tablet by one
+ * long name. Counts are `tabular-nums` and right-aligned so they compare straight down, and a zero
+ * renders as the same em dash a blank history cell does rather than as a `0` the eye has to read
+ * past.
+ *
+ * `marks` numbers the teams that carry a note under the table. It is passed to both tables rather
+ * than to whichever one currently holds the marked team, so a renamed team that later retires
+ * keeps its marker without an edit here.
+ */
+function trophyTableHtml(
+  rows: TrophyRow[],
+  teamHeader: string,
+  columnIndexes: number[],
+  marks: Map<string, number>,
+): string {
+  const headers = [
+    `<th class="${HIST_TH_SEASON}">${esc(teamHeader)}</th>`,
+    ...columnIndexes.map((i) => `<th class="${HIST_TH_BASE} text-right">${esc(HISTORY_COLUMNS[i].header)}</th>`),
+  ].join("");
+
+  const body = rows
+    .map(({ team, counts }) => {
+      const cells = columnIndexes
+        .map((i) =>
+          counts[i] > 0
+            ? `<td class="${HIST_TD} text-right tabular-nums">${counts[i]}</td>`
+            : `<td class="${HIST_TD} text-right text-stone">&mdash;</td>`,
+        )
+        .join("");
+      const mark = marks.get(team);
+      const sup = mark ? `<sup class="${HIST_FOOTMARK}">${mark}</sup>` : "";
+      return `                <tr><td class="${HIST_TD_SEASON}">${historyNameHtml(team, { abbreviate: false })}${sup}</td>${cells}</tr>`;
+    })
+    .join("\n");
+
+  return `      <div class="${CARD} overflow-hidden">
+        <div class="${TBL_SCROLL}">
+          <table class="w-max min-w-full text-left border-separate border-spacing-0">
+            <thead><tr class="bg-shell">${headers}</tr></thead>
+            <tbody>
+${body}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+}
+
+/**
+ * The Records section: the same twenty seasons the table above lists, counted per owner.
+ *
+ * Two tables rather than one, split on `ACTIVE_TEAMS`. A single ranked table would put Chico Pico
+ * de Gallo third with three championships and no way to play for a fourth, which reads as a
+ * standings error every time it is seen. Splitting them lets the top table answer the question
+ * people actually arrive with, who is winning this thing, and still leaves the retired teams their
+ * record rather than deleting it.
+ *
+ * The two tables carry different columns, and neither list is written down: `scoredColumns()`
+ * gives each table the columns its own rows scored in, which drops Total Points from Retired
+ * Owners because nobody in it played a season where that was recorded.
+ *
+ * Notes under the Trophy Case run in two groups, and only the second is numbered. The unnumbered
+ * one is about the table as a whole (which columns the older seasons never recorded); the numbered
+ * ones are about a single line, so they take a superscript on the team they belong to. Both are
+ * derived, so both take themselves off when the thing they explain stops being true.
+ *
+ * Sits directly under the full history table and above the earlier seasons' honor cards, which is
+ * the order `HISTORY_SECTIONS` promises: history, records, past leagues.
+ *
+ * TODO — more records. The private `FFL History & Records` Google Doc's "FFL Stats & Records"
+ * section holds all-time bests and worsts (highest and lowest single-game scores, biggest
+ * blowouts, closest finishes) that no page renders yet. It is split across three scoring eras
+ * (2006-2011, 2012-2019, 2020-2024 PPR) whose numbers are **not comparable**, so any table built
+ * from it has to group by era rather than sort one all-time list. Candidate blocks, each its own
+ * `SUB_H3` under this same section: Scoring Records (by era), Streaks & Droughts (title droughts,
+ * back-to-back champions, consecutive Toilet Bowls), Head-to-Head (all-time series between two
+ * owners), Draft Records (keepers held longest, rounds that produced champions).
+ */
+function recordsHtml(): string {
+  if (LEAGUE_HISTORY.length === 0) return "";
+
+  const { rows, rawNames } = trophyCounts();
+  const active = rows.filter((r) => ACTIVE_TEAMS.includes(r.team));
+  const retired = rows.filter((r) => !ACTIVE_TEAMS.includes(r.team));
+  const activeColumns = scoredColumns(active);
+
+  // A former name is worth a note only while the map still knows it *and* the history still says
+  // it, so a rewritten row or a deleted alias takes both the note and its superscript away.
+  const renames = Object.entries(TEAM_ALIASES).filter(([from]) => rawNames.has(from));
+  const marks = new Map(renames.map(([, to], i) => [to, i + 1]));
+
+  // Which columns the older seasons simply never recorded, read off the columns the Trophy Case
+  // actually renders. Filling in the missing figures retires the line on its own.
+  const thin = activeColumns
+    .map((i) => {
+      const c = HISTORY_COLUMNS[i];
+      const seasons = LEAGUE_HISTORY.filter((r) => c.value(r)).map((r) => r.season).sort();
+      return seasons.length < LEAGUE_HISTORY.length
+        ? `${c.header} has only been recorded since ${seasons[0]}.`
+        : "";
+    })
+    .filter(Boolean);
+
+  const notes = [...thin, ...renames.map(([from, to], i) => `(${i + 1}) ${to} formerly known as ${from}.`)]
+    .map((n) => `      <p class="text-sm text-stone mt-3">${esc(n)}</p>`)
+    .join("\n");
+
+  const retiredBlock = retired.length
+    ? `
+      <h3 class="${SUB_H3} mt-9">Retired Owners</h3>
+${trophyTableHtml(retired, "Owner", scoredColumns(retired), marks)}`
+    : "";
+
+  return `
+    <section id="records" class="mb-14 scroll-mt-6">
+      <h2 class="${SECTION_H2}">Records</h2>
+      <h3 class="${SUB_H3}">Trophy Case</h3>
+${trophyTableHtml(active, "Owner", activeColumns, marks)}
+${notes}${retiredBlock}
+      <p class="text-sm text-stone mt-6">More records are on the way: scoring highs and lows, streaks, and head-to-head series.</p>
+    </section>
+`;
 }
 
 /**
@@ -1334,11 +1623,14 @@ ${mflLinks}
  *
  * A root-level page like the index, so it takes the same `base: ""` chrome and the same 1080px
  * measure. Sections, in order: the sub-nav, the newest season's honors (the same four cards the
- * home page opens on, from the same renderer), the all-time table, then each earlier season.
+ * home page opens on, from the same renderer), the all-time table, Records, then each earlier
+ * season.
  *
  * The all-time table sits second rather than last so it holds its place as seasons accumulate;
  * were it below them it would sink another screen every August. The newest season stays above it
  * because a finished season is the thing worth opening on, which is the home page's reasoning too.
+ * Records follows the table it counts, and both sit above the earlier seasons' cards so the three
+ * sections the sub-nav names appear in the order it names them.
  *
  * Past Leagues closes the page, below the oldest season's cards, matching its place in the
  * sub-nav: it is where to go when this page does not have what you came for, so it reads as the
@@ -1371,14 +1663,14 @@ ${htmlHead({
     ogTitle: "League History",
     description: "Champions, runners-up, and season honors for every recorded season.",
     siteName: leagueName,
-    extraStyles: HISTORY_STYLES,
+    extraStyles: TABLE_SCROLL_STYLES,
   })}
 <body class="bg-cream text-ink font-sans antialiased">
 ${siteHeader(chrome)}
   <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
     <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-8">League History</h1>
 ${historyNavHtml()}
-${newest ? honorBlocks(newest) : ""}${allTime}${earlier.map(honorBlocks).join("")}${pastLeaguesHtml()}${backToTopHtml()}
+${newest ? honorBlocks(newest) : ""}${allTime}${recordsHtml()}${earlier.map(honorBlocks).join("")}${pastLeaguesHtml()}${backToTopHtml()}
   </main>
 </body>
 </html>`;
@@ -1509,11 +1801,33 @@ ${tiles}
  * three short ones, on the page most likely to be opened from a phone on a Tuesday, so the
  * label wraps and only the short columns hold their line.
  */
-const PRZ_TH = "px-4 first:pl-5 last:pr-5 py-[9px] text-left text-[11px] font-medium tracking-[0.12em] uppercase text-stone whitespace-nowrap";
+/**
+ * The prize tables' header cell, split the same way `HIST_TH_BASE` is: the base carries no
+ * alignment so the right-aligned money and count columns can set their own. Appending
+ * `text-right` to a `PRZ_TH` that already says `text-left` puts two `text-align` utilities on one
+ * element, and those resolve by stylesheet order rather than attribute order.
+ */
+const PRZ_TH_BASE = "px-4 first:pl-5 last:pr-5 py-[9px] text-[11px] font-medium tracking-[0.12em] uppercase text-stone whitespace-nowrap";
+const PRZ_TH = `${PRZ_TH_BASE} text-left`;
 const PRZ_TD = "px-4 first:pl-5 last:pr-5 py-3 border-t border-rule text-[15px] align-top";
 const PRZ_TD_TIGHT = `${PRZ_TD} whitespace-nowrap`;
 /** The group divider: the page background showing through the card, carrying the group's name. */
 const PRZ_GROUP = `px-5 py-2 border-t border-rule bg-cream ${LABEL_TYPE}`;
+
+/**
+ * The all-time winnings table's frozen Team column, the Prize Tracker's answer to
+ * `HIST_TH_SEASON` / `HIST_TD_SEASON`.
+ *
+ * Both cells carry their own opaque fill, because a sticky cell slides over the rows beside it and
+ * a `<tr>` background does not travel with it — the same rule the History table's frozen column
+ * lives by.
+ *
+ * It takes the bare `FREEZE_SEAM` with no `lg:shadow-none`, unlike the three History-page tables.
+ * Those were measured against a width they fit at; this one grows a season column every year, so
+ * there is no width at which it settles and no honest breakpoint to hide the seam at.
+ */
+const PRZ_TH_TEAM = `${PRZ_TH} sticky left-0 z-20 bg-shell ${FREEZE_SEAM}`;
+const PRZ_TD_TEAM = `${PRZ_TD_TIGHT} sticky left-0 z-10 bg-white font-medium ${FREEZE_SEAM}`;
 /** The provisional marker on a line that has a leader but has not closed. */
 const LEADING_TAG = `<span class="ml-2 align-middle inline-block bg-brass text-forest rounded px-1.5 py-px text-[10px] font-semibold tracking-[0.08em] uppercase">Leading</span>`;
 
@@ -1533,7 +1847,7 @@ const LEADING_TAG = `<span class="ml-2 align-middle inline-block bg-brass text-f
 function prizeTableHtml(ps: PrizeSeason): string {
   const winnerHeader = ps.final ? "Winner" : "Leader or Winner";
   const headers = ["Prize", winnerHeader, "Result", "Amount"]
-    .map((h, i) => `<th class="${PRZ_TH}${i === 3 ? " text-right" : ""}">${esc(h)}</th>`)
+    .map((h, i) => `<th class="${i === 3 ? `${PRZ_TH_BASE} text-right` : PRZ_TH}">${esc(h)}</th>`)
     .join("");
 
   const body = ps.groups
@@ -1569,8 +1883,13 @@ ${ps.notes.map((n) => `        <li>${esc(n)}</li>`).join("\n")}
       </ul>`
     : "";
 
+  // `TBL_SCROLL` but still `w-full`, which is the one place this site's tables split. The label
+  // column wraps on purpose (see CLAUDE.md), so at most widths the table fits and the fade shows
+  // nothing at all — it self-hides, which is exactly why hanging it here is free. On a phone the
+  // three `nowrap` columns can still push past the measure, and that is the case it is here for.
+  // `w-max` would be wrong: it would stop the label wrapping and turn a tall cell into a wide one.
   return `      <div class="${CARD} overflow-hidden">
-        <div class="overflow-x-auto">
+        <div class="${TBL_SCROLL}">
           <table class="w-full text-left">
             <thead><tr class="bg-shell">${headers}</tr></thead>
             <tbody>
@@ -1614,6 +1933,14 @@ ${prizeTableHtml(ps)}
  * season table with the interesting columns removed. Every cell is `nowrap` and the card
  * scrolls sideways, which is the History table's trade and is the right one here: this grows
  * a column a year, and by the 2030s no amount of wrapping saves it.
+ *
+ * It takes the History table's full scrolling kit, and for the same reasons stated there:
+ * `w-max min-w-full` so it overflows rather than squeezing (a `w-full` table leaves the browser
+ * nothing to scroll), `border-separate border-spacing-0` so the frozen column keeps its own row
+ * rule (preflight collapses tables, and a collapsed table owns its cells' borders, which a sticky
+ * cell then paints without), `TBL_SCROLL` for the edge fade, and a frozen Team column so the row
+ * you are reading stays on screen. Team names are already city words here, so it needs no
+ * responsive shortening tier on top.
  */
 function allTimeWinningsHtml(seasons: string[]): string {
   if (seasons.length < 2) return "";
@@ -1632,7 +1959,7 @@ function allTimeWinningsHtml(seasons: string[]): string {
   if (ranked.length === 0) return "";
 
   const headers = ["Team", ...seasons, "Total"]
-    .map((h, i) => `<th class="${PRZ_TH}${i === 0 ? "" : " text-right"}">${esc(h)}</th>`)
+    .map((h, i) => `<th class="${i === 0 ? PRZ_TH_TEAM : `${PRZ_TH_BASE} text-right`}">${esc(h)}</th>`)
     .join("");
 
   const rows = ranked
@@ -1645,7 +1972,7 @@ function allTimeWinningsHtml(seasons: string[]): string {
             : `<td class="${PRZ_TD_TIGHT} text-right tabular-nums">${esc(money(v))}</td>`;
         })
         .join("");
-      return `              <tr><td class="${PRZ_TD_TIGHT}">${esc(TEAM_CITIES[team] ?? team)}</td>${cells}<td class="${PRZ_TD_TIGHT} text-right tabular-nums font-semibold">${esc(money(sum(row)))}</td></tr>`;
+      return `              <tr><td class="${PRZ_TD_TEAM}">${esc(TEAM_CITIES[team] ?? team)}</td>${cells}<td class="${PRZ_TD_TIGHT} text-right tabular-nums font-semibold">${esc(money(sum(row)))}</td></tr>`;
     })
     .join("\n");
 
@@ -1653,8 +1980,8 @@ function allTimeWinningsHtml(seasons: string[]): string {
     <section id="all-time" class="mb-14 scroll-mt-6">
       <h2 class="${SECTION_H2}">All-Time Winnings</h2>
       <div class="${CARD} overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full text-left">
+        <div class="${TBL_SCROLL}">
+          <table class="w-max min-w-full text-left border-separate border-spacing-0">
             <thead><tr class="bg-shell">${headers}</tr></thead>
             <tbody>
 ${rows}
@@ -1735,6 +2062,7 @@ ${htmlHead({
     ogTitle: "Prize Tracker",
     description: "Prize winners by season, plus all-time winnings.",
     siteName: leagueName,
+    extraStyles: TABLE_SCROLL_STYLES,
   })}
 <body class="bg-cream text-ink font-sans antialiased">
 ${siteHeader(chrome)}

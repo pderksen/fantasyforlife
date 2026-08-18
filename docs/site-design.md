@@ -96,7 +96,7 @@ History table's frozen Season column. The site header was weighed as a third and
 
 **A floating button was passed over for the same kind of reason.** A fixed control has to be
 reasoned about against the roster table's sticky header, the History table's frozen column and
-`.hist-scroll` fade, and the home page's lightbox `<dialog>`, and it needs JS, on a site that is
+`.tbl-scroll` fade, and the home page's lightbox `<dialog>`, and it needs JS, on a site that is
 previewed over `file://`. iOS already gives status-bar-tap-to-top on the phone case it would
 help most.
 
@@ -118,14 +118,80 @@ Excel button live. The capture timestamp stays the last line, so the link sits a
 
 ---
 
+## Scrolling Tables
+
+Cross-page furniture, like the site header. Every table on the site except the roster grid takes
+some part of one kit, so a wide table behaves the same way whichever page it is on. It grew out of
+the League History table (Aug 2026) and was lifted out of it when the Trophy Case, the Prize
+Tracker's tables and the traded-picks table all wanted the same thing.
+
+Four pieces, all in `html.ts` and all declared above their first use:
+
+- `TABLE_SCROLL_STYLES` — the `.tbl-scroll` CSS. **A page rendering any of these tables has to
+  pass it through `htmlHead({ extraStyles })`,** or the fade silently does nothing. Roster pages
+  concatenate it with `ROSTER_STYLES`.
+- `TBL_SCROLL` — the wrapper's class pair (`tbl-scroll overflow-x-auto`). One constant so a table
+  cannot get the affordance half-applied: a fade with no scroll container, or a scroll container
+  with no fade.
+- `TBL_ON_CREAM` — the cover-color override for a table that sits on the page body.
+- `FREEZE_SEAM` / `FREEZE_SEAM_TO_LG` — the hairline beside a frozen first column.
+
+**Who takes what, and why the answers differ:**
+
+| Table | Fade | Frozen column | Table width |
+|---|---|---|---|
+| League History, Trophy Case, Retired Owners | yes | yes, seam to `lg` | `w-max min-w-full` |
+| All-Time Winnings (prizes) | yes | yes, seam always | `w-max min-w-full` |
+| Season prize ledger | yes | no | `w-full` |
+| Traded Picks (roster pages) | yes, on cream | no | `w-auto` |
+| Roster grid | no | its own sticky header | `TABLE_WRAP` |
+
+- **The fade self-hides, which is why it can go on a table that rarely overflows.** The two cover
+  layers are pinned to the content with `background-attachment: local` and the two dark fades to
+  the viewport with `scroll`, so a side shows a fade only while it still has table left and the
+  whole effect vanishes at a width where nothing overflows. The season prize ledger is the case
+  that proves it useful: its label column wraps, so at most widths it fits and shows nothing, and
+  on a phone its three `nowrap` columns push past the measure and the fade appears.
+- **`--tbl-bg` exists because not every table sits on white.** The covers have to match what is
+  behind the table or they read as two pale rectangles parked over the first and last columns,
+  which is the exact failure a cover prevents. Default `#fff` covers everything inside a `CARD`;
+  the traded-picks table sits straight on the cream page body and sets `TBL_ON_CREAM`.
+- **The seam is a utility, not a CSS class, because its breakpoint is per-table.** A frozen column
+  slides content underneath, and the hairline marks that seam; above the width where a table stops
+  overflowing it is a stray rule beside the first column. `FREEZE_SEAM_TO_LG` is the measured
+  answer for the three History-page tables. All-Time Winnings takes the bare seam, because it
+  grows a season column every year and has no width at which it settles. It is a `box-shadow`
+  rather than a `border-r` so it adds no width to the column being conserved, and `lg:shadow-none`
+  is safe against the base utility only because Tailwind sorts variants after their unprefixed
+  forms — unlike the `PILL_EXPORT` and `CARD` traps, where both are unprefixed.
+- **A frozen column needs a row identity worth pinning, and two tables don't have one.** Traded
+  Picks identifies a row by Season *and* Round together, so freezing Season would hold four
+  characters on screen while the identifying half scrolled away. The prize ledger's first column
+  wraps by design. Both take the fade alone.
+- **Freezing always brings two other things**: `border-separate border-spacing-0` on the table, so
+  the sticky cell keeps its row rule (preflight collapses tables, and a collapsed table owns its
+  cells' borders), and an opaque `bg-*` on both frozen cells, because a `<tr>` background does not
+  travel with a sticky cell.
+- **`w-full` is the odd one out and is deliberate.** A `w-full` table squeezes its columns to the
+  container and leaves the browser nothing to scroll, which is why the tables meant to overflow
+  take `w-max min-w-full` (or `w-auto`, which sizes to content). The prize ledger keeps `w-full`
+  because its label column is supposed to wrap: `w-max` there would turn a tall cell into a wide
+  one and undo the thing that makes the page readable on a phone.
+- **Header cells split their alignment out.** `HIST_TH_BASE` and `PRZ_TH_BASE` carry none;
+  `HIST_TH` and `PRZ_TH` are those plus `text-left`. Appending `text-right` to the aligned form
+  puts two `text-align` utilities on one element, which resolve by stylesheet order rather than
+  attribute order. Body cells carry no alignment and may append one freely.
+
+---
+
 ## League History Page
 
 `output/history.html`, from `generateHistoryHtml()` in `html.ts`, rewritten by
 `regenerateHistory()` in `index.ts` on every run right after the index.
 
 **Sections**, in order: the sub-nav, the newest season's honor cards from the same
-`honorsSection()` the home page uses, the all-time table, then each earlier season's cards, then
-Past Leagues, and a "Back to top" link closing the page. Content is hand-written in
+`honorsSection()` the home page uses, the all-time table, Records, then each earlier season's
+cards, then Past Leagues, and a "Back to top" link closing the page. Content is hand-written in
 `league-info.ts` as the history is settled, which is why most of it is still blank.
 
 **The sub-nav lists the page's sections, not its seasons.** `HISTORY_SECTIONS` in `html.ts` is the
@@ -147,10 +213,85 @@ this page), then a plain middot-separated text row, which had nothing for the h1
   rule instead of a pixel above it. Remove the row's border and the underline floats; remove the
   offset and it thickens the rule.
 - **The underline means "this one works", not "you are here".** Nothing observes scroll position,
-  so a second built section is simply a second underlined tab.
+  so a second built section is simply a second underlined tab. All three are live as of Aug 2026,
+  which is the state the mechanism was always heading for rather than a change to it.
 - **Tabs are `whitespace-nowrap`,** so a narrow phone drops a whole label to a second line rather
   than breaking one. `gap-y-0` keeps the two lines tight enough to still read as one bar, with the
   live tab's underline on the upper line and the row's rule under the lower.
+
+### Records
+
+`recordsHtml()` in `html.ts`, sitting directly under the all-time table it counts and above the
+earlier seasons' honor cards, so the three sections the sub-nav names appear in the order it names
+them. Two tables today, `SUB_H3` headings over each: **Trophy Case** for the ten teams in
+`ACTIVE_TEAMS`, **Retired Owners** for everyone else the history names.
+
+- **It counts `HISTORY_COLUMNS`, not a list of its own.** `trophyCounts()` walks `LEAGUE_HISTORY`
+  through the same column list the table above renders, so the Trophy Case tallies exactly the
+  four finishes that table shows. Re-adding Best Record to `HISTORY_COLUMNS` would grow both in
+  one edit, which is the whole reason the count is not driven by a second hand-written list.
+- **Each table shows the columns its own rows scored in**, from `scoredColumns()`. That is what
+  drops Total Points from Retired Owners: it has only been recorded since 2023 and every retired
+  team left before then, so the column is structurally empty there, and four dashes down a column
+  spend width claiming a record was kept when it wasn't. Derived rather than a hard-coded "the
+  retired table shows three columns", so the column returns on its own the day a retired team
+  turns out to have won one. It applies to both tables, so an all-empty column would leave the
+  Trophy Case too, and the notes below read off the columns that table actually rendered.
+- **The split into two tables is the point, not a tidiness pass.** One ranked table would sit
+  Chico Pico de Gallo third on three championships with no way to play for a fourth, which reads
+  as a standings error every time it is seen. The top table then answers the question people
+  arrive with, who is winning this thing, and the retired teams keep their record instead of
+  having it deleted. `ACTIVE_TEAMS` in `league-info.ts` is the only thing that decides which
+  table a team lands in; a team that leaves is one deletion there and the lower table fills
+  itself.
+- **A renamed team is one team, and its line says so.** `TEAM_ALIASES` folds a former name into
+  the current one before counting, so Riverstone's line carries the two championships won as the
+  Winnemucca Muckers, and a `HIST_FOOTMARK` superscript on that line points at a numbered note
+  under the table. The history rows above deliberately keep the old name, because a row there
+  records what happened, and that mismatch is exactly why the fold lives at render rather than in
+  the data. A tie's ` & ` splits so both teams get credit, the same way the tie cell above names
+  both.
+- **Sort is champions, then runners-up, then the name.** The user-facing rule is the first two;
+  the name is a stable final tiebreak so the order does not depend on insertion. Toilet Bowls
+  rank nobody, deliberately: this is a trophy case, and sorting anyone up or down for them turns
+  a joke into a standing.
+- **A current owner with nothing gets a row of dashes.** Every `ACTIVE_TEAMS` entry is seeded at
+  zero, because a missing current owner reads as an oversight while a row of dashes reads as a
+  record. Retired teams get no such floor, since they are only on the page because they won
+  something. A zero renders as the same em dash a blank history cell does, so the eye lands on
+  the numbers rather than reading past a column of `0`s.
+- **The notes run in two groups, and only the second is numbered.** An unnumbered note is about
+  the table as a whole, so it needs no anchor: the one there now names the first season a column
+  was recorded, and shows only while that column is thinner than the table. A numbered note is
+  about one line, so it takes a superscript on the team it belongs to and is written
+  `(1) <team> formerly known as <old name>.` Both are derived, and both take themselves off when
+  the thing they explain stops being true: filling in the older Total Points figures retires the
+  first, and rewriting the last row that still says an old name retires the second along with its
+  superscript. Same self-retiring trick the "still being compiled" note under the table uses.
+- **Retired Owners carries no note of its own.** Its heading already says what it is, and a line
+  explaining that those seasons still count in the table above was there briefly and dropped: the
+  full history is two screens up and says so itself.
+- **`trophyTableHtml()` reuses the History table's cells outright** — `CARD`, `TBL_SCROLL`,
+  `HIST_TH` / `HIST_TD`, the frozen first column, the same three width tiers through
+  `historyNameHtml()`. It is the same list of names read the other way round, so the two should
+  look like one object seen twice rather than two tables sharing a page. At `lg` it measures about
+  650px against 1016, so unlike the table above it has real slack: a long team name costs nothing
+  here.
+- **`HIST_TH_BASE` was split out so a header can pick its own alignment.** `HIST_TH` is it plus
+  `text-left`; appending `text-right` to `HIST_TH` puts two `text-align` utilities on one element,
+  and those resolve by stylesheet order rather than attribute order. Same trap `PILL_EXPORT` swaps
+  `display` rather than adding one for. `HIST_TD` carries no alignment, so count cells append
+  `text-right tabular-nums` freely.
+- **`SUB_H3` is a new heading level and Records is the only thing using it.** Every other section
+  on these pages is a `SECTION_H2` eyebrow over one card, so the question never arose. Three
+  identical uppercase eyebrows would flatten the tables into each other; a 17px bold sentence-case
+  title reads as the name of the table under it while staying plainly subordinate to the h1.
+- **More records are planned, and the page says so.** A muted line closes the section. The next
+  source is the "FFL Stats & Records" section of the private `FFL History & Records` doc, which
+  is split across three scoring eras (2006-2011, 2012-2019, 2020-2024 PPR) whose numbers are not
+  comparable, so anything built from it groups by era rather than sorting one all-time list.
+  Candidates, each a `SUB_H3` plus a table inside this same section: Scoring Records (by era),
+  Streaks & Droughts, Head-to-Head, Draft Records.
 
 **Past Leagues closes the page**, from `pastLeaguesHtml()`. One card, two labelled blocks: Sleeper
 from `SLEEPER_FIRST_SEASON` on, then one `YEAR_TILE` per MyFantasyLeague season in
@@ -213,7 +354,7 @@ picks tables are dense data and keep their own denser styling.
   | `lg` (1024) and up | full | 15px | ~920px | 960px at 1024, 1016px capped |
 
   Only the phone tier still overflows, and nothing fits 350px of measure at any size, so that one
-  is carried by the frozen Season column and the `.hist-scroll` edge fade instead. **1024 is the
+  is carried by the frozen Season column and the `.tbl-scroll` edge fade instead. **1024 is the
   tightest point, about 40px of slack**, and all four columns are sized by the same 23-character
   name, so a longer one spends it and returns the scrollbar to tablets.
 - **The alternatives were weighed and passed over.** Capping the card height with a sticky header
@@ -221,17 +362,16 @@ picks tables are dense data and keep their own denser styling.
   and a JS-synced second scrollbar above the table adds a moving part that exists only to relocate
   a control. Shrinking type alone was measured too: at 13px the full-name table is ~794px, which
   still overflows a 768px iPad, so it cannot do the job the city words do.
-- **The fade is a scroll shadow, not a gradient overlay.** `.hist-scroll` layers two white covers
-  at `background-attachment: local` (they travel with the table) over two dark edge fades at
-  `scroll` (they stay with the viewport), so each side shows a fade only while it has table left
-  and the whole effect disappears at a width where nothing overflows. An absolutely positioned
-  gradient would sit over the last column once you reached the end and would need JS to know
-  when to hide. `.hist-freeze`, the hairline beside the frozen Season column, is a `box-shadow`
-  for the same reason a border would be wrong: it adds no width to the column being conserved.
-  Both live in `HISTORY_STYLES`, passed as the page's `extraStyles`, the arrangement roster
-  pages already use for `ROSTER_STYLES`. The table itself takes `border-separate border-spacing-0`
-  so the frozen column keeps its row rule: preflight collapses tables, and a collapsed table owns
-  its cells' borders, which a sticky cell then paints without.
+- **The fade is a scroll shadow, not a gradient overlay.** `.tbl-scroll` layers two covers at
+  `background-attachment: local` (they travel with the table) over two dark edge fades at `scroll`
+  (they stay with the viewport), so each side shows a fade only while it has table left and the
+  whole effect disappears at a width where nothing overflows. An absolutely positioned gradient
+  would sit over the last column once you reached the end and would need JS to know when to hide.
+  The frozen column's seam is `FREEZE_SEAM_TO_LG`, a `box-shadow` for the same reason a border
+  would be wrong: it adds no width to the column being conserved. The table itself takes
+  `border-separate border-spacing-0` so the frozen column keeps its row rule: preflight collapses
+  tables, and a collapsed table owns its cells' borders, which a sticky cell then paints without.
+  None of this is History-page furniture any more; it is the shared kit in Scrolling Tables above.
 - **Best Record was a sixth column and was dropped (Aug 2026).** Six name columns only fit by
   cutting the two stat columns to city words; at five, Total Points spells its team out like the
   bracket columns do, which is the trade that was made. `SeasonResult.bestRecord` survives in
@@ -432,9 +572,15 @@ with the cell.
 
 ### Traded Picks section
 
-`<h2>` heading + `overflow-x-auto` scroll wrapper on every snapshot type (contents differ per
-the display rules in `CLAUDE.md`), or "None" when empty. Table uses `w-auto` (not full-width)
-so it only spans its content.
+`<h2>` heading + a `TBL_SCROLL` wrapper on every snapshot type (contents differ per the display
+rules in `CLAUDE.md`), or "None" when empty. Table uses `w-auto` (not full-width) so it only spans
+its content, which is also what lets it overflow rather than squeeze.
+
+It is the one table on the site that sits on the cream page body instead of inside a white card,
+so its wrapper adds `TBL_ON_CREAM` — without it the fade's covers paint white rectangles over the
+first and last columns. It takes no frozen column: a row is identified by Season *and* Round, and
+pinning Season alone would keep four characters on screen while the identifying half scrolled
+away. See Scrolling Tables for the kit.
 
 The "Traded On" column renders only when at least one pick in that table has a `tradedOn`, so
 captures predating the field drop it instead of showing a column of placeholders; individual

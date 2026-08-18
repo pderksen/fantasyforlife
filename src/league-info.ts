@@ -113,9 +113,10 @@ export const SEASON_HONORS: Record<string, Honor[]> = {
  * room for one word. Same call `PRIZE_WINNERS` already makes by hand, kept here so the two
  * can't drift once that table gets a page.
  *
- * The folded teams below appear only in `LEAGUE_HISTORY`'s pre-Sleeper rows and join on nothing.
+ * The retired teams below appear only in `LEAGUE_HISTORY`'s pre-Sleeper rows and join on nothing.
  * They are here because the mobile layout shortens every name it renders, so a name this map
- * doesn't know would sit at full length beside a column of city words.
+ * doesn't know would sit at full length beside a column of city words. Same reason Winnemucca
+ * Muckers is still listed: a renamed team's old name goes on rendering in the rows it won.
  */
 export const TEAM_CITIES: Record<string, string> = {
   "Clovis Jets": "Clovis",
@@ -128,13 +129,54 @@ export const TEAM_CITIES: Record<string, string> = {
   "South Town Freedom Fighters": "South Town",
   "Vancouver Moose Drool": "Vancouver",
   "Visalia Viagra Vipers": "Visalia",
-  // Folded, and named only by the history doc's FFL Champions section.
+  // Retired, and named only by the history doc's FFL Champions section.
   "Biola Slugglords": "Biola",
   "Canton HOFers": "Canton",
   "Chico Pico de Gallo": "Chico",
   "Collet Winners": "Collet",
+  // Not retired: the Riverstone Stoners under their old name. See `TEAM_ALIASES`.
   "Winnemucca Muckers": "Winnemucca",
 };
+
+/**
+ * A team's former name mapped to the name that team goes by today.
+ *
+ * The League History table is a record of what happened, so a season keeps the name the team
+ * actually played under: 2006 says Winnemucca Muckers because that is who won it. The Trophy
+ * Case is a record of *owners*, and an owner who renamed their team did not start over at zero,
+ * so it folds the old name into the new one before counting. Nothing else consults this map —
+ * every join key in the repo is a current name already.
+ *
+ * A team that leaves the league belongs in neither this map nor `ACTIVE_TEAMS`; it falls through
+ * to the Trophy Case's retired table on its own.
+ */
+export const TEAM_ALIASES: Record<string, string> = {
+  // Renamed for the 2024 season; last appears as Winnemucca in the 2023 runner-up row.
+  "Winnemucca Muckers": "Riverstone Stoners",
+};
+
+/**
+ * The ten teams currently in the league, and the only list that decides which Trophy Case table
+ * a team lands in: named here it is active, absent it is retired.
+ *
+ * Hand-maintained rather than read off a snapshot, because the History page reads no snapshot
+ * data at all (`generateHistoryHtml()` takes a league name and a nav, nothing else) and giving it
+ * a data dependency to answer one yes/no question is a poor trade. A team that joins or leaves is
+ * one edit here plus, if they leave, nothing else — the retired table fills itself from whatever
+ * the history names that this list does not.
+ */
+export const ACTIVE_TEAMS: string[] = [
+  "Clovis Jets",
+  "Dinkey Creek Dirt Clods",
+  "Easton Evil Empire",
+  "Kingsburg Killaz",
+  "Lemoore Liberators",
+  "Riverstone Stoners",
+  "Sanger Squatty Pottys",
+  "South Town Freedom Fighters",
+  "Vancouver Moose Drool",
+  "Visalia Viagra Vipers",
+];
 
 /** The league's first season, and the far end of the history table's "still being compiled" note. */
 export const LEAGUE_FIRST_SEASON = "2006";
@@ -176,8 +218,9 @@ export const LEAGUE_HISTORY: SeasonResult[] = [
   // MyFantasyLeague, whose archive carries rosters rather than results. The doc is private, so
   // it is not in `ARCHIVE_LINKS`; find it in Drive by name. That
   // section records the three bracket finishes and nothing else, so every pre-2023 row leaves
-  // Total Points blank. Names of folded teams (Winnemucca, Chico, Canton,
-  // Collet, Biola) are kept as the doc writes them; they join on nothing and appear only here.
+  // Total Points blank. Retired teams (Chico, Canton, Collet, Biola) are kept as the doc writes
+  // them; they join on nothing and appear only here. Winnemucca is not one of them — it is the
+  // Riverstone Stoners' old name, folded by `TEAM_ALIASES` where the counting happens.
   { season: "2006", champion: "Winnemucca Muckers", runnerUp: "Chico Pico de Gallo", toiletBowl: "Biola Slugglords" },
   { season: "2007", champion: "Chico Pico de Gallo", runnerUp: "Dinkey Creek Dirt Clods", toiletBowl: "Visalia Viagra Vipers" },
   { season: "2008", champion: "Winnemucca Muckers", runnerUp: "Chico Pico de Gallo", toiletBowl: "Dinkey Creek Dirt Clods" },
