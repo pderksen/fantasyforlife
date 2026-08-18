@@ -63,9 +63,8 @@ differ per page:
   narrow column above a much wider table. The gutters match the roster wrapper's so the
   wordmark lines up with the h1.
 
-**Planned pages render as `span`, not a dimmed `a`.** Four nav items (Prize Tracker, Survivor,
-Official Rules, Photo Gallery) have no page yet. A link that goes nowhere invites the click and
-then reads as broken. `NavItem.href` in `league-info.ts` is the only switch — fill one in and
+**Planned pages render as `span`, not a dimmed `a`.** Two nav items (Official Rules, Photo
+Gallery) have no page yet. A link that goes nowhere invites the click and then reads as broken. `NavItem.href` in `league-info.ts` is the only switch — fill one in and
 the item becomes a live link.
 
 **A relative `href` names a file at the output root.** `navItemHtml()` prefixes it with
@@ -127,7 +126,9 @@ held to a 1080px measure. Exact classes live in `html.ts`; this documents struct
 3. **"20XX Draft Order" + "From the gallery"** — side by side on wide screens, stacked below
    ~900px. Draft order from `DRAFT_ORDERS` in `tiers.ts`, photos from `GALLERY` in
    `league-info.ts`.
-4. **Closing link rows** — "Tiers history" (every tiers page the hero card isn't already
+4. **Survivor notice** — one band, no link. `survivorNoticeHtml()`, copy from `SURVIVOR` in
+   `league-info.ts`.
+5. **Closing link rows** — "Tiers history" (every tiers page the hero card isn't already
    showing, newest first, then the 2006–2024 sheet) and "Past seasons" (Sleeper, where its
    previous-leagues menu is, and MyFantasyLeague).
 
@@ -179,6 +180,18 @@ which between them took a third of the page to say what two rows of links say. G
 the `PILL_LATEST` dark chip (the hero card was already the newest-tiers shortcut, so it was
 saying the same thing twice) and the **Throwback Year badge**. Nothing on the site marks a
 throwback year now — worth knowing, since the next one is 2030.
+
+**Survivor is a notice here rather than a nav item, and it carries no link.** The contest runs in
+its own Sleeper league, and Sleeper renders a survivor league in its mobile app only, so there is
+no page to build and no URL that would help a desktop reader. Naming that constraint is the whole
+content of the band. It is brass-tinted (`bg-brass/12` over a `border-brass/35` hairline) rather
+than another white `CARD`, so a standing fact reads as an announcement instead of one more card
+in a page of cards, and it carries no bottom margin: the section above it ends in `mb-14` and the
+closing rows bring their own `mt-16`. It sits at the foot of the page rather than under the hero
+cards, where it was first built: a fact that never changes does not need the position the season's
+honors and the draft countdown are competing for, and one band above the closing rows is still
+read on a page this short. It was in `SITE_NAV` until Aug 2026, where it rendered as a dimmed
+"Coming soon" span, which said the opposite of the truth.
 
 **Two destinations are inert.** "All 20XX prize winners" under the honors and "More in the Photo
 Gallery" under the photos are `PLANNED` spans, the body-copy twin of `NAV_PLANNED`: the Prize

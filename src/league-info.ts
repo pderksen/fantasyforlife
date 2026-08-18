@@ -38,7 +38,7 @@ export const SITE_NAV: NavItem[] = [
   { label: "Current Tiers", tiers: true },
   // Written to output/prizes.html, served at /prizes. Same flat-file rule as history.html.
   { label: "Prize Tracker", href: "prizes.html" },
-  { label: "Survivor" },
+  // No Survivor item: it is not a page and never will be. `SURVIVOR` below says where it lives.
   { label: "Official Rules" },
   // Written to output/history.html, which Cloudflare Pages serves at /history. The link
   // keeps the extension so it also resolves over file:// during local preview.
@@ -46,6 +46,19 @@ export const SITE_NAV: NavItem[] = [
   { label: "Photo Gallery" },
   { label: "Sleeper", href: "https://sleeper.com/leagues", pill: true, external: true },
 ];
+
+/**
+ * The Survivor contest, which runs in its own Sleeper league.
+ *
+ * A standing notice on the home page rather than a nav item: there is no page to link and no
+ * URL worth giving, since Sleeper only renders a survivor league in its mobile app. A desktop
+ * click that lands nowhere is worse than plain text naming the constraint, which is the whole
+ * content of the notice.
+ */
+export const SURVIVOR = {
+  label: "Survivor",
+  line: "Runs in a separate Sleeper league, visible only in the Sleeper mobile app.",
+} as const;
 
 /**
  * When each season's draft starts, as an ISO string with an explicit offset.

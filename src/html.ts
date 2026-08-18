@@ -8,6 +8,7 @@ import { exportFileName, newestNavLink } from "./snapshot.js";
 import {
   SITE,
   SITE_NAV,
+  SURVIVOR,
   ARCHIVE_LINKS,
   GALLERY,
   SEASON_HONORS,
@@ -593,6 +594,32 @@ const COUNTDOWN_SCRIPT = `  <script>
   </script>`;
 
 /**
+ * The Survivor notice: a standing band at the foot of the home page, below the draft order and
+ * the gallery, above the closing link rows.
+ *
+ * It carries no link on purpose. Sleeper renders a survivor league in its mobile app and not
+ * on the web, so the fact *is* the message; an anchor here would send a desktop reader to a
+ * page that cannot show them the thing. Copy lives in `SURVIVOR` in `league-info.ts`.
+ *
+ * Brass-tinted rather than another white `CARD`, so a standing fact reads as an announcement
+ * instead of one more card in a page of cards. The fill and border are opacity modifiers on
+ * the one brass token, so nothing here introduces a colour the theme doesn't already name.
+ *
+ * No bottom margin: the closing link rows bring their own `mt-16`, and the section above ends
+ * in `mb-14`, so the band is spaced by its neighbours rather than adding to them.
+ */
+function survivorNoticeHtml(): string {
+  return `    <div class="bg-brass/12 border border-brass/35 rounded-xl px-6 py-4 flex items-center gap-4">
+      <span class="w-10 h-10 rounded-full bg-brass text-forest flex items-center justify-center shrink-0"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="20" x="5" y="2" rx="2"/><path d="M12 18h.01"/></svg></span>
+      <span>
+        <span class="${EYEBROW} text-clay-ink">${esc(SURVIVOR.label)}</span>
+        <span class="block text-[15px] font-medium leading-snug">${esc(SURVIVOR.line)}</span>
+      </span>
+    </div>
+`;
+}
+
+/**
  * Lucide glyphs for the honor cards, inlined — the project ships no icon font or sprite.
  *
  * Stroked in `currentColor`, so each card's tone sets the glyph colour along with its label
@@ -883,8 +910,8 @@ function siteLinksHtml(navLinks: NavLink[], latest: NavLink | undefined): string
 /**
  * The home page.
  *
- * Sections, in order: the season's honors, the two hero cards, the draft order beside the
- * photo gallery, then the closing link rows. Honors lead because a finished season is the
+ * Sections, in order: the season's honors, the two hero cards, the draft order beside the photo
+ * gallery, the Survivor notice, then the closing link rows. Honors lead because a finished season is the
  * thing worth opening on; the hero cards are navigation, and navigation reads fine second.
  */
 export function generateIndexHtml(
@@ -915,7 +942,7 @@ ${htmlHead({
 <body class="bg-cream text-ink font-sans antialiased">
 ${siteHeader(chrome)}
   <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14">
-${honorsHtml()}${heroHtml(latest, draftOrder?.season)}${columnsHtml}${siteLinksHtml(navLinks, latest)}
+${honorsHtml()}${heroHtml(latest, draftOrder?.season)}${columnsHtml}${survivorNoticeHtml()}${siteLinksHtml(navLinks, latest)}
   </main>
 ${lightboxHtml()}
 ${COUNTDOWN_SCRIPT}
