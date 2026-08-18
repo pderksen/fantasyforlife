@@ -122,6 +122,44 @@ picks tables are dense data and keep their own denser styling.
   measure is a sideways scroll inside the card, never a two-line row. Total Points names a team
   and nothing else: the point total stays on the honor card above, where a number has room to
   be a number.
+- **One layout at every width.** The same table renders on a phone as on a desktop, scrolled
+  sideways inside its `overflow-x-auto` wrapper. A stacked phone variant (one labeled block per
+  season below `sm`) shipped in Aug 2026 and was reverted days later: two renderings of the same
+  list is a standing sync cost, and sideways scroll is what a wide table is supposed to do. The
+  table carries `w-max min-w-full` so it can exceed its container (a plain `w-full` would squeeze
+  the columns and leave the browser nothing to scroll) while still filling it on a wide screen.
+- **The scroll is designed out of every width but the phone.** At full names the table runs
+  ~920px, and the horizontal scrollbar sits at the foot of a twenty-row box where nobody scrolling
+  the page will meet it, so relying on it was never viable. `historyNameHtml()` renders each name
+  at two lengths and a visibility pair picks one, `HIST_EDGE` steps the padding and type with it,
+  and the three tiers are sized against the measure each width has:
+
+  | Width | Names | Type | Table | Measure available |
+  |---|---|---|---|---|
+  | below `md` (768) | city word | 13px | ~490px | 350px at 390, 576px at 640 |
+  | `md`–`lg` | city word | 15px | ~597px | 704px at 768 |
+  | `lg` (1024) and up | full | 15px | ~920px | 960px at 1024, 1016px capped |
+
+  Only the phone tier still overflows, and nothing fits 350px of measure at any size, so that one
+  is carried by the frozen Season column and the `.hist-scroll` edge fade instead. **1024 is the
+  tightest point, about 40px of slack**, and all four columns are sized by the same 23-character
+  name, so a longer one spends it and returns the scrollbar to tablets.
+- **The alternatives were weighed and passed over.** Capping the card height with a sticky header
+  would put the bar permanently on screen but nests a vertical scroller inside the page scroll,
+  and a JS-synced second scrollbar above the table adds a moving part that exists only to relocate
+  a control. Shrinking type alone was measured too: at 13px the full-name table is ~794px, which
+  still overflows a 768px iPad, so it cannot do the job the city words do.
+- **The fade is a scroll shadow, not a gradient overlay.** `.hist-scroll` layers two white covers
+  at `background-attachment: local` (they travel with the table) over two dark edge fades at
+  `scroll` (they stay with the viewport), so each side shows a fade only while it has table left
+  and the whole effect disappears at a width where nothing overflows. An absolutely positioned
+  gradient would sit over the last column once you reached the end and would need JS to know
+  when to hide. `.hist-freeze`, the hairline beside the frozen Season column, is a `box-shadow`
+  for the same reason a border would be wrong: it adds no width to the column being conserved.
+  Both live in `HISTORY_STYLES`, passed as the page's `extraStyles`, the arrangement roster
+  pages already use for `ROSTER_STYLES`. The table itself takes `border-separate border-spacing-0`
+  so the frozen column keeps its row rule: preflight collapses tables, and a collapsed table owns
+  its cells' borders, which a sticky cell then paints without.
 - **Best Record was a sixth column and was dropped (Aug 2026).** Six name columns only fit by
   cutting the two stat columns to city words; at five, Total Points spells its team out like the
   bracket columns do, which is the trade that was made. `SeasonResult.bestRecord` survives in

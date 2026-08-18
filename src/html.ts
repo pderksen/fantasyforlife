@@ -1032,8 +1032,48 @@ const BACK_TO_TOP = `    <div class="pt-2">
  * `border-t` on every body cell (rather than `border-b` and a flush last row) is what puts the
  * rule under the header strip and leaves the card's own border to close the bottom.
  */
-const HIST_TH = "px-4 first:pl-5 last:pr-5 py-[9px] text-left text-[11px] font-medium tracking-[0.12em] uppercase text-stone whitespace-nowrap";
-const HIST_TD = "px-4 first:pl-5 last:pr-5 py-2.5 border-t border-rule text-[15px] whitespace-nowrap";
+const HIST_EDGE = "px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5";
+const HIST_TH = `${HIST_EDGE} py-[9px] text-left text-[11px] font-medium tracking-[0.12em] uppercase text-stone whitespace-nowrap`;
+const HIST_TD = `${HIST_EDGE} py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap`;
+
+/**
+ * The Season column, frozen at the left edge so the year stays put while the names scroll under it.
+ *
+ * Both cells need their own opaque fill: a sticky cell slides over the rows beside it, and the
+ * `<tr>` background does not travel with it. `hist-freeze` is the hairline that marks the seam,
+ * and it takes itself off at `sm`, where nothing scrolls under anything.
+ */
+const HIST_TH_SEASON = `${HIST_TH} sticky left-0 z-20 bg-shell hist-freeze`;
+const HIST_TD_SEASON = `${HIST_TD} sticky left-0 z-10 bg-white font-medium hist-freeze`;
+
+/**
+ * The two League History rules Tailwind utilities can't state, passed to `htmlHead()` as the
+ * history page's `extraStyles` (the roster pages' `ROSTER_STYLES` is the same arrangement).
+ *
+ * `.hist-scroll` is the classic scroll shadow: two white covers pinned to the *content* with
+ * `background-attachment: local`, and two dark edge fades pinned to the *viewport* with
+ * `scroll`. The covers travel with the table, so a fade shows only on a side that still has
+ * table left, and the whole thing disappears at a width where nothing overflows. That
+ * self-hiding is why it beats an absolutely positioned gradient, which would sit over the last
+ * column once you reached the end.
+ *
+ * `.hist-freeze` is the seam beside the frozen Season column, dropped at `lg` where the table
+ * fits its container and nothing slides under anything. It is a `box-shadow` rather than a `border-r` so it adds no width
+ * to a column whose width is the thing being conserved.
+ */
+const HISTORY_STYLES = `    .hist-scroll {
+      background:
+        linear-gradient(to right, #fff 40%, #ffffff00) left center,
+        linear-gradient(to left, #fff 40%, #ffffff00) right center,
+        radial-gradient(farthest-side at 0 50%, #16211a24, #16211a00) left center,
+        radial-gradient(farthest-side at 100% 50%, #16211a24, #16211a00) right center;
+      background-repeat: no-repeat;
+      background-size: 34px 100%, 34px 100%, 13px 100%, 13px 100%;
+      background-attachment: local, local, scroll, scroll;
+    }
+    .hist-freeze { box-shadow: 1px 0 0 0 var(--color-rule); }
+    @media (min-width: 64rem) { .hist-freeze { box-shadow: none; } }
+`;
 
 /**
  * Names shortened for the League History table only, where four columns of team names have to
@@ -1054,9 +1094,10 @@ const HISTORY_SHORT_NAMES: Record<string, string> = {
 /**
  * Every team named in a cell reduced to its city word, a tie's pair included.
  *
- * The stacked mobile layout runs every value through this, and `shortenForHistory()` falls back
- * to it for a tie. A name `TEAM_CITIES` doesn't know passes through whole, which is the safe
- * failure: a new team reads long beside a column of city words rather than vanishing.
+ * `shortenForHistory()` is the only caller, falling back to it for a tie, where a pair of full
+ * names would be twice the width the column is sized for. A name `TEAM_CITIES` doesn't know
+ * passes through whole, which is the safe failure: a new team reads long beside a column of city
+ * words rather than vanishing.
  */
 function cityWords(name: string): string {
   return name.split(" & ").map((n) => TEAM_CITIES[n] ?? n).join(" & ");
@@ -1068,17 +1109,36 @@ function shortenForHistory(name: string): string {
 }
 
 /**
- * The four name columns of the League History table, in order, declared once because two
- * layouts render them: the table at `sm` and up, the stacked blocks below it.
+ * One history cell's team name at two lengths: the city word on a phone, `shortenForHistory()`
+ * from `sm` up. Both are in the markup and a Tailwind visibility pair picks one, so nothing here
+ * decides over the data and a name is still written once, from one source value.
+ *
+ * **The phone measure is what forces it.** Five `whitespace-nowrap` columns of full names run
+ * about 880px, two and a half screens of sideways travel on a 390px viewport, and the scrollbar
+ * that gets you there sits below twenty rows of table. City words cut the table to roughly 450px:
+ * still a scroll, but one swipe with the year frozen beside it.
+ *
+ * A name identical at both lengths renders once — a team `TEAM_CITIES` doesn't know has nothing
+ * shorter to show, and duplicating it would only pad the HTML.
+ */
+function historyNameHtml(name: string): string {
+  const wide = esc(shortenForHistory(name));
+  const narrow = esc(cityWords(name));
+  if (wide === narrow) return wide;
+  return `<span class="lg:hidden">${narrow}</span><span class="hidden lg:inline">${wide}</span>`;
+}
+
+/**
+ * The four name columns of the League History table, in order, declared once so the header row
+ * and the body cells can never disagree about which columns exist.
  *
  * **The three bracket finishes run first, in finish order**, and Total Points follows as the
  * one column that isn't a bracket result. The honor cards above the table run in a different
  * order (Total Points third); the two lists are ordered on their own terms and neither follows
  * the other.
  *
- * Every column names a team at full length on the wide layout, through `shortenForHistory()`;
- * dropping the Best Record column is what bought back the measure that pays for it. The stack
- * shortens everything to a city word regardless, since a phone has room for one word.
+ * Every column names a team at full length, through `shortenForHistory()`; dropping the Best
+ * Record column is what bought back the measure that pays for it.
  */
 interface HistoryColumn {
   header: string;
@@ -1091,43 +1151,6 @@ const HISTORY_COLUMNS: HistoryColumn[] = [
   { header: "Toilet Bowl", value: (r) => r.toiletBowl },
   { header: "Total Points", value: (r) => r.totalPoints },
 ];
-
-const HIST_STACK_DT = "text-[11px] font-medium tracking-[0.1em] uppercase text-stone pt-[5px]";
-const HIST_STACK_DD = "text-[15px]";
-
-/**
- * The same seasons as one block each, for phones.
- *
- * Five columns of team names do not fit a 390px viewport at any font size, so below `sm` the
- * table stops being a table: each season becomes its own labeled block and the page scrolls the
- * one direction a phone scrolls. **Every name here is a city word** — a block is read one
- * season at a time, so the full name buys nothing and costs a wrapped line.
- *
- * A field with no name recorded is **left out**, not dashed. The dash on the wide layout is
- * holding a column open; here there is no column to hold, and seventeen of the twenty seasons would
- * otherwise carry a dashed Total Points line. A season with nothing at all still renders its
- * year, so the list never skips one.
- */
-function historyStackHtml(rows: SeasonResult[]): string {
-  return rows
-    .map((r) => {
-      const lines = HISTORY_COLUMNS
-        .flatMap((c) => {
-          const v = c.value(r);
-          return v
-            ? [`              <dt class="${HIST_STACK_DT}">${esc(c.header)}</dt><dd class="${HIST_STACK_DD}">${esc(cityWords(v))}</dd>`]
-            : [];
-        })
-        .join("\n");
-      const body = lines
-        ? `\n            <dl class="grid grid-cols-[100px_1fr] gap-x-3 gap-y-1.5 mt-2">\n${lines}\n            </dl>`
-        : `\n            <p class="text-[15px] text-stone mt-1.5">Not recorded.</p>`;
-      return `          <div class="px-5 py-4">
-            <div class="text-[15px] font-semibold">${esc(r.season)}</div>${body}
-          </div>`;
-    })
-    .join("\n");
-}
 
 /**
  * Every season on one line: champion, runner-up, Toilet Bowl, total points.
@@ -1147,18 +1170,36 @@ function historyStackHtml(rows: SeasonResult[]): string {
  * of object — a short standing list of team names — and the two now read as a pair across the
  * two pages.
  *
- * **Two layouts inside one card, and both are always in the markup.** The table renders at `sm`
- * and up, `historyStackHtml()` below it, and which one shows is a Tailwind visibility pair
- * (`sm:hidden` / `hidden sm:block`), not a decision made over the data. So a season added to
- * `LEAGUE_HISTORY` lands in both with no second edit, and the price is the season list
- * appearing twice in the HTML — cheap on a static page, and why both layouts build from
- * `HISTORY_COLUMNS` rather than two hand-written lists that could disagree about a column.
+ * **One layout at every width.** There is no phone variant: the same table, the same columns, the
+ * same rows render on a 390px screen as on a desktop. A stacked block-per-season layout was tried
+ * below `sm` and dropped — two renderings of one list is a standing sync cost, and sideways scroll
+ * is what a wide table is supposed to do.
  *
- * **Every table cell is `whitespace-nowrap`**, so a name never wraps to a second line and the
- * columns stay readable straight down. The cost is width: the card scrolls sideways rather than
- * reflowing once five names exceed the measure, which is what the `overflow-x-auto` inside it is
- * for, and what `shortenForHistory()` is holding off. The stack has no such budget to protect,
- * so it does not use it.
+ * **Every cell is `whitespace-nowrap`**, so a name never wraps to a second line and the columns
+ * stay readable straight down. The cost is width, paid in sideways scroll, and three things make
+ * that scroll cheap enough to keep:
+ * - `w-max min-w-full` on the table, never `w-full`. A `w-full` table squeezes its columns to the
+ *   container instead of overflowing, leaving the browser nothing to scroll.
+ * - `historyNameHtml()` drops every name to a city word below `lg`, and `HIST_EDGE` tightens the
+ *   padding and the type a step earlier, below `md`. Three tiers, sized so the table fits its
+ *   container at every width a tablet or a desktop reports:
+ *   - below `md` — city words at 13px, ~490px wide, which clears a 640px viewport (576px of
+ *     measure). A phone is the one size nothing fits: 390px leaves 350px, so it still scrolls,
+ *     and the frozen column plus the edge fade are what carry it.
+ *   - `md` to `lg` — city words at 15px, ~597px, against 704px at a 768px iPad.
+ *   - `lg` and up — full names at 15px, ~920px, against 960px at 1024 and 1016px once the
+ *     1080px measure caps out. **1024 is the tightest point on the page**, roughly 40px of slack,
+ *     so a team name longer than "Dinkey Creek Dirt Clods" (23 characters, and the widest string
+ *     in every one of the four columns) spends it and puts the scrollbar back on tablets.
+ * - `border-separate border-spacing-0` on the table, so the frozen column keeps its own row rule.
+ *   Tailwind's preflight collapses tables, and a collapsed table owns its cells' borders — a
+ *   sticky cell then paints without them, which is the same trap `ROSTER_STYLES` redraws a pinned
+ *   `th`'s edges for. Separated borders look identical here (only `border-t` is ever set, so
+ *   nothing was merging in the first place) and the bug simply doesn't arise.
+ * - The Season column is frozen (`HIST_TD_SEASON`), so on the phone widths that do still scroll
+ *   the year you are reading stays on screen. That matters more than the scrollbar does: the bar
+ *   sits under twenty rows of table, out of reach until you have scrolled past the whole thing,
+ *   which is why the fade in `HISTORY_STYLES` carries the "there is more this way" signal instead.
  */
 function leagueHistoryTableHtml(): string {
   if (LEAGUE_HISTORY.length === 0) return "";
@@ -1170,10 +1211,10 @@ function leagueHistoryTableHtml(): string {
       const cells = HISTORY_COLUMNS.map((c) => {
         const v = c.value(r);
         return v
-          ? `<td class="${HIST_TD}">${esc(shortenForHistory(v))}</td>`
+          ? `<td class="${HIST_TD}">${historyNameHtml(v)}</td>`
           : `<td class="${HIST_TD} text-stone">&mdash;</td>`;
       });
-      return `                <tr><td class="${HIST_TD} font-medium">${esc(r.season)}</td>${cells.join("")}</tr>`;
+      return `                <tr><td class="${HIST_TD_SEASON}">${esc(r.season)}</td>${cells.join("")}</tr>`;
     })
     .join("\n");
 
@@ -1185,15 +1226,12 @@ function leagueHistoryTableHtml(): string {
     : "";
 
   const headers = ["Season", ...HISTORY_COLUMNS.map((c) => c.header)]
-    .map((h) => `<th class="${HIST_TH}">${h}</th>`)
+    .map((h, i) => `<th class="${i === 0 ? HIST_TH_SEASON : HIST_TH}">${h}</th>`)
     .join("");
 
   return `      <div class="${CARD} overflow-hidden">
-        <div class="sm:hidden divide-y divide-rule">
-${historyStackHtml(rows)}
-        </div>
-        <div class="hidden sm:block overflow-x-auto">
-          <table class="w-full text-left">
+        <div class="hist-scroll overflow-x-auto">
+          <table class="w-max min-w-full text-left border-separate border-spacing-0">
             <thead><tr class="bg-shell">${headers}</tr></thead>
             <tbody>
 ${tableRows}
@@ -1241,6 +1279,7 @@ ${htmlHead({
     ogTitle: "League History",
     description: "Champions, runners-up, and season honors for every recorded season.",
     siteName: leagueName,
+    extraStyles: HISTORY_STYLES,
   })}
 <body class="bg-cream text-ink font-sans antialiased">
 ${siteHeader(chrome)}
