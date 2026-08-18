@@ -80,10 +80,34 @@ relative to the page being written.
 `output/history.html`, from `generateHistoryHtml()` in `html.ts`, rewritten by
 `regenerateHistory()` in `index.ts` on every run right after the index.
 
-**Sections**, in order: the sub-nav (all-time table, then each season newest-first), the newest
-season's honor cards from the same `honorsSection()` the home page uses, the all-time table, then
-each earlier season's cards. Content is hand-written in `league-info.ts` as the history is settled,
-which is why most of it is still blank.
+**Sections**, in order: the sub-nav, the newest season's honor cards from the same
+`honorsSection()` the home page uses, the all-time table, then each earlier season's cards, and a
+"Back to top" link closing the page. Content is hand-written in `league-info.ts` as the history is
+settled, which is why most of it is still blank.
+
+**The sub-nav lists the page's sections, not its seasons.** `HISTORY_SECTIONS` in `html.ts` is the
+list: Full League History, Records, League Sites. It carried a pill per recorded season until Aug
+2026, which was dropped because a row that grows by one every August wraps to a second line in the
+2030s while saying nothing a reader scrolling the page can't already see. A section that doesn't
+exist yet still gets a tab, inert and carrying a small `TAB_SOON` tag, so the shape of the page is
+legible before it is finished; giving that entry an `href` is the whole edit that turns it live.
+
+**It is an underlined tab bar, not pills, and that is the one place it and the Prize Tracker's
+sub-nav differ.** `TAB_ROW` / `TAB_LINK` / `TAB_PLANNED` in `html.ts`: labels on a hairline that
+runs the measure, the live one underlined in moss. Pills were built first and dropped the same day
+(three boxes give equal weight to three items when only one goes anywhere, and `PILL_LINK` is what
+the roster pages use for *cross-page* chips, so borrowing it blurs a page switch and a jump down
+this page), then a plain middot-separated text row, which had nothing for the h1 to sit on.
+
+- **The rule and the tabs' `-mb-px` are one mechanism.** The `border-b` belongs to the `nav`; each
+  tab carries `border-b-2` and pulls itself down a pixel so the live tab's underline lands on the
+  rule instead of a pixel above it. Remove the row's border and the underline floats; remove the
+  offset and it thickens the rule.
+- **The underline means "this one works", not "you are here".** Nothing observes scroll position,
+  so a second built section is simply a second underlined tab.
+- **Tabs are `whitespace-nowrap`,** so a narrow phone drops a whole label to a second line rather
+  than breaking one. `gap-y-0` keeps the two lines tight enough to still read as one bar, with the
+  live tab's underline on the upper line and the row's rule under the lower.
 
 **The all-time table is the draft order card in table form.** `leagueHistoryTableHtml()` borrows
 `draftOrderHtml()`'s treatment wholesale — bordered card, `bg-shell` header strip, 15px rows split

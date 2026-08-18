@@ -952,29 +952,74 @@ ${LIGHTBOX_SCRIPT}
 }
 
 /**
- * The League History page's own sub-nav: the all-time table, then one pill per recorded season.
+ * The sub-nav's tab-bar geometry.
  *
- * Anchors within the page rather than a file per season. Every season's block is a heading and
+ * The hairline belongs to the `nav`, and every item overlaps it by a pixel (`-mb-px` against
+ * its own `border-b-2`) so the live tab's moss underline lands *on* the rule rather than a
+ * pixel above it. Both borders are therefore load-bearing: drop `border-b` from the row and
+ * the underline floats, drop `-mb-px` from the items and it doubles the rule's thickness.
+ *
+ * Items are `whitespace-nowrap`, so the failure mode on a narrow phone is one label dropping
+ * to a second line, never a broken label. When that happens the live tab's underline sits on
+ * the upper line while the row's rule stays under the lower one — visible, and the reason
+ * `gap-y-0` keeps the two lines tight enough to still read as one bar.
+ */
+const TAB_ROW = "flex flex-wrap items-end gap-x-6 sm:gap-x-7 gap-y-0 mb-11 border-b border-line";
+const TAB_BOX = "inline-flex items-baseline gap-2 whitespace-nowrap pb-2.5 -mb-px border-b-2 text-sm font-medium";
+const TAB_LINK = `${TAB_BOX} border-moss text-moss no-underline transition-opacity hover:opacity-70`;
+/** An unbuilt section: same geometry, no underline, and inert rather than a link to nowhere. */
+const TAB_PLANNED = `${TAB_BOX} border-transparent text-stone cursor-default`;
+/** The tag marking a tab that isn't built yet. Small tracked caps, so it reads as a status and not part of the label. */
+const TAB_SOON = `<span class="text-[10px] font-semibold tracking-[0.12em] uppercase text-stone/70">Soon</span>`;
+
+/**
+ * The League History page's own sub-nav: one jump link per section of the page below it.
+ *
+ * Anchors within the page rather than a file per section. A season's block is a heading and
  * four cards, so twenty of them still make a page shorter than one roster table, and a single
  * file means a new year costs a `SEASON_HONORS` entry and nothing else.
  *
- * Newest season first, and that ordering is the point: a year appended on the right would push
- * the season people actually want further along the row every August, and wrap to a second line
- * somewhere in the 2030s. Here the current year is always the second pill.
+ * The list is the page's sections, not its seasons: per-year pills lived here until Aug 2026
+ * and were dropped, because a row that grows by one every August ends up wrapping to a second
+ * line while saying nothing a reader scrolling the page doesn't already see. Sections that
+ * don't exist yet still get a tab, inert and tagged `TAB_SOON`, so the shape of the page is
+ * legible before it's finished; giving one an `href` is the whole edit that turns it live.
+ *
+ * An underlined tab bar rather than the `PILL_LINK` row the Prize Tracker uses, which is the
+ * one place the two pages deliberately differ. Three pills give equal weight to three items
+ * when only one of them goes anywhere, and pills are what the roster pages use for *cross-page*
+ * chips, so borrowing them here blurs a page switch and a jump down this page. The rule also
+ * gives the h1 above it something to sit on, which a bare row of links did not.
+ *
+ * The live tab is underlined because it is the one that works, not because it tracks scroll
+ * position — nothing here observes the sections, so a second live section would simply be a
+ * second underlined tab.
  *
  * Sits below the h1 rather than at the top of the page so it reads as a switch within League
  * History instead of a second site nav competing with the green bar above it.
  */
-function historyNavHtml(seasons: string[]): string {
-  const years = seasons
-    .map((s) => `      <a href="#s${esc(s)}" class="${PILL_LINK}">${esc(s)}</a>`)
-    .join("\n");
+const HISTORY_SECTIONS: { label: string; href?: string }[] = [
+  { label: "Full League History", href: "#all-time" },
+  { label: "Records" },
+  { label: "League Sites" },
+];
 
-  return `    <nav class="flex flex-wrap items-center gap-2 mb-12">
-      <a href="#all-time" class="${PILL_LINK}">Full league history</a>
-${years}
+function historyNavHtml(): string {
+  const items = HISTORY_SECTIONS.map(({ label, href }) =>
+    href
+      ? `      <a href="${esc(href)}" class="${TAB_LINK}">${esc(label)}</a>`
+      : `      <span class="${TAB_PLANNED}" title="Coming soon">${esc(label)} ${TAB_SOON}</span>`,
+  ).join("\n");
+
+  return `    <nav class="${TAB_ROW}">
+${items}
     </nav>`;
 }
+
+/** Bottom-of-page return to the sub-nav. `#top` is the document top with no id to match. */
+const BACK_TO_TOP = `    <div class="pt-2">
+      <a href="#top" class="${LINK} text-sm">&#8593; Back to top</a>
+    </div>`;
 
 /**
  * The League History table's two cell styles, lifted from the draft order card in
@@ -1201,8 +1246,9 @@ ${htmlHead({
 ${siteHeader(chrome)}
   <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
     <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-8">League History</h1>
-${historyNavHtml(seasons)}
-${newest ? honorBlocks(newest) : ""}${allTime}${earlier.map(honorBlocks).join("")}  </main>
+${historyNavHtml()}
+${newest ? honorBlocks(newest) : ""}${allTime}${earlier.map(honorBlocks).join("")}${BACK_TO_TOP}
+  </main>
 </body>
 </html>`;
 }
