@@ -13,6 +13,7 @@ import {
   SEASON_HONORS,
   LEAGUE_HISTORY,
   LEAGUE_FIRST_SEASON,
+  type SeasonResult,
   TEAM_CITIES,
   PRIZE_SEASONS,
   getDraftDate,
@@ -972,17 +973,85 @@ const HIST_TD = "px-4 first:pl-5 last:pr-5 py-2.5 border-t border-rule text-[15p
  *   `TEAM_CITIES`, since a pair of full names is twice the width the column is sized for.
  *   A name the map doesn't know passes through whole rather than disappearing.
  * - "South Town Freedom Fighters" loses its nickname. At 26 characters it is the widest name
- *   in the league by a wide margin, and it can land in any of the five columns.
+ *   in the league by a wide margin, and it can land in any of the three columns that use this.
  */
 const HISTORY_SHORT_NAMES: Record<string, string> = {
   "South Town Freedom Fighters": "South Town FF",
 };
 
+/**
+ * Every team named in a cell reduced to its city word, a tie's pair included.
+ *
+ * A name `TEAM_CITIES` doesn't know passes through whole, which is the safe failure: a new team
+ * reads long beside a column of city words rather than vanishing from the table.
+ */
+function cityWords(name: string): string {
+  return name.split(" & ").map((n) => TEAM_CITIES[n] ?? n).join(" & ");
+}
+
 function shortenForHistory(name: string): string {
-  if (name.includes(" & ")) {
-    return name.split(" & ").map((n) => TEAM_CITIES[n] ?? n).join(" & ");
-  }
+  if (name.includes(" & ")) return cityWords(name);
   return HISTORY_SHORT_NAMES[name] ?? name;
+}
+
+/**
+ * The five name columns of the League History table, in order, declared once because two
+ * layouts render them: the table at `sm` and up, the stacked blocks below it.
+ *
+ * `city` marks a column that reads as a city word at **every** width. The two stat columns take
+ * it because they answer "who scored the most" rather than identifying a team on its own, so
+ * one word says it, and cutting them to one word each is what buys back the measure the
+ * twenty-season backfill spent. The three bracket columns keep full names on the wide layout.
+ */
+interface HistoryColumn {
+  header: string;
+  value: (r: SeasonResult) => string | undefined;
+  city?: boolean;
+}
+
+const HISTORY_COLUMNS: HistoryColumn[] = [
+  { header: "Champion", value: (r) => r.champion },
+  { header: "Runner-Up", value: (r) => r.runnerUp },
+  { header: "Toilet Bowl", value: (r) => r.toiletBowl },
+  { header: "Total Points", value: (r) => r.totalPoints, city: true },
+  { header: "Best Record", value: (r) => r.bestRecord, city: true },
+];
+
+const HIST_STACK_DT = "text-[11px] font-medium tracking-[0.1em] uppercase text-stone pt-[5px]";
+const HIST_STACK_DD = "text-[15px]";
+
+/**
+ * The same seasons as one block each, for phones.
+ *
+ * Six columns of team names do not fit a 390px viewport at any font size, so below `sm` the
+ * table stops being a table: each season becomes its own labeled block and the page scrolls the
+ * one direction a phone scrolls. **Every name here is a city word** — a block is read one
+ * season at a time, so the full name buys nothing and costs a wrapped line.
+ *
+ * A field with no name recorded is **left out**, not dashed. The dash on the wide layout is
+ * holding a column open; here there is no column to hold, and nineteen of twenty seasons would
+ * otherwise carry two dashed lines apiece. A season with nothing at all still renders its year,
+ * so the list never skips one.
+ */
+function historyStackHtml(rows: SeasonResult[]): string {
+  return rows
+    .map((r) => {
+      const lines = HISTORY_COLUMNS
+        .flatMap((c) => {
+          const v = c.value(r);
+          return v
+            ? [`              <dt class="${HIST_STACK_DT}">${esc(c.header)}</dt><dd class="${HIST_STACK_DD}">${esc(cityWords(v))}</dd>`]
+            : [];
+        })
+        .join("\n");
+      const body = lines
+        ? `\n            <dl class="grid grid-cols-[100px_1fr] gap-x-3 gap-y-1.5 mt-2">\n${lines}\n            </dl>`
+        : `\n            <p class="text-[15px] text-stone mt-1.5">Not recorded.</p>`;
+      return `          <div class="px-5 py-4">
+            <div class="text-[15px] font-semibold">${esc(r.season)}</div>${body}
+          </div>`;
+    })
+    .join("\n");
 }
 
 /**
@@ -990,7 +1059,8 @@ function shortenForHistory(name: string): string {
  *
  * The last two columns name a team the same way the first three do, with no point total and no
  * win-loss record beside it: six columns of names stay scannable down the year, and the numbers
- * are already on the honor cards above.
+ * are already on the honor cards above. They name it in one word (`HISTORY_COLUMNS`), which is
+ * the difference between the table fitting a laptop and scrolling on one.
  *
  * Rendered newest-first, against a source list kept oldest-first, so `LEAGUE_HISTORY` reads as a
  * timeline while the page opens on the seasons anyone remembers. A row may name nobody at all,
@@ -1002,21 +1072,33 @@ function shortenForHistory(name: string): string {
  * of object — a short standing list of team names — and the two now read as a pair across the
  * two pages.
  *
- * **Every cell is `whitespace-nowrap`**, so a name never wraps to a second line and the columns
- * stay readable straight down. The cost is width: the card scrolls sideways rather than
+ * **Two layouts inside one card, and both are always in the markup.** The table renders at `sm`
+ * and up, `historyStackHtml()` below it, and which one shows is a Tailwind visibility pair
+ * (`sm:hidden` / `hidden sm:block`), not a decision made over the data. So a season added to
+ * `LEAGUE_HISTORY` lands in both with no second edit, and the price is the season list
+ * appearing twice in the HTML — cheap on a static page, and why both layouts build from
+ * `HISTORY_COLUMNS` rather than two hand-written lists that could disagree about a column.
+ *
+ * **Every table cell is `whitespace-nowrap`**, so a name never wraps to a second line and the
+ * columns stay readable straight down. The cost is width: the card scrolls sideways rather than
  * reflowing once six names exceed the measure, which is what the `overflow-x-auto` inside it is
- * for, and what `shortenForHistory()` is holding off.
+ * for, and what `shortenForHistory()` is holding off. The stack has no such budget to protect,
+ * so it does not use it.
  */
 function leagueHistoryTableHtml(): string {
   if (LEAGUE_HISTORY.length === 0) return "";
 
-  const rows = [...LEAGUE_HISTORY]
-    .sort((a, b) => b.season.localeCompare(a.season))
+  const rows = [...LEAGUE_HISTORY].sort((a, b) => b.season.localeCompare(a.season));
+
+  const tableRows = rows
     .map((r) => {
-      const cells = [r.champion, r.runnerUp, r.toiletBowl, r.totalPoints, r.bestRecord].map((v) => v
-        ? `<td class="${HIST_TD}">${esc(shortenForHistory(v))}</td>`
-        : `<td class="${HIST_TD} text-stone">&mdash;</td>`);
-      return `              <tr><td class="${HIST_TD} font-medium">${esc(r.season)}</td>${cells.join("")}</tr>`;
+      const cells = HISTORY_COLUMNS.map((c) => {
+        const v = c.value(r);
+        return v
+          ? `<td class="${HIST_TD}">${esc(c.city ? cityWords(v) : shortenForHistory(v))}</td>`
+          : `<td class="${HIST_TD} text-stone">&mdash;</td>`;
+      });
+      return `                <tr><td class="${HIST_TD} font-medium">${esc(r.season)}</td>${cells.join("")}</tr>`;
     })
     .join("\n");
 
@@ -1027,16 +1109,19 @@ function leagueHistoryTableHtml(): string {
     ? `\n      <p class="text-sm text-stone mt-3">${esc(LEAGUE_FIRST_SEASON)}&ndash;${esc(String(Number(earliest) - 1))} are still being compiled.</p>`
     : "";
 
-  const headers = ["Season", "Champion", "Runner-Up", "Toilet Bowl", "Total Points", "Best Record"]
+  const headers = ["Season", ...HISTORY_COLUMNS.map((c) => c.header)]
     .map((h) => `<th class="${HIST_TH}">${h}</th>`)
     .join("");
 
   return `      <div class="${CARD} overflow-hidden">
-        <div class="overflow-x-auto">
+        <div class="sm:hidden divide-y divide-rule">
+${historyStackHtml(rows)}
+        </div>
+        <div class="hidden sm:block overflow-x-auto">
           <table class="w-full text-left">
             <thead><tr class="bg-shell">${headers}</tr></thead>
             <tbody>
-${rows}
+${tableRows}
             </tbody>
           </table>
         </div>

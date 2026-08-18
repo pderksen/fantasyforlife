@@ -95,9 +95,14 @@ export const SEASON_HONORS: Record<string, Honor[]> = {
 /**
  * The city word each team is known by, keyed by the full name every other file carries.
  *
- * For the places a full slate of names cannot fit — today the League History table's tie cells,
- * where two champions of one category share a column sized for one. Same call `PRIZE_WINNERS`
- * already makes by hand, kept here so the two can't drift once that table gets a page.
+ * For the places a full slate of names cannot fit: the League History table's tie cells, its
+ * Total Points and Best Record columns, and its whole stacked mobile layout, where a phone has
+ * room for one word. Same call `PRIZE_WINNERS` already makes by hand, kept here so the two
+ * can't drift once that table gets a page.
+ *
+ * The folded teams below appear only in `LEAGUE_HISTORY`'s pre-Sleeper rows and join on nothing.
+ * They are here because the mobile layout shortens every name it renders, so a name this map
+ * doesn't know would sit at full length beside a column of city words.
  */
 export const TEAM_CITIES: Record<string, string> = {
   "Clovis Jets": "Clovis",
@@ -110,6 +115,12 @@ export const TEAM_CITIES: Record<string, string> = {
   "South Town Freedom Fighters": "South Town",
   "Vancouver Moose Drool": "Vancouver",
   "Visalia Viagra Vipers": "Visalia",
+  // Folded, and named only by the history doc's FFL Champions section.
+  "Biola Slugglords": "Biola",
+  "Canton HOFers": "Canton",
+  "Chico Pico de Gallo": "Chico",
+  "Collet Winners": "Collet",
+  "Winnemucca Muckers": "Winnemucca",
 };
 
 /** The league's first season, and the far end of the history table's "still being compiled" note. */
@@ -140,13 +151,37 @@ export interface SeasonResult {
  * together.** A row may leave any name blank; only the pre-Sleeper seasons should need to.
  */
 export const LEAGUE_HISTORY: SeasonResult[] = [
-  // 2006–2023 are still to be filled in. Nothing in this repo or the Sleeper API records them:
-  // those seasons ran on MyFantasyLeague, whose archive carries rosters rather than results.
+  // 2006–2023 come from the "FFL Champions" section of the hand-kept `FFL History & Records`
+  // Google Doc, which is the only place those seasons are written down — they ran on
+  // MyFantasyLeague, whose archive carries rosters rather than results. The doc is private, so
+  // it is not in `ARCHIVE_LINKS`; find it in Drive by name. That
+  // section records the three bracket finishes and nothing else, so every pre-2025 row leaves
+  // Total Points and Best Record blank. Names of folded teams (Winnemucca, Chico, Canton,
+  // Collet, Biola) are kept as the doc writes them; they join on nothing and appear only here.
+  { season: "2006", champion: "Winnemucca Muckers", runnerUp: "Chico Pico de Gallo", toiletBowl: "Biola Slugglords" },
+  { season: "2007", champion: "Chico Pico de Gallo", runnerUp: "Dinkey Creek Dirt Clods", toiletBowl: "Visalia Viagra Vipers" },
+  { season: "2008", champion: "Winnemucca Muckers", runnerUp: "Chico Pico de Gallo", toiletBowl: "Dinkey Creek Dirt Clods" },
+  { season: "2009", champion: "Kingsburg Killaz", runnerUp: "Canton HOFers", toiletBowl: "Chico Pico de Gallo" },
+  { season: "2010", champion: "Clovis Jets", runnerUp: "Winnemucca Muckers", toiletBowl: "Chico Pico de Gallo" },
+  { season: "2011", champion: "Chico Pico de Gallo", runnerUp: "Kingsburg Killaz", toiletBowl: "South Town Freedom Fighters" },
+  { season: "2012", champion: "Kingsburg Killaz", runnerUp: "Visalia Viagra Vipers", toiletBowl: "Chico Pico de Gallo" },
+  { season: "2013", champion: "Visalia Viagra Vipers", runnerUp: "Chico Pico de Gallo", toiletBowl: "Winnemucca Muckers" },
+  { season: "2014", champion: "South Town Freedom Fighters", runnerUp: "Canton HOFers", toiletBowl: "Visalia Viagra Vipers" },
+  { season: "2015", champion: "Kingsburg Killaz", runnerUp: "Easton Evil Empire", toiletBowl: "Chico Pico de Gallo" },
+  { season: "2016", champion: "Vancouver Moose Drool", runnerUp: "Kingsburg Killaz", toiletBowl: "Collet Winners" },
+  { season: "2017", champion: "Chico Pico de Gallo", runnerUp: "South Town Freedom Fighters", toiletBowl: "Clovis Jets" },
+  { season: "2018", champion: "Dinkey Creek Dirt Clods", runnerUp: "Winnemucca Muckers", toiletBowl: "South Town Freedom Fighters" },
+  { season: "2019", champion: "Easton Evil Empire", runnerUp: "Clovis Jets", toiletBowl: "Dinkey Creek Dirt Clods" },
+  { season: "2020", champion: "Clovis Jets", runnerUp: "Sanger Squatty Pottys", toiletBowl: "South Town Freedom Fighters" },
+  { season: "2021", champion: "Easton Evil Empire", runnerUp: "Kingsburg Killaz", toiletBowl: "South Town Freedom Fighters" },
+  { season: "2022", champion: "Sanger Squatty Pottys", runnerUp: "Easton Evil Empire", toiletBowl: "Visalia Viagra Vipers" },
+  { season: "2023", champion: "Kingsburg Killaz", runnerUp: "Winnemucca Muckers", toiletBowl: "Lemoore Liberators" },
   {
     season: "2024",
-    // The champion and Toilet Bowl winner are the two owners in the trophy photo on the home
-    // page; the runner-up isn't recorded anywhere yet.
+    // Champion and Toilet Bowl are the two owners in the trophy photo on the home page; the
+    // runner-up comes from the history doc.
     champion: "Easton Evil Empire",
+    runnerUp: "Kingsburg Killaz",
     toiletBowl: "Clovis Jets",
   },
   {
