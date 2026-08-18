@@ -1079,14 +1079,13 @@ ${table}
 ${htmlHead({
     title: `${leagueName} - League History`,
     ogTitle: "League History",
-    description: "Champions, records, and the long story of the league. Est. 2006.",
+    description: "Champions, runners-up, and season honors for every recorded season.",
     siteName: leagueName,
   })}
 <body class="bg-cream text-ink font-sans antialiased">
 ${siteHeader(chrome)}
   <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
-    <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-2">League History</h1>
-    <p class="text-fern mb-8">Champions, records, and the long story of the league since ${esc(LEAGUE_FIRST_SEASON)}.</p>
+    <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-8">League History</h1>
 ${historyNavHtml(seasons)}
 ${newest ? honorBlocks(newest) : ""}${allTime}${earlier.map(honorBlocks).join("")}  </main>
 </body>
@@ -1442,14 +1441,13 @@ export function generatePrizesHtml(leagueName: string, navLinks: NavLink[], hasM
 ${htmlHead({
     title: `${leagueName} - Prize Tracker`,
     ogTitle: "Prize Tracker",
-    description: "Every prize the league pays out, tracked week by week and settled at season's end.",
+    description: "Prize winners by season, plus all-time winnings.",
     siteName: leagueName,
   })}
 <body class="bg-cream text-ink font-sans antialiased">
 ${siteHeader(chrome)}
   <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14">
-    <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-2">Prize Tracker</h1>
-    <p class="text-fern mb-8">Every prize the league pays out, season by season.</p>
+    <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-8">Prize Tracker</h1>
 ${prizesNavHtml(seasons, allTime !== "")}
 ${blocks}${prizeArchiveHtml()}
   </main>
