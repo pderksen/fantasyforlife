@@ -13,6 +13,7 @@ import {
   SEASON_HONORS,
   LEAGUE_HISTORY,
   LEAGUE_FIRST_SEASON,
+  TEAM_CITIES,
   getDraftDate,
   getLatestHonors,
   type Honor,
@@ -929,12 +930,63 @@ ${years}
 }
 
 /**
- * Every season on one line: champion, runner-up, Toilet Bowl.
+ * The League History table's two cell styles, lifted from the draft order card in
+ * `draftOrderHtml()` so the two lists match: the same `bg-shell` header strip, the same 15px
+ * rows divided by `border-t` hairlines. Edge padding is `px-5` like the card's rows, but only
+ * at the two ends — six columns of `px-5` would spend 240px of the measure on gutters. The
+ * `first:`/`last:` overrides beat the `px-4` beneath them on specificity, not source order, so
+ * this pair is safe in a way `${CARD} rounded-[14px]` is not.
+ *
+ * `border-t` on every body cell (rather than `border-b` and a flush last row) is what puts the
+ * rule under the header strip and leaves the card's own border to close the bottom.
+ */
+const HIST_TH = "px-4 first:pl-5 last:pr-5 py-[9px] text-left text-[11px] font-medium tracking-[0.12em] uppercase text-stone whitespace-nowrap";
+const HIST_TD = "px-4 first:pl-5 last:pr-5 py-2.5 border-t border-rule text-[15px] whitespace-nowrap";
+
+/**
+ * Names shortened for the League History table only, where six columns of team names have to
+ * fit one line each. Applied at render, so `LEAGUE_HISTORY` keeps the full names the rest of
+ * the repo joins on and a widened table only has to drop this step.
+ *
+ * Two rules, both narrow:
+ * - A tie (` & `, the only thing that puts two teams in one cell) drops to city words via
+ *   `TEAM_CITIES`, since a pair of full names is twice the width the column is sized for.
+ *   A name the map doesn't know passes through whole rather than disappearing.
+ * - "South Town Freedom Fighters" loses its nickname. At 26 characters it is the widest name
+ *   in the league by a wide margin, and it can land in any of the five columns.
+ */
+const HISTORY_SHORT_NAMES: Record<string, string> = {
+  "South Town Freedom Fighters": "South Town FF",
+};
+
+function shortenForHistory(name: string): string {
+  if (name.includes(" & ")) {
+    return name.split(" & ").map((n) => TEAM_CITIES[n] ?? n).join(" & ");
+  }
+  return HISTORY_SHORT_NAMES[name] ?? name;
+}
+
+/**
+ * Every season on one line: champion, runner-up, Toilet Bowl, total points, best record.
+ *
+ * The last two columns name a team the same way the first three do, with no point total and no
+ * win-loss record beside it: six columns of names stay scannable down the year, and the numbers
+ * are already on the honor cards above.
  *
  * Rendered newest-first, against a source list kept oldest-first, so `LEAGUE_HISTORY` reads as a
  * timeline while the page opens on the seasons anyone remembers. A row may name nobody at all,
  * which is the state most of the pre-Sleeper seasons are in — hence the dash for a blank cell
  * and the note under the table, which keeps an incomplete record from reading as a complete one.
+ *
+ * **Styled as the home page's draft order card**, not as the traded-picks tables: the same
+ * bordered card, `bg-shell` header strip, hairline row rules and 15px rows. It is the same kind
+ * of object — a short standing list of team names — and the two now read as a pair across the
+ * two pages.
+ *
+ * **Every cell is `whitespace-nowrap`**, so a name never wraps to a second line and the columns
+ * stay readable straight down. The cost is width: the card scrolls sideways rather than
+ * reflowing once six names exceed the measure, which is what the `overflow-x-auto` inside it is
+ * for, and what `shortenForHistory()` is holding off.
  */
 function leagueHistoryTableHtml(): string {
   if (LEAGUE_HISTORY.length === 0) return "";
@@ -942,10 +994,10 @@ function leagueHistoryTableHtml(): string {
   const rows = [...LEAGUE_HISTORY]
     .sort((a, b) => b.season.localeCompare(a.season))
     .map((r) => {
-      const cells = [r.champion, r.runnerUp, r.toiletBowl].map((v) => v
-        ? `<td class="${TP_TD}">${esc(v)}</td>`
-        : `<td class="${TP_TD_MUTED}">&mdash;</td>`);
-      return `      <tr><td class="${TP_TD} font-medium">${esc(r.season)}</td>${cells.join("")}</tr>`;
+      const cells = [r.champion, r.runnerUp, r.toiletBowl, r.totalPoints, r.bestRecord].map((v) => v
+        ? `<td class="${HIST_TD}">${esc(shortenForHistory(v))}</td>`
+        : `<td class="${HIST_TD} text-stone">&mdash;</td>`);
+      return `              <tr><td class="${HIST_TD} font-medium">${esc(r.season)}</td>${cells.join("")}</tr>`;
     })
     .join("\n");
 
@@ -953,21 +1005,23 @@ function leagueHistoryTableHtml(): string {
   // than written out, so filling in an older season shortens the sentence on its own.
   const earliest = [...LEAGUE_HISTORY].sort((a, b) => a.season.localeCompare(b.season))[0].season;
   const missing = Number(earliest) > Number(LEAGUE_FIRST_SEASON)
-    ? `\n    <p class="text-sm text-stone mt-3">${esc(LEAGUE_FIRST_SEASON)}&ndash;${esc(String(Number(earliest) - 1))} are still being compiled.</p>`
+    ? `\n      <p class="text-sm text-stone mt-3">${esc(LEAGUE_FIRST_SEASON)}&ndash;${esc(String(Number(earliest) - 1))} are still being compiled.</p>`
     : "";
 
-  const headers = ["Season", "Champion", "Runner-Up", "Toilet Bowl"]
-    .map((h) => `<th class="${TP_TH}">${h}</th>`)
+  const headers = ["Season", "Champion", "Runner-Up", "Toilet Bowl", "Total Points", "Best Record"]
+    .map((h) => `<th class="${HIST_TH}">${h}</th>`)
     .join("");
 
-  return `  <div class="overflow-x-auto -mx-1">
-  <table class="text-sm w-auto">
-    <thead><tr>${headers}</tr></thead>
-    <tbody class="${LAST_ROW_FLUSH}">
+  return `      <div class="${CARD} overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead><tr class="bg-shell">${headers}</tr></thead>
+            <tbody>
 ${rows}
-    </tbody>
-  </table>
-  </div>${missing}`;
+            </tbody>
+          </table>
+        </div>
+      </div>${missing}`;
 }
 
 /**

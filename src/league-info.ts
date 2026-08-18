@@ -91,6 +91,26 @@ export const SEASON_HONORS: Record<string, Honor[]> = {
   ],
 };
 
+/**
+ * The city word each team is known by, keyed by the full name every other file carries.
+ *
+ * For the places a full slate of names cannot fit — today the League History table's tie cells,
+ * where two champions of one category share a column sized for one. Same call `PRIZE_WINNERS`
+ * already makes by hand, kept here so the two can't drift once that table gets a page.
+ */
+export const TEAM_CITIES: Record<string, string> = {
+  "Clovis Jets": "Clovis",
+  "Dinkey Creek Dirt Clods": "Dinkey Creek",
+  "Easton Evil Empire": "Easton",
+  "Kingsburg Killaz": "Kingsburg",
+  "Lemoore Liberators": "Lemoore",
+  "Riverstone Stoners": "Riverstone",
+  "Sanger Squatty Pottys": "Sanger",
+  "South Town Freedom Fighters": "South Town",
+  "Vancouver Moose Drool": "Vancouver",
+  "Visalia Viagra Vipers": "Visalia",
+};
+
 /** The league's first season, and the far end of the history table's "still being compiled" note. */
 export const LEAGUE_FIRST_SEASON = "2006";
 
@@ -101,6 +121,10 @@ export interface SeasonResult {
   champion?: string;
   runnerUp?: string;
   toiletBowl?: string;
+  /** Most regular-season points scored. The team, not the number — the total lives on the honor card. */
+  totalPoints?: string;
+  /** Best regular-season record. Same rule: the team, not the record. */
+  bestRecord?: string;
 }
 
 /**
@@ -108,7 +132,7 @@ export interface SeasonResult {
  *
  * Deliberately separate from `SEASON_HONORS` rather than derived from it. Honors are a season's
  * free-form highlight reel (a year might record three cards or five, with labels chosen to suit),
- * while this is a fixed four-column spine that has to line up down twenty years. Matching a card
+ * while this is a fixed six-column spine that has to line up down twenty years. Matching a card
  * by its label string to fill this table would break the day a label is reworded.
  *
  * The cost is that a season with both records names its champion twice, so **change the two
@@ -129,6 +153,10 @@ export const LEAGUE_HISTORY: SeasonResult[] = [
     champion: "Visalia Viagra Vipers",
     runnerUp: "Sanger Squatty Pottys",
     toiletBowl: "South Town Freedom Fighters",
+    totalPoints: "Sanger Squatty Pottys",
+    // Two teams finished 10-4; the prize was split, so the cell names both. Full names here and
+    // in every row: ` & ` is the tie the table's renderer keys on to drop the pair to city words.
+    bestRecord: "Vancouver Moose Drool & Visalia Viagra Vipers",
   },
 ];
 

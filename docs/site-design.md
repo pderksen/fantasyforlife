@@ -81,9 +81,26 @@ relative to the page being written.
 `output/history.html`, from `generateHistoryHtml()` in `html.ts`, rewritten by
 `regenerateHistory()` in `index.ts` on every run right after the index.
 
-**The content is a placeholder.** The page was created so the "League History" nav item has
-somewhere to go; its sections get written by hand as the history is settled.
+**Sections**, in order: the sub-nav (all-time table, then each season newest-first), the newest
+season's honor cards from the same `honorsSection()` the home page uses, the all-time table, then
+each earlier season's cards. Content is hand-written in `league-info.ts` as the history is settled,
+which is why most of it is still blank.
 
+**The all-time table is the draft order card in table form.** `leagueHistoryTableHtml()` borrows
+`draftOrderHtml()`'s treatment wholesale — bordered card, `bg-shell` header strip, 15px rows split
+by `border-t` hairlines — rather than the `TP_*` styles the traded-picks tables use. Both are short
+standing lists of team names, so matching them makes the two pages read as one site; the traded
+picks tables are dense data and keep their own denser styling.
+
+- **Six columns, and no row wraps.** Season, Champion, Runner-Up, Toilet Bowl, Total Points, Best
+  Record. Cells are `whitespace-nowrap`, so the failure mode when names outgrow the 1080px measure
+  is a sideways scroll inside the card, never a two-line row. The last two columns name a team and
+  nothing else: the point total and the win-loss record stay on the honor cards above, where a
+  number has room to be a number.
+- **Abbreviation is a render step, not a data edit.** `shortenForHistory()` drops a tie to city
+  words (`TEAM_CITIES`) and shortens "South Town Freedom Fighters" to "South Town FF".
+  `LEAGUE_HISTORY` keeps full names, so widening the table later means deleting a call, not
+  rewriting rows. `LEAGUE_HISTORY` is stored oldest-first and rendered newest-first.
 - **A flat file, not `history/index.html`.** Cloudflare Pages serves either at `/history` (and
   301s `/history.html` to it), but a flat file also opens over `file://`, which is how this
   project previews pages locally. The nav link keeps the `.html` for that reason.
