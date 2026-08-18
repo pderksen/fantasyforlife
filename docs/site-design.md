@@ -55,9 +55,6 @@ differ per page:
   ran wordmark-only, which is what the toggle is for. The filename is a contract between
   `SITE_MARK` in `snapshot.ts` and the `<img src>` in `html.ts`, so renaming the asset means
   editing both.
-- **`tiersHref`** — the newest tiers page, from `newestNavLink()` in `snapshot.ts`. The home
-  page's hero card, its dark `PILL_LATEST` chip, and every page's "Current Tiers" nav item all
-  call that one helper, so they cannot disagree.
 - **`fullBleed`** — roster pages only. Roster tables are as wide as ten owners make them and
   run edge-to-edge, so a header capped at the home page's 1080px measure would float in a
   narrow column above a much wider table. The gutters match the roster wrapper's so the
@@ -70,8 +67,15 @@ the item becomes a live link.
 **A relative `href` names a file at the output root.** `navItemHtml()` prefixes it with
 `chrome.base`, so a single `SITE_NAV` entry resolves from the index (`history.html`) and from a
 season directory (`../history.html`) with no per-page config. Absolute hrefs (the Sleeper pill)
-pass through untouched, and `tiersHref` skips the prefix because the caller already resolved it
-relative to the page being written.
+pass through untouched.
+
+`SiteChrome` carried a fourth field, `tiersHref`, until the Keeper Tiers page landed: the
+"Current Tiers" nav item resolved at render time to whichever roster page was newest, which is
+why it needed a per-page href instead of a fixed one. That item is now "Keeper Tiers" pointing
+at `tiers.html`, an ordinary relative entry like History and Prizes, so every nav item resolves
+the same way and the field went with it. `newestNavLink()` still exists and still has exactly
+one caller: the home page's hero card, which is the only thing on the site that deliberately
+points at a specific season and stage.
 
 ### The header scrolls away, and every page closes on "Back to top"
 
@@ -105,16 +109,16 @@ height heuristic would be unverifiable guesswork (see *Verifying Changes* in `CL
 the link hides itself in the only sense that matters: a page that fits the viewport never puts
 it in front of anyone.
 
-**`spacing` is its only knob**, because the four pages close on blocks with different bottom
+**`spacing` is its only knob**, because the pages close on blocks with different bottom
 margins: `pt-2` under History's `mb-14` sections and under the home and Prize pages' closing
-link rows, `mt-8` on a roster page where it follows the traded picks directly. The home and
-Prize pages gained `pb-16` on their `main` (History already had it) so the link is not flush
-against the bottom of the document.
+link rows, `pt-6` under the Keeper Tiers card, `mt-8` on a roster page where it follows the
+traded picks directly. The home, Prize and Tiers pages carry `pb-16` on their `main` (History
+already had it) so the link is not flush against the bottom of the document.
 
 **On a roster page it returns the document, not the table.** A table scrolling inside its own
-`max-h` stays where it was; what comes back is the page top, which is where the chip bar and the
-Excel button live. The capture timestamp stays the last line, so the link sits above the
-`<footer>` there and below the final section everywhere else.
+`max-h` stays where it was; what comes back is the page top, which is where the chip bar lives.
+The capture timestamp stays the last line, so the link sits above the `<footer>` there and below
+the final section everywhere else.
 
 ---
 
@@ -387,8 +391,7 @@ picks tables are dense data and keep their own denser styling.
 - Root-level page, so it takes the index's chrome (`base: ""`, no `fullBleed`) and the same
   1080px measure.
 - It depends on no snapshot data, so unlike `regenerateIndex()` it writes even before any
-  roster page exists. The only thing it takes from the nav links is where "Current Tiers"
-  points.
+  roster page exists, and takes nothing at all from the nav links it is handed.
 
 ---
 
@@ -459,8 +462,13 @@ rule, which is why that button carries no handler and needs no form.
 **What the closing rows replaced.** A "Tiers by Season" chip grid and a "Past Seasons" section,
 which between them took a third of the page to say what two rows of links say. Gone with them:
 the `PILL_LATEST` dark chip (the hero card was already the newest-tiers shortcut, so it was
-saying the same thing twice) and the **Throwback Year badge**. Nothing on the site marks a
-throwback year now — worth knowing, since the next one is 2030.
+saying the same thing twice) and the **Throwback Year badge**.
+
+**The tiers row is now a single link.** It listed every tiers page individually until the Keeper
+Tiers hub landed; that list, the 2006–2024 archive link, and the Throwback badge all moved onto
+the hub, and what is left here is `All keeper tiers →`. The hero card above still opens the
+newest one, so this row exists only for the ones it isn't showing. The "Past seasons" row below
+it is unchanged.
 
 **Survivor is a notice here rather than a nav item, and it carries no link.** The contest runs in
 its own Sleeper league, and Sleeper renders a survivor league in its mobile app only, so there is
@@ -508,6 +516,56 @@ the row, and it joins the row the moment 2026 Post-Draft is generated and takes 
 
 ---
 
+## Keeper Tiers Page
+
+`output/tiers.html`, generated by `generateTiersHtml` in `src/html.ts`, served at `/tiers`. Root
+level, so it takes the index's chrome (`base: ""`, no `fullBleed`) and the same 1080px measure.
+A flat file rather than `tiers/index.html`, the same call the History and Prize pages make: it
+opens over `file://` during local preview.
+
+The page is a single card. A `bg-shell` header strip ("Season" / "Stage"), then one row per
+season newest-first, then a row for the pre-Sleeper archive. Each season row is the year at
+17–19px bold on the left, a Throwback badge where one applies, and that season's stages as
+`PILL_LINK` pills pushed right with `ml-auto`. Same card idiom as the home page's draft order
+list and the History table: `CARD` over `bg-shell`, rows on `border-t border-rule` hairlines.
+
+**Why the hub exists.** Every roster page's own nav lists only its season's stages, and this is
+the one page that crosses seasons — which is what lets that nav stay three chips as the league
+adds years. The list itself is not new: it was a "Tiers by Season" chip grid on the home page
+until the Aug 2026 redesign removed it for taking a third of that page. Giving it a page of its
+own is the thing that was missing then.
+
+**The rows are derived, not typed.** They come straight from `discoverPages()` by way of
+`buildIndexNavLinks()`, so a season appears the run after its first snapshot lands and gains a
+pill per stage with no edit here. Newest season first, keeping `discoverPages()`' own
+newest-stage-first order within each one — the same ordering the home page's closing rows used.
+
+**The archive is a row in the same card, not a section of its own, and it is typed like one.**
+The 2006–2024 seasons' tiers really are the next entries in this list; they just live in a Google
+Sheet (`ARCHIVE_LINKS.tiersSheet`). So the range takes the same 19px bold as a season year, and
+its destination is a `PILL_LINK` sitting where a season's stage pills sit — only the label and
+the trailing arrow differ. A lighter year or a plain text link there filed the whole pre-Sleeper
+era as a footnote to the list rather than a member of it, which is backwards: it is 19 of the
+league's 21 seasons. The range is derived from `LEAGUE_FIRST_SEASON` and `SLEEPER_FIRST_SEASON`,
+so it cannot claim years the sheet doesn't hold and the site doesn't serve.
+
+**The Throwback badge is back, and it is computed now.** `isThrowbackSeason()` in
+`league-info.ts` reads the five-year cadence from `THROWBACK_FIRST` (2025). The pre-redesign
+badge inferred a throwback year from a *missing pre-draft page*, which is true today and wrong
+the first time a pre-draft capture is simply skipped — a silent failure, since a wrong badge
+looks exactly like a right one. It is a filled forest chip rather than an outline: it is the one
+thing on the row that isn't a link, and an outlined chip beside outlined pills would read as a
+fourth destination.
+
+**The nav item points here, not at the newest page.** `SITE_NAV`'s first entry was "Current
+Tiers", resolving at render time through `newestNavLink()` to whichever roster page was newest.
+It is now "Keeper Tiers" → `tiers.html`. The nav is where you go when you don't already know
+which season and stage you want; the home page's hero card is what points at the newest, and it
+still does, advancing on its own from 2026 Pre-Draft to 2026 Post-Draft the run after that page
+is generated.
+
+---
+
 ## Roster Page
 
 Generated by `generateHtml` in `src/html.ts`. Light mode, cream body, site header, content in a
@@ -521,12 +579,26 @@ it changed.
 
 ### Chrome details
 
-- **Excel pill**: nav's last item, pushed right with `ml-auto` — a download icon plus "Excel",
-  linking `rosters-<type>-<season>-ffl.xlsx` as a sibling with the `download` attribute.
+- **Nav bar** (`navBar()`): an `← All Keeper Tiers` pill back to the hub, then this season's
+  own stages, the current one as a filled `PILL_ACTIVE` span. It lists **only this season** —
+  the hub is the one page that crosses seasons, which is what lets this row stay a fixed three
+  chips as the league adds years. The back-link replaced a `Home` pill; the header wordmark
+  above it already goes home, and from a roster page the hub is the more useful destination.
+  It says "All" because the page it sits on *is* keeper tiers: the word doing the work is the
+  one saying this opens every season's, not this one's.
+- **Excel pill**: no longer in that row. It sits below the roster table and its footnotes and
+  **above** the Traded Picks heading, left-aligned in its own `mt-8` block, labelled "Download
+  as Excel" because nothing beside it gives the download icon context any more. It links
+  `rosters-<type>-<season>-ffl.xlsx` as a sibling with the `download` attribute. Its old spot
+  was chosen so the workbook was reachable without scrolling past a full roster; the price was
+  a download sitting inside the page's own navigation, reading as one more place to go. Below
+  the pick table would be worse than above it: the workbook's second sheet *is* that table, so
+  a download under it reads as an export of the picks alone. The `mt-8` matches the Traded
+  Picks heading's own top margin so the two blocks share a rhythm.
   `PILL_EXPORT` shares `PILL_BOX` and `PILL_LINK_COLORS` with the other pills but **swaps**
   `inline-block` for `inline-flex` rather than adding it: two `display` utilities on one
   element resolve by stylesheet order, not attribute order, so the loser would be picked
-  silently.
+  silently. It dropped its `ml-auto` in the move, since alignment is now its wrapper's business.
 - **`SECTION_H2` is the only section heading style** — small uppercase tracked type, used by
   both the index sections and `tradedPicksSection()` on roster pages. It used to be index-only,
   with `tradedPicksSection()` carrying a hand-written duplicate that had to be kept in sync;

@@ -26,8 +26,6 @@ export interface NavItem {
   label: string;
   /** Live destination. Relative hrefs are resolved against the output root by the renderer. */
   href?: string;
-  /** Resolves at render time to the newest tiers page that exists. */
-  tiers?: boolean;
   /** Renders as the filled pill at the end of the bar. */
   pill?: boolean;
   /** Appends the ↗ mark and opens in a new tab. */
@@ -35,7 +33,10 @@ export interface NavItem {
 }
 
 export const SITE_NAV: NavItem[] = [
-  { label: "Current Tiers", tiers: true },
+  // Written to output/tiers.html, served at /tiers. The hub listing every season's tiers
+  // pages, not the newest one: the nav is where you go when you don't already know which
+  // season and stage you want. The home page's hero card is what points at the newest.
+  { label: "Keeper Tiers", href: "tiers.html" },
   // Written to output/prizes.html, served at /prizes. Same flat-file rule as history.html.
   { label: "Prize Tracker", href: "prizes.html" },
   // No Survivor item: it is not a page and never will be. `SURVIVOR` below says where it lives.
@@ -59,6 +60,27 @@ export const SURVIVOR = {
   label: "Survivor",
   line: "Runs in a separate Sleeper league, visible only in the Sleeper mobile app.",
 } as const;
+
+/**
+ * The first throwback season, and the cadence after it.
+ *
+ * Every fifth year nobody keeps a player: the whole league drafts fresh, so a throwback
+ * season has no keepers to carry and its pre-draft snapshot is skipped entirely. The tiers
+ * hub badges those years, since a season showing only two stages otherwise reads as a
+ * capture someone forgot to take.
+ *
+ * Derived from the cadence rather than inferred from a missing pre-draft page, which is what
+ * the pre-redesign badge did: that rule badges any season whose pre-draft capture was simply
+ * missed, and it would be wrong silently.
+ */
+const THROWBACK_FIRST = 2025;
+const THROWBACK_EVERY = 5;
+
+/** Whether a season drafts fresh, with no keepers carried from the year before. */
+export function isThrowbackSeason(season: string): boolean {
+  const year = Number(season);
+  return Number.isFinite(year) && year >= THROWBACK_FIRST && (year - THROWBACK_FIRST) % THROWBACK_EVERY === 0;
+}
 
 /**
  * When each season's draft starts, as an ISO string with an explicit offset.

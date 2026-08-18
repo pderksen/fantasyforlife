@@ -24,6 +24,7 @@ import {
   PRIZE_SEASONS,
   getDraftDate,
   getLatestHonors,
+  isThrowbackSeason,
   prizeSeasons,
   type Honor,
   type HonorIcon,
@@ -157,8 +158,11 @@ const YEAR_TILE = `${PILL} bg-shell border border-line text-ink no-underline tra
  * The Excel export pill. `inline-flex` replaces `inline-block` rather than joining it — two
  * `display` utilities on one element resolve by stylesheet order, not attribute order, so
  * whichever Tailwind emits last would win silently.
+ *
+ * No `ml-auto`: it used to be pushed to the right end of the roster page's chip row, and now
+ * closes the page above the capture timestamp, where its alignment is its wrapper's business.
  */
-const PILL_EXPORT = `inline-flex items-center gap-1.5 ${PILL_BOX} ${PILL_LINK_COLORS} ml-auto`;
+const PILL_EXPORT = `inline-flex items-center gap-1.5 ${PILL_BOX} ${PILL_LINK_COLORS}`;
 /**
  * Section label. Small uppercase tracked type sitting directly on the background rather than
  * a heavier heading — the tables and cards below carry the weight, so the labels stay out of
@@ -427,7 +431,7 @@ function tradedPicksSection(tradedPicks?: ResolvedTradedPick[]): string {
  * Where a page sits relative to the output root, and what the site header can show from there.
  *
  * Every page carries the same header, but the index sits at `output/` and roster pages sit a
- * directory down, so the avatar and the "Current Tiers" link need a prefix that differs per
+ * directory down, so the avatar and every relative nav href need a prefix that differs per
  * page. Passing it in beats guessing from the season, and keeps `generateIndexHtml` pure.
  */
 export interface SiteChrome {
@@ -439,8 +443,6 @@ export interface SiteChrome {
    * than to a broken image.
    */
   hasMark: boolean;
-  /** Newest tiers page, relative to this page. Absent before any roster page exists. */
-  tiersHref?: string;
   /**
    * Run the header's contents to the page edges instead of the home page's 1080px measure.
    *
@@ -466,11 +468,9 @@ function isAbsoluteHref(href: string): boolean {
 }
 
 function navItemHtml(item: NavItem, chrome: SiteChrome): string {
-  // `tiersHref` is resolved by the caller and already relative to this page; a plain
-  // `href` names a file at the output root, so it needs the prefix back out of a
+  // A relative `href` names a file at the output root, so it needs the prefix back out of a
   // season directory. Absolute ones (Sleeper) are left alone.
-  const own = item.href && !isAbsoluteHref(item.href) ? `${chrome.base}${item.href}` : item.href;
-  const href = item.tiers ? chrome.tiersHref : own;
+  const href = item.href && !isAbsoluteHref(item.href) ? `${chrome.base}${item.href}` : item.href;
   const label = esc(item.label) + (item.external ? " &#8599;" : "");
 
   if (!href) return `<span class="${NAV_PLANNED}" title="Coming soon">${label}</span>`;
@@ -512,11 +512,20 @@ function siteHeader(chrome: SiteChrome): string {
 const DOWNLOAD_ICON = `<svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 3a.75.75 0 0 1 .75.75v7.19l2.22-2.22a.75.75 0 1 1 1.06 1.06l-3.5 3.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 1 1 1.06-1.06l2.22 2.22V3.75A.75.75 0 0 1 10 3Z"/><path d="M3.75 12.5a.75.75 0 0 1 .75.75v1.25c0 .414.336.75.75.75h9.5a.75.75 0 0 0 .75-.75v-1.25a.75.75 0 0 1 1.5 0v1.25A2.25 2.25 0 0 1 14.75 16.75h-9.5A2.25 2.25 0 0 1 3 14.5v-1.25a.75.75 0 0 1 .75-.75Z"/></svg>`;
 
 /**
- * Nav bar for a season's pages: Home, that season's chips, then the Excel export pushed to
- * the right. The export sits here rather than under the table so it is reachable without
- * scrolling past a full roster, and wears the same pill as its neighbours so it stays quiet.
+ * Nav bar for a season's pages: back to the tiers hub, then that season's own stages.
+ *
+ * The back-link replaces the Home pill this row used to carry. The header wordmark above it
+ * already goes home, and from a roster page the useful destination is the hub — it is the one
+ * place that lists every other season, which this row deliberately does not: a chip per stage
+ * per season grows with the league, and the hub is what absorbs that growth. It reads "All
+ * Keeper Tiers" rather than "Keeper Tiers" because the page it sits on *is* keeper tiers; the
+ * word doing the work is the one saying this opens every season's, not this one's.
+ *
+ * The Excel export used to sit at the right end of this row and now sits below the table, in
+ * `exportRowHtml()`. Its old spot was chosen so it was reachable without scrolling past a full
+ * roster; the cost was a download inside the page's own navigation, reading as a place to go.
  */
-function navBar(navLinks: NavLink[], season: string, exportHref: string): string {
+function navBar(navLinks: NavLink[], season: string, tiersHref: string): string {
   const items = navLinks
     .filter((l) => l.season === season)
     .map((l) => l.current
@@ -524,10 +533,25 @@ function navBar(navLinks: NavLink[], season: string, exportHref: string): string
       : `<a href="${esc(l.href)}" class="${PILL_LINK}">${esc(l.chip)}</a>`)
     .join("\n      ");
   return `  <nav class="flex flex-wrap items-center gap-2 mb-6">
-      <a href="../index.html" class="${PILL_LINK}">Home</a>
+      <a href="${esc(tiersHref)}" class="${PILL_LINK}">&#8592; All Keeper Tiers</a>
       ${items}
-      <a href="${esc(exportHref)}" download class="${PILL_EXPORT}" title="Download this page as an Excel workbook">${DOWNLOAD_ICON}Excel</a>
     </nav>`;
+}
+
+/**
+ * The Excel download, below the roster table and its footnotes and above Traded Picks.
+ *
+ * Left-aligned in its own block, so it reads as the end of the roster rather than as one more
+ * destination — which is what it did at the right end of the chip row, where it used to sit.
+ * Below the Traded Picks table would be worse than above it: the workbook's second sheet *is*
+ * that pick table, so a download sitting under it reads as an export of the picks alone.
+ * `mt-8` matches the Traded Picks heading's own top margin, so the two blocks share a rhythm.
+ * The label spells the action out because nothing beside it gives the icon context any more.
+ */
+function exportRowHtml(exportHref: string): string {
+  return `  <div class="mt-8">
+    <a href="${esc(exportHref)}" download class="${PILL_EXPORT}" title="Download this page as an Excel workbook">${DOWNLOAD_ICON}Download as Excel</a>
+  </div>`;
 }
 
 // ── Roster page styles ──
@@ -575,8 +599,9 @@ export function generateHtml(
 
   const dataRows = renderGridRows(rows, rosters.length + (hasRoundColumn ? 1 : 0), hasRoundColumn);
 
+  const navHtml = navBar(navLinks, snapshot.season, `${chrome.base}tiers.html`);
   // Sibling file, written by the same run that writes this page.
-  const navHtml = navBar(navLinks, snapshot.season, exportFileName(snapshot.season, snapshot.snapshotType));
+  const exportHtml = exportRowHtml(exportFileName(snapshot.season, snapshot.snapshotType));
 
   const styles = TABLE_SCROLL_STYLES + ROSTER_STYLES + (hasRoundColumn ? ROUND_COL_STYLE : "");
   const roundTh = hasRoundColumn ? `      <th class="${TH}">Round</th>\n` : "";
@@ -604,6 +629,7 @@ ${roundTh}${headerCells}
 ${dataRows.join("\n")}
   </table>
   </div>${tableNotes(rosters, columnOrderNote(snapshot, grid))}
+${exportHtml}
 ${tradedPicksSection(tradedPicks)}
 ${backToTopHtml("mt-8")}
   <footer class="mt-8 text-xs text-stone">Data retrieved ${esc(formatPacificTime(snapshot.capturedAt))}</footer>
@@ -984,33 +1010,19 @@ const LIGHTBOX_SCRIPT = `  <script>
   </script>`;
 
 /**
- * The link rows the page closes on: every tiers page that isn't already the hero card, then
- * where the pre-Sleeper seasons live.
+ * The link rows the page closes on: one route into the tiers hub, then where the pre-Sleeper
+ * seasons live.
  *
- * This replaced the "Tiers by Season" chip grid and the "Past Seasons" section, which between
- * them took a third of the page to say what two rows of links say. The consequence to know: the
- * Throwback badge went with them, and nothing else on the site marks a throwback year.
+ * The tiers row used to list every page individually, and the Keeper Tiers hub now holds that
+ * list — along with the 2006–2024 archive link and the Throwback badge, both of which moved
+ * there. One link is what is left worth putting at the foot of the home page: the hero card
+ * above already opens the newest tiers, so this row is only for the ones it isn't showing.
  */
-function siteLinksHtml(navLinks: NavLink[], latest: NavLink | undefined): string {
-  // Newest season first, keeping `discoverPages()`' newest-type-first order within each one,
-  // and dropping whichever link the hero card is already showing.
-  const bySeason = new Map<string, NavLink[]>();
-  for (const link of navLinks) {
-    bySeason.set(link.season, [...(bySeason.get(link.season) ?? []), link]);
-  }
-  const history = [...bySeason.keys()].sort().reverse()
-    .flatMap((season) => bySeason.get(season)!)
-    .filter((l) => l !== latest);
-
-  const tiers = [
-    ...history.map((l) => `<a href="${esc(l.href)}" class="${LINK}">${esc(l.season)} ${esc(l.chip)}</a>`),
-    `<a href="${ARCHIVE_LINKS.tiersSheet}" target="_blank" rel="noopener noreferrer" class="${LINK}">2006&ndash;2024 archive &#x2197;</a>`,
-  ].join("\n        ");
-
+function siteLinksHtml(): string {
   return `    <div class="mt-16 border-t border-line pt-5 pb-12 text-sm flex flex-col gap-3.5">
       <div class="flex gap-6 flex-wrap items-baseline">
         <span class="${ROW_LABEL}">Tiers history</span>
-        ${tiers}
+        <a href="tiers.html" class="${LINK}">All keeper tiers &#8594;</a>
       </div>
       <div class="flex gap-6 flex-wrap items-baseline">
         <span class="${ROW_LABEL}">Past seasons</span>
@@ -1034,10 +1046,11 @@ export function generateIndexHtml(
   draftOrder?: DraftOrder,
   hasMark = false,
 ): string {
-  // The newest tiers published. Same helper the roster pages use for their header link, so
-  // the hero card, the closing link rows, and every page's "Current Tiers" agree by construction.
+  // The newest tiers published, and the only thing on the site that points at a specific
+  // stage: it advances on its own as each season's pages are generated. The nav item and the
+  // closing link row both go to the hub instead, which lists every stage of every season.
   const latest = newestNavLink(navLinks);
-  const chrome: SiteChrome = { base: "", hasMark, tiersHref: latest?.href };
+  const chrome: SiteChrome = { base: "", hasMark };
 
   // Draft order and gallery share a row on wide screens and stack on narrow ones.
   const columnsHtml = `
@@ -1056,12 +1069,104 @@ ${htmlHead({
 <body class="bg-cream text-ink font-sans antialiased">
 ${siteHeader(chrome)}
   <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
-${honorsHtml()}${heroHtml(latest, draftOrder?.season)}${columnsHtml}${survivorNoticeHtml()}${siteLinksHtml(navLinks, latest)}
+${honorsHtml()}${heroHtml(latest, draftOrder?.season)}${columnsHtml}${survivorNoticeHtml()}${siteLinksHtml()}
 ${backToTopHtml()}
   </main>
 ${lightboxHtml()}
 ${COUNTDOWN_SCRIPT}
 ${LIGHTBOX_SCRIPT}
+</body>
+</html>`;
+}
+
+// ── Keeper Tiers hub ──
+
+/**
+ * The badge on a season that drafts fresh.
+ *
+ * Filled forest rather than an outline: it is the one thing on the row that isn't a link, and
+ * an outlined chip beside three outlined pills would read as a fourth destination.
+ */
+const THROWBACK_BADGE = "inline-block rounded-md bg-forest text-parchment text-[11px] font-medium tracking-[0.08em] uppercase px-2 py-[3px]";
+
+/** A row of the tiers hub: the season, whatever badge it earns, and its stages on the right. */
+function tiersRowHtml(season: string, links: NavLink[]): string {
+  const pills = links
+    .map((l) => `<a href="${esc(l.href)}" class="${PILL_LINK}">${esc(l.chip)}</a>`)
+    .join("\n            ");
+  const badge = isThrowbackSeason(season)
+    ? `\n          <span class="${THROWBACK_BADGE}" title="Throwback year: no keepers, the whole league drafts fresh">Throwback</span>`
+    : "";
+
+  return `        <div class="flex items-center gap-3 flex-wrap px-5 py-3.5 border-t border-rule">
+          <span class="text-[19px] font-bold tracking-tight">${esc(season)}</span>${badge}
+          <span class="ml-auto flex gap-2 flex-wrap justify-end">
+            ${pills}
+          </span>
+        </div>`;
+}
+
+/**
+ * The Keeper Tiers hub: one row per season with its stages as pills, closing on the row for
+ * the seasons that predate Sleeper.
+ *
+ * The list this page carries used to be a chip grid on the home page, removed in the Aug 2026
+ * redesign for taking a third of that page. It comes back here because a hub is what makes the
+ * roster pages navigable without the home page's help: every roster page's nav lists only its
+ * own season's stages, and this is the one place that crosses seasons.
+ *
+ * The archive sits in the same card as a row of its own rather than under a heading of its own.
+ * Those seasons' tiers really are the next entries in this list, they just live in a Google
+ * Sheet, so the row names the range on the left exactly like a season and puts the destination
+ * where a season puts its pills.
+ *
+ * Rows come straight from `discoverPages()` by way of the nav links, so a season appears the
+ * run after its first snapshot lands and gains a pill per stage with no edit here.
+ */
+export function generateTiersHtml(leagueName: string, navLinks: NavLink[], hasMark = false): string {
+  const chrome: SiteChrome = { base: "", hasMark };
+
+  // Newest season first, keeping `discoverPages()`' newest-stage-first order within each one.
+  const bySeason = new Map<string, NavLink[]>();
+  for (const link of navLinks) {
+    bySeason.set(link.season, [...(bySeason.get(link.season) ?? []), link]);
+  }
+  const rows = [...bySeason.keys()].sort().reverse()
+    .map((season) => tiersRowHtml(season, bySeason.get(season)!))
+    .join("\n");
+
+  // Typed exactly like a season row, because it is one: those years' tiers are the next
+  // entries in this list and only the destination differs. A lighter year or a plain text
+  // link would file them as a footnote to the list instead of a member of it.
+  const archiveRow = `        <div class="flex items-center gap-3 flex-wrap px-5 py-3.5 border-t border-rule">
+          <span class="text-[19px] font-bold tracking-tight">${esc(LEAGUE_FIRST_SEASON)}&ndash;${Number(SLEEPER_FIRST_SEASON) - 1}</span>
+          <span class="ml-auto flex gap-2 flex-wrap justify-end">
+            <a href="${ARCHIVE_LINKS.tiersSheet}" target="_blank" rel="noopener noreferrer" class="${PILL_LINK}">Google Sheets Archive &#x2197;</a>
+          </span>
+        </div>`;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+${htmlHead({
+    title: `${leagueName} - Keeper Tiers`,
+    ogTitle: "Keeper Tiers",
+    description: "Roster tiers for every season and every stage of it, from pre-draft keepers to final rosters.",
+    siteName: leagueName,
+  })}
+<body class="bg-cream text-ink font-sans antialiased">
+${siteHeader(chrome)}
+  <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
+    <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-8">Keeper Tiers</h1>
+    <div class="${CARD} overflow-hidden">
+      <div class="flex items-center justify-between gap-3 px-5 py-[9px] bg-shell text-[11px] font-medium tracking-[0.12em] uppercase text-stone">
+        <span>Season</span>
+        <span>Stage</span>
+      </div>
+${rows}
+${archiveRow}
+    </div>
+${backToTopHtml("pt-6")}
+  </main>
 </body>
 </html>`;
 }
@@ -1637,7 +1742,7 @@ ${mflLinks}
  * exit rather than as another record.
  */
 export function generateHistoryHtml(leagueName: string, navLinks: NavLink[], hasMark = false): string {
-  const chrome: SiteChrome = { base: "", hasMark, tiersHref: newestNavLink(navLinks)?.href };
+  const chrome: SiteChrome = { base: "", hasMark };
 
   const seasons = Object.keys(SEASON_HONORS).sort().reverse();
   const [newest, ...earlier] = seasons;
@@ -2043,7 +2148,7 @@ function prizeArchiveHtml(): string {
  * fixed position instead of sinking another screen every August.
  */
 export function generatePrizesHtml(leagueName: string, navLinks: NavLink[], hasMark = false): string {
-  const chrome: SiteChrome = { base: "", hasMark, tiersHref: newestNavLink(navLinks)?.href };
+  const chrome: SiteChrome = { base: "", hasMark };
 
   const seasons = prizeSeasons();
   const [newest, ...earlier] = seasons;

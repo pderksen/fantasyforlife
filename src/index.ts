@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
-import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, getExportOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, getHistoryOutputPath, getPrizesOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft, resolveTrades, saveTrades, preDraftWindowClosed, hasSiteMark, syncStaticAssets, newestNavLink, SnapshotGuardError } from "./snapshot.js";
-import { generateHtml, generateIndexHtml, generateHistoryHtml, generatePrizesHtml, writeHtml, formatPacificDate } from "./html.js";
+import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, getExportOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, getHistoryOutputPath, getPrizesOutputPath, getTiersOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft, resolveTrades, saveTrades, preDraftWindowClosed, hasSiteMark, syncStaticAssets, SnapshotGuardError } from "./snapshot.js";
+import { generateHtml, generateIndexHtml, generateTiersHtml, generateHistoryHtml, generatePrizesHtml, writeHtml, formatPacificDate } from "./html.js";
 import { generateWorkbook, writeWorkbook } from "./xlsx.js";
 import { getLeagueDrafts, getDraftPicks, getDraftTradedPicksRaw, fetchAllPlayers, getLeagueTradedPicks, getPickTrades, getTrades, getLeague } from "./sleeper-api.js";
 import { getTierConfig, getLatestDraftOrder } from "./tiers.js";
@@ -96,9 +96,20 @@ async function regenerateIndex(): Promise<void> {
 }
 
 /**
+ * Rewrite the Keeper Tiers hub, the page listing every season's tiers pages.
+ *
+ * Written on every run like the other root pages, and unlike them it is the one whose content
+ * is entirely the nav links: a season appears here the run after its first snapshot lands.
+ */
+async function regenerateTiers(): Promise<void> {
+  const outputPath = getTiersOutputPath();
+  await writeHtml(generateTiersHtml(LEAGUE_NAME, buildIndexNavLinks(), hasSiteMark()), outputPath);
+  console.log(`Tiers written: ${outputPath}`);
+}
+
+/**
  * Rewrite the League History page. Unlike the index it depends on no snapshot data, so it is
- * written on every run regardless of whether any roster page exists yet — the only thing it
- * takes from the nav links is where "Current Tiers" points.
+ * written on every run regardless of whether any roster page exists yet.
  */
 async function regenerateHistory(): Promise<void> {
   const outputPath = getHistoryOutputPath();
@@ -109,7 +120,7 @@ async function regenerateHistory(): Promise<void> {
 /**
  * Rewrite the Prize Tracker page. Like the History page it reads no snapshot data — the prize
  * pool is hand-kept in `PRIZE_SEASONS` — so it is written on every run regardless of what has
- * been captured, and only takes where "Current Tiers" points from the nav links.
+ * been captured.
  */
 async function regeneratePrizes(): Promise<void> {
   const outputPath = getPrizesOutputPath();
@@ -135,8 +146,8 @@ async function writeRosterOutputs(snapshot: Snapshot, inputs: RosterPageInputs):
   const { season, snapshotType } = snapshot;
 
   // Roster pages sit one directory down from the output root, so the site header's avatar
-  // and "Current Tiers" link need to climb back out.
-  const chrome = { base: "../", hasMark: hasSiteMark(), tiersHref: newestNavLink(navLinks)?.href, fullBleed: true };
+  // and every relative nav link need to climb back out.
+  const chrome = { base: "../", hasMark: hasSiteMark(), fullBleed: true };
 
   const outputPath = getOutputPath(season, snapshotType);
   await writeHtml(generateHtml(snapshot, navLinks, ownerOrder, tiers, draftRounds, tradedPicks, chrome), outputPath);
@@ -390,6 +401,7 @@ async function main(): Promise<void> {
 
   // Always regenerate the index page to pick up any new snapshots
   await regenerateIndex();
+  await regenerateTiers();
   await regenerateHistory();
   await regeneratePrizes();
 

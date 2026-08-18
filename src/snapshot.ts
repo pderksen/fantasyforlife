@@ -651,9 +651,9 @@ export function buildIndexNavLinks(): NavLink[] {
  * The newest tiers page that exists: newest season, newest snapshot type within it.
  *
  * `discoverPages()` walks seasons oldest-first and types newest-first, so the answer is the
- * first link belonging to the last season. Both the home page's hero card and every page's
- * "Current Tiers" nav item point here, and it advances on its own — 2026 Pre-Draft today,
- * 2026 Post-Draft the moment that page is generated.
+ * first link belonging to the last season. The home page's hero card points here and advances
+ * on its own — 2026 Pre-Draft today, 2026 Post-Draft the moment that page is generated. The
+ * "Keeper Tiers" nav item deliberately does not: it goes to the hub, which lists every stage.
  */
 export function newestNavLink(links: NavLink[]): NavLink | undefined {
   const newestSeason = links[links.length - 1]?.season;
@@ -676,6 +676,14 @@ export function getHistoryOutputPath(): string {
 /** The Prize Tracker page. Flat file at the output root, same rule as the History page. */
 export function getPrizesOutputPath(): string {
   return join(DATA_DIR, "..", "output", "prizes.html");
+}
+
+/**
+ * The Keeper Tiers hub, listing every season's tiers pages. Flat file at the output root,
+ * same rule as the History and Prize pages.
+ */
+export function getTiersOutputPath(): string {
+  return join(DATA_DIR, "..", "output", "tiers.html");
 }
 
 // ── Static assets ──
