@@ -1010,25 +1010,34 @@ const LIGHTBOX_SCRIPT = `  <script>
   </script>`;
 
 /**
- * The link rows the page closes on: one route into the tiers hub, then where the pre-Sleeper
- * seasons live.
+ * The link rows the page closes on: where the seasons live off-site, then Sleeper's help centre.
  *
- * The tiers row used to list every page individually, and the Keeper Tiers hub now holds that
- * list — along with the 2006–2024 archive link and the Throwback badge, both of which moved
- * there. One link is what is left worth putting at the foot of the home page: the hero card
- * above already opens the newest tiers, so this row is only for the ones it isn't showing.
+ * Both rows are destinations this site does not hold. The block opened on a "Tiers history" row
+ * into the tiers hub until Aug 2026, a third route to that one page: the header nav carries it
+ * from every page and the hero card above opens the newest season of it. The hub keeps the two
+ * routes it earns, and the foot of the page keeps only what lives elsewhere.
+ *
+ * The two hosts stack rather than sharing a line, in a `flex-col` beside the label: the Sleeper
+ * link keeps the menu path that finds the old leagues sitting next to it, which is the only
+ * thing that path explains, and MyFantasyLeague reads as the line below rather than as a third
+ * item in a sentence about Sleeper. The outer row is still `items-baseline`, so the label lines
+ * up with the first of the two.
  */
 function siteLinksHtml(): string {
   return `    <div class="mt-16 border-t border-line pt-5 pb-12 text-sm flex flex-col gap-3.5">
       <div class="flex gap-6 flex-wrap items-baseline">
-        <span class="${ROW_LABEL}">Tiers history</span>
-        <a href="tiers.html" class="${LINK}">All keeper tiers &#8594;</a>
+        <span class="${ROW_LABEL}">Past seasons</span>
+        <div class="flex flex-col gap-2">
+          <div class="flex gap-6 flex-wrap items-baseline">
+            <a href="${ARCHIVE_LINKS.sleeper}" target="_blank" rel="noopener noreferrer" class="${LINK}">2025+ on Sleeper &#x2197;</a>
+            <span class="text-stone">Go to Settings &rsaquo; League History &rsaquo; Previous Leagues</span>
+          </div>
+          <a href="${ARCHIVE_LINKS.myFantasyLeague}" target="_blank" rel="noopener noreferrer" class="${LINK}">2006&ndash;2024 on MyFantasyLeague &#x2197;</a>
+        </div>
       </div>
       <div class="flex gap-6 flex-wrap items-baseline">
-        <span class="${ROW_LABEL}">Past seasons</span>
-        <a href="${ARCHIVE_LINKS.sleeper}" target="_blank" rel="noopener noreferrer" class="${LINK}">2025+ on Sleeper &#x2197;</a>
-        <span class="text-stone">Settings &rsaquo; League History &rsaquo; Previous Leagues</span>
-        <a href="${ARCHIVE_LINKS.myFantasyLeague}" target="_blank" rel="noopener noreferrer" class="${LINK}">2006&ndash;2024 on MyFantasyLeague &#x2197;</a>
+        <span class="${ROW_LABEL}">Help</span>
+        <a href="${ARCHIVE_LINKS.sleeperSupport}" target="_blank" rel="noopener noreferrer" class="${LINK}">Sleeper Support &#x2197;</a>
       </div>
     </div>`;
 }

@@ -412,9 +412,9 @@ held to a 1080px measure. Exact classes live in `html.ts`; this documents struct
    `league-info.ts`.
 4. **Survivor notice** — one band, no link. `survivorNoticeHtml()`, copy from `SURVIVOR` in
    `league-info.ts`.
-5. **Closing link rows** — "Tiers history" (every tiers page the hero card isn't already
-   showing, newest first, then the 2006–2024 sheet) and "Past seasons" (Sleeper, where its
-   previous-leagues menu is, and MyFantasyLeague).
+5. **Closing link rows** — "Past seasons" (Sleeper with the in-app menu path that finds the old
+   leagues, then MyFantasyLeague on the line below) and "Help" (Sleeper's fantasy football
+   support centre). Both rows point off-site; everything this site publishes is in the header nav.
 
 **Honors lead, navigation follows.** The order above inverts what the Aug 2026 redesign shipped,
 where the hero cards came first. A finished season's champion is the thing worth opening on; the
@@ -464,11 +464,19 @@ which between them took a third of the page to say what two rows of links say. G
 the `PILL_LATEST` dark chip (the hero card was already the newest-tiers shortcut, so it was
 saying the same thing twice) and the **Throwback Year badge**.
 
-**The tiers row is now a single link.** It listed every tiers page individually until the Keeper
-Tiers hub landed; that list, the 2006–2024 archive link, and the Throwback badge all moved onto
-the hub, and what is left here is `All keeper tiers →`. The hero card above still opens the
-newest one, so this row exists only for the ones it isn't showing. The "Past seasons" row below
-it is unchanged.
+**The tiers row is gone.** It listed every tiers page individually until the Keeper Tiers hub
+landed; that list, the 2006–2024 archive link, and the Throwback badge all moved onto the hub,
+leaving one `All keeper tiers →` link, and in Aug 2026 that went too. "Keeper Tiers" is a header
+nav item on every page and the hero card above opens the newest season of it, so a row at the
+foot was a third route to one page. What replaced it is a "Help" row: Sleeper's own support
+centre, which is the kind of thing the foot of a page is for and the header has no slot for.
+
+**The two hosts stack inside the "Past seasons" row**, Sleeper on the first line with the menu
+path beside it and MyFantasyLeague on the second, held by a `flex-col` between the label and the
+links. One line of three items put the menu path either between the two links or after both, and
+it explains Sleeper's app only: next to anything else it reads as belonging to the last link it
+follows. Stacking also gives each host its own line at every width instead of letting the wrap
+point decide, which is what a two-host list of years should look like.
 
 **Survivor is a notice here rather than a nav item, and it carries no link.** The contest runs in
 its own Sleeper league, and Sleeper renders a survivor league in its mobile app only, so there is
@@ -502,17 +510,8 @@ deterministic — only the counter reads the viewer's clock, so regenerating pro
 With JS off the card still reads as a date, with en dashes where the numbers go. The offset in
 the ISO string is required: a bare local datetime would mean a different instant per time zone.
 
-**Tiers history order.** Newest season first, and within a season newest type first
-(End-of-Season, Post-Draft, Pre-Draft). The within-season half comes free from `discoverPages()`
-in `snapshot.ts` (ordered by `SNAPSHOT_TYPE_ORDER`), which walks seasons *oldest*-first, so
-`siteLinksHtml()` groups and reverses by season rather than reversing the flat list — that would
-flip the type order too. Labels are `<season> <chip>`, the chip being `SNAPSHOT_TYPE_LABELS`
-with " Rosters" stripped. Every page is a roster snapshot, so `NavLink.page` is a plain
-`SnapshotType`.
-
-The row drops whichever link the hero card is already showing, by identity against
-`newestNavLink()`. So it advances by itself: 2026 Pre-Draft is the hero today and absent from
-the row, and it joins the row the moment 2026 Post-Draft is generated and takes the card.
+**Season-by-season tiers ordering lives on the hub**, not here: `siteLinksHtml()` takes no
+`NavLink` list at all now, and the Keeper Tiers page section below carries the ordering rule.
 
 ---
 

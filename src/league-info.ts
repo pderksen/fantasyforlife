@@ -39,11 +39,11 @@ export const SITE_NAV: NavItem[] = [
   { label: "Keeper Tiers", href: "tiers.html" },
   // Written to output/prizes.html, served at /prizes. Same flat-file rule as history.html.
   { label: "Prize Tracker", href: "prizes.html" },
-  // No Survivor item: it is not a page and never will be. `SURVIVOR` below says where it lives.
-  { label: "Official Rules" },
   // Written to output/history.html, which Cloudflare Pages serves at /history. The link
   // keeps the extension so it also resolves over file:// during local preview.
   { label: "League History", href: "history.html" },
+  // No Survivor item: it is not a page and never will be. `SURVIVOR` below says where it lives.
+  { label: "Official Rules" },
   { label: "Photo Gallery" },
   { label: "Sleeper", href: "https://sleeper.com/leagues", pill: true, external: true },
 ];
@@ -602,4 +602,9 @@ export const ARCHIVE_LINKS = {
   /** Newest MFL season, the one the home page's single archive link points at. */
   myFantasyLeague: mflHomeUrl("2024", "30136"),
   sleeper: "https://sleeper.com/leagues",
+  /**
+   * Sleeper's fantasy football help centre, linked from the home page footer. Not an archive,
+   * but the same kind of off-site destination: something a reader needs and no page here holds.
+   */
+  sleeperSupport: "https://support.sleeper.com/en/collections/410900-fantasy-football",
 } as const;
