@@ -146,9 +146,16 @@ export interface SeasonResult {
   champion?: string;
   runnerUp?: string;
   toiletBowl?: string;
-  /** Most regular-season points scored. The team, not the number — the total lives on the honor card. */
+  /** Most points scored over the full season. The team, not the number — the total lives on the honor card. */
   totalPoints?: string;
-  /** Best regular-season record. Same rule: the team, not the record. */
+  /**
+   * Best regular-season record. Same rule: the team, not the record.
+   *
+   * **Nothing renders this.** The History table dropped its Best Record column in Aug 2026 to
+   * buy back the width that lets Total Points spell a team out; the 2025 value is kept because
+   * it is a split tie recorded nowhere else in the repo, and re-adding the column is then a
+   * one-line edit to `HISTORY_COLUMNS`. A new season need not fill it.
+   */
   bestRecord?: string;
 }
 
@@ -157,19 +164,19 @@ export interface SeasonResult {
  *
  * Deliberately separate from `SEASON_HONORS` rather than derived from it. Honors are a season's
  * free-form highlight reel (a year might record three cards or five, with labels chosen to suit),
- * while this is a fixed six-column spine that has to line up down twenty years. Matching a card
+ * while this is a fixed five-column spine that has to line up down twenty years. Matching a card
  * by its label string to fill this table would break the day a label is reworded.
  *
- * The cost is that a season with both records names its champion twice, so **change the two
- * together.** A row may leave any name blank; only the pre-Sleeper seasons should need to.
+ * The cost is that a season naming the same team on a card and in a row says it twice, so **change
+ * the two together.** A row may leave any name blank; only the pre-Sleeper seasons should need to.
  */
 export const LEAGUE_HISTORY: SeasonResult[] = [
   // 2006–2023 come from the "FFL Champions" section of the hand-kept `FFL History & Records`
   // Google Doc, which is the only place those seasons are written down — they ran on
   // MyFantasyLeague, whose archive carries rosters rather than results. The doc is private, so
   // it is not in `ARCHIVE_LINKS`; find it in Drive by name. That
-  // section records the three bracket finishes and nothing else, so every pre-2025 row leaves
-  // Total Points and Best Record blank. Names of folded teams (Winnemucca, Chico, Canton,
+  // section records the three bracket finishes and nothing else, so every pre-2023 row leaves
+  // Total Points blank. Names of folded teams (Winnemucca, Chico, Canton,
   // Collet, Biola) are kept as the doc writes them; they join on nothing and appear only here.
   { season: "2006", champion: "Winnemucca Muckers", runnerUp: "Chico Pico de Gallo", toiletBowl: "Biola Slugglords" },
   { season: "2007", champion: "Chico Pico de Gallo", runnerUp: "Dinkey Creek Dirt Clods", toiletBowl: "Visalia Viagra Vipers" },
@@ -188,7 +195,16 @@ export const LEAGUE_HISTORY: SeasonResult[] = [
   { season: "2020", champion: "Clovis Jets", runnerUp: "Sanger Squatty Pottys", toiletBowl: "South Town Freedom Fighters" },
   { season: "2021", champion: "Easton Evil Empire", runnerUp: "Kingsburg Killaz", toiletBowl: "South Town Freedom Fighters" },
   { season: "2022", champion: "Sanger Squatty Pottys", runnerUp: "Easton Evil Empire", toiletBowl: "Visalia Viagra Vipers" },
-  { season: "2023", champion: "Kingsburg Killaz", runnerUp: "Winnemucca Muckers", toiletBowl: "Lemoore Liberators" },
+  {
+    season: "2023",
+    champion: "Kingsburg Killaz",
+    runnerUp: "Winnemucca Muckers",
+    toiletBowl: "Lemoore Liberators",
+    // 2,211.66 over the full season, from the 2023 tab of `ARCHIVE_LINKS.prizeSheet` ("Highest
+    // total points for the entire season"), which is the same line 2025's figure comes from.
+    // The sheet names teams by city word; expanded here, since every row stores the full name.
+    totalPoints: "Dinkey Creek Dirt Clods",
+  },
   {
     season: "2024",
     // Champion and Toilet Bowl are the two owners in the trophy photo on the home page; the
@@ -196,6 +212,8 @@ export const LEAGUE_HISTORY: SeasonResult[] = [
     champion: "Easton Evil Empire",
     runnerUp: "Kingsburg Killaz",
     toiletBowl: "Clovis Jets",
+    // 2,336.34, from the 2024 tab of the same workbook.
+    totalPoints: "Lemoore Liberators",
   },
   {
     season: "2025",

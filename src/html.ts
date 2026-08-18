@@ -980,7 +980,7 @@ ${years}
  * The League History table's two cell styles, lifted from the draft order card in
  * `draftOrderHtml()` so the two lists match: the same `bg-shell` header strip, the same 15px
  * rows divided by `border-t` hairlines. Edge padding is `px-5` like the card's rows, but only
- * at the two ends — six columns of `px-5` would spend 240px of the measure on gutters. The
+ * at the two ends — five columns of `px-5` would spend 200px of the measure on gutters. The
  * `first:`/`last:` overrides beat the `px-4` beneath them on specificity, not source order, so
  * this pair is safe in a way `${CARD} rounded-[14px]` is not.
  *
@@ -991,7 +991,7 @@ const HIST_TH = "px-4 first:pl-5 last:pr-5 py-[9px] text-left text-[11px] font-m
 const HIST_TD = "px-4 first:pl-5 last:pr-5 py-2.5 border-t border-rule text-[15px] whitespace-nowrap";
 
 /**
- * Names shortened for the League History table only, where six columns of team names have to
+ * Names shortened for the League History table only, where four columns of team names have to
  * fit one line each. Applied at render, so `LEAGUE_HISTORY` keeps the full names the rest of
  * the repo joins on and a widened table only has to drop this step.
  *
@@ -1000,7 +1000,7 @@ const HIST_TD = "px-4 first:pl-5 last:pr-5 py-2.5 border-t border-rule text-[15p
  *   `TEAM_CITIES`, since a pair of full names is twice the width the column is sized for.
  *   A name the map doesn't know passes through whole rather than disappearing.
  * - "South Town Freedom Fighters" loses its nickname. At 26 characters it is the widest name
- *   in the league by a wide margin, and it can land in any of the three columns that use this.
+ *   in the league by a wide margin, and it can land in any of the four columns that use this.
  */
 const HISTORY_SHORT_NAMES: Record<string, string> = {
   "South Town Freedom Fighters": "South Town FF",
@@ -1009,8 +1009,9 @@ const HISTORY_SHORT_NAMES: Record<string, string> = {
 /**
  * Every team named in a cell reduced to its city word, a tie's pair included.
  *
- * A name `TEAM_CITIES` doesn't know passes through whole, which is the safe failure: a new team
- * reads long beside a column of city words rather than vanishing from the table.
+ * The stacked mobile layout runs every value through this, and `shortenForHistory()` falls back
+ * to it for a tie. A name `TEAM_CITIES` doesn't know passes through whole, which is the safe
+ * failure: a new team reads long beside a column of city words rather than vanishing.
  */
 function cityWords(name: string): string {
   return name.split(" & ").map((n) => TEAM_CITIES[n] ?? n).join(" & ");
@@ -1022,26 +1023,28 @@ function shortenForHistory(name: string): string {
 }
 
 /**
- * The five name columns of the League History table, in order, declared once because two
+ * The four name columns of the League History table, in order, declared once because two
  * layouts render them: the table at `sm` and up, the stacked blocks below it.
  *
- * `city` marks a column that reads as a city word at **every** width. The two stat columns take
- * it because they answer "who scored the most" rather than identifying a team on its own, so
- * one word says it, and cutting them to one word each is what buys back the measure the
- * twenty-season backfill spent. The three bracket columns keep full names on the wide layout.
+ * **The three bracket finishes run first, in finish order**, and Total Points follows as the
+ * one column that isn't a bracket result. The honor cards above the table run in a different
+ * order (Total Points third); the two lists are ordered on their own terms and neither follows
+ * the other.
+ *
+ * Every column names a team at full length on the wide layout, through `shortenForHistory()`;
+ * dropping the Best Record column is what bought back the measure that pays for it. The stack
+ * shortens everything to a city word regardless, since a phone has room for one word.
  */
 interface HistoryColumn {
   header: string;
   value: (r: SeasonResult) => string | undefined;
-  city?: boolean;
 }
 
 const HISTORY_COLUMNS: HistoryColumn[] = [
   { header: "Champion", value: (r) => r.champion },
   { header: "Runner-Up", value: (r) => r.runnerUp },
   { header: "Toilet Bowl", value: (r) => r.toiletBowl },
-  { header: "Total Points", value: (r) => r.totalPoints, city: true },
-  { header: "Best Record", value: (r) => r.bestRecord, city: true },
+  { header: "Total Points", value: (r) => r.totalPoints },
 ];
 
 const HIST_STACK_DT = "text-[11px] font-medium tracking-[0.1em] uppercase text-stone pt-[5px]";
@@ -1050,15 +1053,15 @@ const HIST_STACK_DD = "text-[15px]";
 /**
  * The same seasons as one block each, for phones.
  *
- * Six columns of team names do not fit a 390px viewport at any font size, so below `sm` the
+ * Five columns of team names do not fit a 390px viewport at any font size, so below `sm` the
  * table stops being a table: each season becomes its own labeled block and the page scrolls the
  * one direction a phone scrolls. **Every name here is a city word** — a block is read one
  * season at a time, so the full name buys nothing and costs a wrapped line.
  *
  * A field with no name recorded is **left out**, not dashed. The dash on the wide layout is
- * holding a column open; here there is no column to hold, and nineteen of twenty seasons would
- * otherwise carry two dashed lines apiece. A season with nothing at all still renders its year,
- * so the list never skips one.
+ * holding a column open; here there is no column to hold, and seventeen of the twenty seasons would
+ * otherwise carry a dashed Total Points line. A season with nothing at all still renders its
+ * year, so the list never skips one.
  */
 function historyStackHtml(rows: SeasonResult[]): string {
   return rows
@@ -1082,12 +1085,12 @@ function historyStackHtml(rows: SeasonResult[]): string {
 }
 
 /**
- * Every season on one line: champion, runner-up, Toilet Bowl, total points, best record.
+ * Every season on one line: champion, runner-up, Toilet Bowl, total points.
  *
- * The last two columns name a team the same way the first three do, with no point total and no
- * win-loss record beside it: six columns of names stay scannable down the year, and the numbers
- * are already on the honor cards above. They name it in one word (`HISTORY_COLUMNS`), which is
- * the difference between the table fitting a laptop and scrolling on one.
+ * Total Points names a team the same way the bracket columns do, with no point total beside it:
+ * five columns of names stay scannable down the year, and the number is already on the honor
+ * card above. It reads at full length now that Best Record is gone; that column's width is what
+ * pays for it.
  *
  * Rendered newest-first, against a source list kept oldest-first, so `LEAGUE_HISTORY` reads as a
  * timeline while the page opens on the seasons anyone remembers. A row may name nobody at all,
@@ -1108,7 +1111,7 @@ function historyStackHtml(rows: SeasonResult[]): string {
  *
  * **Every table cell is `whitespace-nowrap`**, so a name never wraps to a second line and the
  * columns stay readable straight down. The cost is width: the card scrolls sideways rather than
- * reflowing once six names exceed the measure, which is what the `overflow-x-auto` inside it is
+ * reflowing once five names exceed the measure, which is what the `overflow-x-auto` inside it is
  * for, and what `shortenForHistory()` is holding off. The stack has no such budget to protect,
  * so it does not use it.
  */
@@ -1122,7 +1125,7 @@ function leagueHistoryTableHtml(): string {
       const cells = HISTORY_COLUMNS.map((c) => {
         const v = c.value(r);
         return v
-          ? `<td class="${HIST_TD}">${esc(c.city ? cityWords(v) : shortenForHistory(v))}</td>`
+          ? `<td class="${HIST_TD}">${esc(shortenForHistory(v))}</td>`
           : `<td class="${HIST_TD} text-stone">&mdash;</td>`;
       });
       return `                <tr><td class="${HIST_TD} font-medium">${esc(r.season)}</td>${cells.join("")}</tr>`;
@@ -1324,7 +1327,7 @@ ${tiles}
  * The prize ledger's cell styles.
  *
  * Deliberately **not** the History table's rule that every cell is `whitespace-nowrap`. That
- * table is six columns of team names, where wrapping helps nobody and sideways scroll is the
+ * table is five columns of team names, where wrapping helps nobody and sideways scroll is the
  * right trade. This one is a single prose column ("Top single player, single week") beside
  * three short ones, on the page most likely to be opened from a phone on a Tuesday, so the
  * label wraps and only the short columns hold their line.

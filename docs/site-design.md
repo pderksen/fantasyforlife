@@ -91,11 +91,18 @@ by `border-t` hairlines — rather than the `TP_*` styles the traded-picks table
 standing lists of team names, so matching them makes the two pages read as one site; the traded
 picks tables are dense data and keep their own denser styling.
 
-- **Six columns, and no row wraps.** Season, Champion, Runner-Up, Toilet Bowl, Total Points, Best
-  Record. Cells are `whitespace-nowrap`, so the failure mode when names outgrow the 1080px measure
-  is a sideways scroll inside the card, never a two-line row. The last two columns name a team and
-  nothing else: the point total and the win-loss record stay on the honor cards above, where a
-  number has room to be a number.
+- **Five columns, and no row wraps.** Season, Champion, Runner-Up, Toilet Bowl, Total Points:
+  the three bracket finishes in finish order, then the one column that isn't a bracket result.
+  The honor cards above run Total Points third instead; the two lists are ordered on their own
+  terms. Cells are `whitespace-nowrap`, so the failure mode when names outgrow the 1080px
+  measure is a sideways scroll inside the card, never a two-line row. Total Points names a team
+  and nothing else: the point total stays on the honor card above, where a number has room to
+  be a number.
+- **Best Record was a sixth column and was dropped (Aug 2026).** Six name columns only fit by
+  cutting the two stat columns to city words; at five, Total Points spells its team out like the
+  bracket columns do, which is the trade that was made. `SeasonResult.bestRecord` survives in
+  `league-info.ts` unrendered, holding 2025's split tie, so restoring the column is one entry in
+  `HISTORY_COLUMNS`.
 - **Abbreviation is a render step, not a data edit.** `shortenForHistory()` drops a tie to city
   words (`TEAM_CITIES`) and shortens "South Town Freedom Fighters" to "South Town FF".
   `LEAGUE_HISTORY` keeps full names, so widening the table later means deleting a call, not
