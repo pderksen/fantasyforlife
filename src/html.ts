@@ -14,11 +14,14 @@ import {
   LEAGUE_HISTORY,
   LEAGUE_FIRST_SEASON,
   TEAM_CITIES,
+  PRIZE_SEASONS,
   getDraftDate,
   getLatestHonors,
+  prizeSeasons,
   type Honor,
   type HonorIcon,
   type NavItem,
+  type PrizeSeason,
 } from "./league-info.js";
 
 // ── Utility helpers ──
@@ -652,17 +655,33 @@ ${cards}
 `;
 }
 
-/** The home page's honors row: the newest season, plus the pointer to the full prize table. */
+/**
+ * Where a season's prize money is recorded, as the line that closes its honor cards.
+ *
+ * Two destinations, because the record is split at 2026: seasons the Prize Tracker carries get
+ * an anchor into it, and the earlier ones point at the hand-kept workbook that holds them. The
+ * split is decided per season rather than page-wide, so a 2025 honor block never sends anyone
+ * to a page that starts at 2026 — which is the whole reason this isn't one hard-coded link.
+ *
+ * Root-relative, so both callers (the home page and the History page) resolve it as written.
+ */
+function prizePointerHtml(season: string): string {
+  const link = PRIZE_SEASONS[season]
+    ? `<a href="prizes.html#s${esc(season)}" class="${LINK}">${esc(season)} prize tracker &#8594;</a>`
+    : `<a href="${ARCHIVE_LINKS.prizeSheet}" target="_blank" rel="noopener noreferrer" class="${LINK}">All ${esc(season)} prize winners &#x2197;</a>`;
+
+  return `
+      <div class="text-center mt-[18px] text-sm font-medium">
+        ${link}
+      </div>`;
+}
+
+/** The home page's honors row: the newest season, plus the pointer to its prize money. */
 function honorsHtml(): string {
   const latest = getLatestHonors();
   if (!latest) return "";
 
-  return honorsSection(latest.season, latest.honors, {
-    footer: `
-      <div class="text-center mt-[18px] text-sm font-medium">
-        <span class="${PLANNED}" title="Coming soon">All ${esc(latest.season)} prize winners &#8594;</span>
-      </div>`,
-  });
+  return honorsSection(latest.season, latest.honors, { footer: prizePointerHtml(latest.season) });
 }
 
 /**
@@ -1041,7 +1060,9 @@ export function generateHistoryHtml(leagueName: string, navLinks: NavLink[], has
   const seasons = Object.keys(SEASON_HONORS).sort().reverse();
   const [newest, ...earlier] = seasons;
 
-  const honorBlocks = (s: string) => honorsSection(s, SEASON_HONORS[s], { id: `s${s}` });
+  // Every season's cards close with the same prize pointer the home page carries, so the two
+  // pages stay a pair and each year routes to whichever record actually holds its money.
+  const honorBlocks = (s: string) => honorsSection(s, SEASON_HONORS[s], { id: `s${s}`, footer: prizePointerHtml(s) });
   const table = leagueHistoryTableHtml();
 
   const allTime = table
@@ -1068,6 +1089,370 @@ ${siteHeader(chrome)}
     <p class="text-fern mb-8">Champions, records, and the long story of the league since ${esc(LEAGUE_FIRST_SEASON)}.</p>
 ${historyNavHtml(seasons)}
 ${newest ? honorBlocks(newest) : ""}${allTime}${earlier.map(honorBlocks).join("")}  </main>
+</body>
+</html>`;
+}
+
+// ── Prize Tracker page ──
+
+/** Whole dollars with a thousands separator. Every amount on the page is an integer split. */
+function money(n: number): string {
+  const whole = Number.isInteger(n);
+  return `$${n.toLocaleString("en-US", { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: 2 })}`;
+}
+
+/** Every prize line in a season, flattened out of its groups. */
+function prizeLines(ps: PrizeSeason) {
+  return ps.groups.flatMap((g) => g.prizes);
+}
+
+/**
+ * What a season has actually paid, per team, settled lines only.
+ *
+ * A leader has won nothing yet, so leading money is deliberately excluded: the tiles and the
+ * band's "awarded" figure are the same number sliced two ways, and a tile that quietly counted
+ * a Week 6 points lead as winnings would be wrong every time the lead changed hands. Where the
+ * leads stand is the table's job, one row at a time.
+ *
+ * A split divides evenly, which is how every tie in the league's history has been settled.
+ */
+function winningsFor(ps: PrizeSeason): { team: string; total: number }[] {
+  const totals = new Map<string, number>();
+  for (const line of prizeLines(ps)) {
+    if (!line.settled || !line.winners?.length) continue;
+    const share = line.amount / line.winners.length;
+    for (const team of line.winners) totals.set(team, (totals.get(team) ?? 0) + share);
+  }
+  return [...totals]
+    .map(([team, total]) => ({ team, total }))
+    .sort((a, b) => b.total - a.total || a.team.localeCompare(b.team));
+}
+
+/** How current a season's numbers are, as the band reads it. */
+function prizeState(ps: PrizeSeason): { text: string; live: boolean } {
+  if (ps.final) return { text: "Final", live: false };
+  if (ps.through) return { text: `Through ${ps.through}`, live: true };
+  return { text: "Not started", live: false };
+}
+
+/**
+ * The band above each season's prizes: whose season, how current, and the four money figures.
+ *
+ * **Nothing here is a subtraction.** Awarded and still-open are both sums over the prize list,
+ * and the pot sits beside them as a stated fact rather than as the thing they are measured
+ * against. The league has historically paid out more than the entry fees make (2025 paid
+ * $1,680 against a $1,600 pot), so a "remaining" figure derived from the pot would render
+ * negative and read as a bug in this page rather than as a fact about the league.
+ *
+ * Forest while a season is running, the plain card once it is final or has not started —
+ * the same tone-per-state idea `HONOR_TONES` uses, so live-versus-done is legible at a glance
+ * rather than only in the small print.
+ */
+function prizeBandHtml(season: string, ps: PrizeSeason): string {
+  const { text, live } = prizeState(ps);
+  const lines = prizeLines(ps);
+  const awarded = lines.filter((l) => l.settled).reduce((sum, l) => sum + l.amount, 0);
+  const open = lines.filter((l) => !l.settled).reduce((sum, l) => sum + l.amount, 0);
+
+  const shell = live
+    ? "bg-forest text-parchment"
+    : `${CARD_BASE} text-ink`;
+  const eyebrow = live ? "text-sage" : "text-stone";
+  const figureLabel = live ? "text-sage" : "text-stone";
+
+  const figure = (label: string, value: string) =>
+    `<span class="text-center sm:text-right"><span class="block text-[10px] tracking-[0.12em] uppercase ${figureLabel}">${esc(label)}</span><span class="block text-[19px] font-bold tabular-nums">${esc(value)}</span></span>`;
+
+  return `      <div class="${shell} rounded-[14px] px-6 py-4 mb-8 flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
+        <span>
+          <span class="${EYEBROW} ${eyebrow}">Prize Pool</span>
+          <span class="block text-[21px] font-bold tracking-[-0.02em]">${esc(text)}</span>
+        </span>
+        <span class="flex flex-wrap gap-x-7 gap-y-3">${figure("Entry", money(ps.entryFee))}${figure("Pot", money(ps.pot))}${figure("Awarded", money(awarded))}${ps.final ? "" : figure("Still open", money(open))}</span>
+      </div>`;
+}
+
+/**
+ * Per-team winnings as an auto-fit row of tiles rather than a second table.
+ *
+ * This is the standings, and it sits above the ledger because "am I winning money" is the
+ * question people open the page with and "which prize paid it" is the follow-up. Tiles rather
+ * than a table because two stacked tables read as one undifferentiated slab, and because the
+ * honors row already established this exact grid idiom on the home page and the History page.
+ *
+ * City words, not full names: a tile is a 150px box and "South Town Freedom Fighters" is not
+ * a 150px string. Renders nothing at all until something has been settled, which is the true
+ * state of a season in August and reads better than ten tiles of $0.
+ */
+function winningsHtml(ps: PrizeSeason): string {
+  const winnings = winningsFor(ps);
+  if (winnings.length === 0) return "";
+
+  const top = winnings[0].total;
+  const tiles = winnings
+    .map(({ team, total }) => {
+      const lead = total === top;
+      const box = lead ? "bg-forest text-parchment" : CARD;
+      const label = lead ? "text-sage" : "text-stone";
+      return `        <div class="${box} rounded-xl px-4 py-3.5">
+          <div class="text-[11px] tracking-[0.08em] uppercase mb-1 ${label}">${esc(TEAM_CITIES[team] ?? team)}</div>
+          <div class="text-[19px] font-bold tabular-nums">${esc(money(total))}</div>
+        </div>`;
+    })
+    .join("\n");
+
+  return `
+      <h3 class="${SECTION_H2}">${ps.final ? "Final Winnings" : "Winnings So Far"}</h3>
+      <div class="grid gap-3 mb-8 [grid-template-columns:repeat(auto-fit,minmax(150px,1fr))]">
+${tiles}
+      </div>
+`;
+}
+
+/**
+ * The prize ledger's cell styles.
+ *
+ * Deliberately **not** the History table's rule that every cell is `whitespace-nowrap`. That
+ * table is six columns of team names, where wrapping helps nobody and sideways scroll is the
+ * right trade. This one is a single prose column ("Top single player, single week") beside
+ * three short ones, on the page most likely to be opened from a phone on a Tuesday, so the
+ * label wraps and only the short columns hold their line.
+ */
+const PRZ_TH = "px-4 first:pl-5 last:pr-5 py-[9px] text-left text-[11px] font-medium tracking-[0.12em] uppercase text-stone whitespace-nowrap";
+const PRZ_TD = "px-4 first:pl-5 last:pr-5 py-3 border-t border-rule text-[15px] align-top";
+const PRZ_TD_TIGHT = `${PRZ_TD} whitespace-nowrap`;
+/** The group divider: the page background showing through the card, carrying the group's name. */
+const PRZ_GROUP = `px-5 py-2 border-t border-rule bg-cream ${LABEL_TYPE}`;
+/** The provisional marker on a line that has a leader but has not closed. */
+const LEADING_TAG = `<span class="ml-2 align-middle inline-block bg-brass text-forest rounded px-1.5 py-px text-[10px] font-semibold tracking-[0.08em] uppercase">Leading</span>`;
+
+/**
+ * One season's prizes, as a single table divided into labelled groups.
+ *
+ * The three states a line can be in are carried by the winner cell rather than by a fifth
+ * status column, which keeps the table at four columns on a page where width is already the
+ * scarce thing: a settled line names its winner plainly, an open one shows the em dash this
+ * site uses everywhere for an unrecorded fact, and a line with a leader names them with the
+ * provisional tag beside it. An unsettled line's amount is muted for the same reason — that
+ * money has not moved yet.
+ *
+ * Names run through `shortenForHistory()`, so a split renders as city words and South Town
+ * loses its nickname, exactly as in the History table and for the same width reason.
+ */
+function prizeTableHtml(ps: PrizeSeason): string {
+  const winnerHeader = ps.final ? "Winner" : "Leader or Winner";
+  const headers = ["Prize", winnerHeader, "Result", "Amount"]
+    .map((h, i) => `<th class="${PRZ_TH}${i === 3 ? " text-right" : ""}">${esc(h)}</th>`)
+    .join("");
+
+  const body = ps.groups
+    .map((group) => {
+      const rows = group.prizes
+        .map((line) => {
+          const named = (line.winners?.length ?? 0) > 0;
+          const label = `<td class="${PRZ_TD}${line.headline ? " font-semibold" : ""}">${esc(line.label)}${line.note ? `<span class="block text-[13px] text-stone">${esc(line.note)}</span>` : ""}</td>`;
+
+          const winner = named
+            ? `<td class="${PRZ_TD_TIGHT}">${esc(shortenForHistory(line.winners!.join(" & ")))}${line.settled ? "" : LEADING_TAG}</td>`
+            : `<td class="${PRZ_TD_TIGHT} text-stone">&mdash;</td>`;
+
+          const result = line.stat
+            ? `<td class="${PRZ_TD_TIGHT} tabular-nums">${esc(line.stat)}</td>`
+            : `<td class="${PRZ_TD_TIGHT} text-stone">&mdash;</td>`;
+
+          const amountTone = line.settled ? (line.headline ? "font-semibold" : "") : "text-stone";
+          const amount = `<td class="${PRZ_TD_TIGHT} text-right tabular-nums ${amountTone}">${esc(money(line.amount))}</td>`;
+
+          return `              <tr>${label}${winner}${result}${amount}</tr>`;
+        })
+        .join("\n");
+
+      return `              <tr><td colspan="4" class="${PRZ_GROUP}">${esc(group.label)}</td></tr>
+${rows}`;
+    })
+    .join("\n");
+
+  const notes = ps.notes?.length
+    ? `\n      <ul class="text-sm text-fern mt-3 list-disc pl-5 flex flex-col gap-1">
+${ps.notes.map((n) => `        <li>${esc(n)}</li>`).join("\n")}
+      </ul>`
+    : "";
+
+  return `      <div class="${CARD} overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead><tr class="bg-shell">${headers}</tr></thead>
+            <tbody>
+${body}
+            </tbody>
+          </table>
+        </div>
+      </div>${notes}`;
+}
+
+/**
+ * One season: the band, the winnings tiles, the ledger, and a link across to that season's
+ * honor cards. `id` is what the sub-nav pills jump to, and it brings `scroll-mt` with it for
+ * the same reason `honorsSection()` does — a bare anchor lands the heading against the top.
+ */
+function prizeSeasonHtml(season: string, ps: PrizeSeason): string {
+  const honors = SEASON_HONORS[season]
+    ? `<a href="history.html#s${esc(season)}" class="${LINK} text-sm font-medium">Season honors &#8594;</a>`
+    : "";
+
+  const heading = honors
+    ? `      <div class="flex items-baseline justify-between gap-4 mb-3.5">
+        <h2 class="${LABEL_TYPE}">${esc(season)} Season</h2>
+        ${honors}
+      </div>`
+    : `      <h2 class="${SECTION_H2}">${esc(season)} Season</h2>`;
+
+  return `
+    <section id="s${esc(season)}" class="mb-14 scroll-mt-6">
+${heading}
+${prizeBandHtml(season, ps)}${winningsHtml(ps)}
+${prizeTableHtml(ps)}
+    </section>
+`;
+}
+
+/**
+ * Total winnings per team across every recorded season, one column per season plus a total.
+ *
+ * Renders only once there are two seasons to compare — a one-season all-time table is the
+ * season table with the interesting columns removed. Every cell is `nowrap` and the card
+ * scrolls sideways, which is the History table's trade and is the right one here: this grows
+ * a column a year, and by the 2030s no amount of wrapping saves it.
+ */
+function allTimeWinningsHtml(seasons: string[]): string {
+  if (seasons.length < 2) return "";
+
+  const totals = new Map<string, Map<string, number>>();
+  for (const season of seasons) {
+    for (const { team, total } of winningsFor(PRIZE_SEASONS[season])) {
+      const row = totals.get(team) ?? new Map<string, number>();
+      row.set(season, total);
+      totals.set(team, row);
+    }
+  }
+
+  const sum = (row: Map<string, number>) => [...row.values()].reduce((a, b) => a + b, 0);
+  const ranked = [...totals].sort((a, b) => sum(b[1]) - sum(a[1]) || a[0].localeCompare(b[0]));
+  if (ranked.length === 0) return "";
+
+  const headers = ["Team", ...seasons, "Total"]
+    .map((h, i) => `<th class="${PRZ_TH}${i === 0 ? "" : " text-right"}">${esc(h)}</th>`)
+    .join("");
+
+  const rows = ranked
+    .map(([team, row]) => {
+      const cells = seasons
+        .map((s) => {
+          const v = row.get(s);
+          return v === undefined
+            ? `<td class="${PRZ_TD_TIGHT} text-right text-stone">&mdash;</td>`
+            : `<td class="${PRZ_TD_TIGHT} text-right tabular-nums">${esc(money(v))}</td>`;
+        })
+        .join("");
+      return `              <tr><td class="${PRZ_TD_TIGHT}">${esc(TEAM_CITIES[team] ?? team)}</td>${cells}<td class="${PRZ_TD_TIGHT} text-right tabular-nums font-semibold">${esc(money(sum(row)))}</td></tr>`;
+    })
+    .join("\n");
+
+  return `
+    <section id="all-time" class="mb-14 scroll-mt-6">
+      <h2 class="${SECTION_H2}">All-Time Winnings</h2>
+      <div class="${CARD} overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left">
+            <thead><tr class="bg-shell">${headers}</tr></thead>
+            <tbody>
+${rows}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <p class="text-sm text-stone mt-3">Settled prizes only. A split is divided evenly between its winners.</p>
+    </section>
+`;
+}
+
+/**
+ * The Prize Tracker's own sub-nav, mirroring the League History page's: newest season first,
+ * so the year people want never migrates rightward as seasons accumulate. A live season is
+ * marked in the pill itself, since that is the one people are arriving for.
+ */
+function prizesNavHtml(seasons: string[], hasAllTime: boolean): string {
+  // One season and no all-time table means every pill points at the only thing on the page.
+  if (!hasAllTime && seasons.length < 2) return "";
+
+  const pills = [
+    ...(hasAllTime ? [`      <a href="#all-time" class="${PILL_LINK}">All-time winnings</a>`] : []),
+    ...seasons.map((s) => {
+      const live = prizeState(PRIZE_SEASONS[s]).live;
+      const suffix = live ? ` <span class="text-brass font-semibold">&middot; Live</span>` : "";
+      return `      <a href="#s${esc(s)}" class="${PILL_LINK}">${esc(s)}${suffix}</a>`;
+    }),
+  ].join("\n");
+
+  return `    <nav class="flex flex-wrap items-center gap-2 mb-12">
+${pills}
+    </nav>`;
+}
+
+/**
+ * The closing link row: where the seasons this page does not carry actually live.
+ *
+ * 2023–2025 ran a different prize structure and are settled for good, so they stay in the
+ * hand-kept workbook rather than being re-typed into `PRIZE_SEASONS` to render a table that
+ * will never change again. Styled as the home page's closing link rows so it reads as the
+ * same kind of pointer.
+ */
+function prizeArchiveHtml(): string {
+  return `    <div class="mt-4 border-t border-line pt-5 pb-12 text-sm flex gap-6 flex-wrap items-baseline">
+      <span class="${ROW_LABEL}">Earlier seasons</span>
+      <a href="${ARCHIVE_LINKS.prizeSheet}" target="_blank" rel="noopener noreferrer" class="${LINK}">Prize winnings 2023&ndash;2025 &#x2197;</a>
+      <span class="text-stone">Different prize structure, kept in the league's own workbook</span>
+    </div>`;
+}
+
+/**
+ * The Prize Tracker page, at `output/prizes.html` (served as `/prizes`).
+ *
+ * A root-level page like the index and History, so it takes the same `base: ""` chrome and the
+ * same 1080px measure. Sections, in order: the sub-nav, the newest season, the all-time table,
+ * then earlier seasons, then the archive link. That is the History page's ordering and for the
+ * same two reasons: the season people came for opens the page, and the all-time table holds a
+ * fixed position instead of sinking another screen every August.
+ */
+export function generatePrizesHtml(leagueName: string, navLinks: NavLink[], hasMark = false): string {
+  const chrome: SiteChrome = { base: "", hasMark, tiersHref: newestNavLink(navLinks)?.href };
+
+  const seasons = prizeSeasons();
+  const [newest, ...earlier] = seasons;
+  const allTime = allTimeWinningsHtml(seasons);
+
+  const blocks = [
+    newest ? prizeSeasonHtml(newest, PRIZE_SEASONS[newest]) : "",
+    allTime,
+    ...earlier.map((s) => prizeSeasonHtml(s, PRIZE_SEASONS[s])),
+  ].join("");
+
+  return `<!DOCTYPE html>
+<html lang="en">
+${htmlHead({
+    title: `${leagueName} - Prize Tracker`,
+    ogTitle: "Prize Tracker",
+    description: "Every prize the league pays out, tracked week by week and settled at season's end.",
+    siteName: leagueName,
+  })}
+<body class="bg-cream text-ink font-sans antialiased">
+${siteHeader(chrome)}
+  <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14">
+    <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-2">Prize Tracker</h1>
+    <p class="text-fern mb-8">Every prize the league pays out, season by season.</p>
+${prizesNavHtml(seasons, allTime !== "")}
+${blocks}${prizeArchiveHtml()}
+  </main>
 </body>
 </html>`;
 }

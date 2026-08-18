@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
-import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, getExportOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, getHistoryOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft, resolveTrades, saveTrades, preDraftWindowClosed, hasSiteMark, syncStaticAssets, newestNavLink, SnapshotGuardError } from "./snapshot.js";
-import { generateHtml, generateIndexHtml, generateHistoryHtml, writeHtml, formatPacificDate } from "./html.js";
+import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, getExportOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, getHistoryOutputPath, getPrizesOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft, resolveTrades, saveTrades, preDraftWindowClosed, hasSiteMark, syncStaticAssets, newestNavLink, SnapshotGuardError } from "./snapshot.js";
+import { generateHtml, generateIndexHtml, generateHistoryHtml, generatePrizesHtml, writeHtml, formatPacificDate } from "./html.js";
 import { generateWorkbook, writeWorkbook } from "./xlsx.js";
 import { getLeagueDrafts, getDraftPicks, getDraftTradedPicksRaw, fetchAllPlayers, getLeagueTradedPicks, getPickTrades, getTrades, getLeague } from "./sleeper-api.js";
 import { getTierConfig, getLatestDraftOrder } from "./tiers.js";
@@ -104,6 +104,17 @@ async function regenerateHistory(): Promise<void> {
   const outputPath = getHistoryOutputPath();
   await writeHtml(generateHistoryHtml(LEAGUE_NAME, buildIndexNavLinks(), hasSiteMark()), outputPath);
   console.log(`History written: ${outputPath}`);
+}
+
+/**
+ * Rewrite the Prize Tracker page. Like the History page it reads no snapshot data — the prize
+ * pool is hand-kept in `PRIZE_SEASONS` — so it is written on every run regardless of what has
+ * been captured, and only takes where "Current Tiers" points from the nav links.
+ */
+async function regeneratePrizes(): Promise<void> {
+  const outputPath = getPrizesOutputPath();
+  await writeHtml(generatePrizesHtml(LEAGUE_NAME, buildIndexNavLinks(), hasSiteMark()), outputPath);
+  console.log(`Prizes written: ${outputPath}`);
 }
 
 interface RosterPageInputs {
@@ -380,6 +391,7 @@ async function main(): Promise<void> {
   // Always regenerate the index page to pick up any new snapshots
   await regenerateIndex();
   await regenerateHistory();
+  await regeneratePrizes();
 
   if (openHomePage) {
     const indexPath = getIndexOutputPath();

@@ -36,7 +36,8 @@ export interface NavItem {
 
 export const SITE_NAV: NavItem[] = [
   { label: "Current Tiers", tiers: true },
-  { label: "Prize Tracker" },
+  // Written to output/prizes.html, served at /prizes. Same flat-file rule as history.html.
+  { label: "Prize Tracker", href: "prizes.html" },
   { label: "Survivor" },
   { label: "Official Rules" },
   // Written to output/history.html, which Cloudflare Pages serves at /history. The link
@@ -163,10 +164,14 @@ export const LEAGUE_HISTORY: SeasonResult[] = [
 /**
  * One line of a season's prize payout table.
  *
- * Nothing renders this today. The home page carried the full table until the Aug 2026 gallery
- * pass replaced it with the "All 20XX prize winners" link under the honor cards, and that link
- * is inert until a Prize Tracker page exists. The record is kept here, not deleted: it is
- * hand-settled in the league chat and exists in no API, so losing it loses it for good.
+ * Nothing renders this, and the Prize Tracker page will not: it starts at 2026, where a new
+ * prize structure starts. The home page's "All 2025 prize winners" link now points at
+ * `ARCHIVE_LINKS.prizeSheet`, which carries the same numbers plus 2024's.
+ *
+ * Kept rather than deleted only because it is a second copy of a hand-settled record that
+ * exists in no API. If the sheet is judged durable enough on its own, this and its `Prize`
+ * interface can go in one edit — nothing imports either. **Not** the shape to extend for a
+ * new season; that is `PrizeSeason` below.
  */
 export interface Prize {
   label: string;
@@ -208,6 +213,130 @@ export function getLatestHonors(): { season: string; honors: Honor[] } | undefin
 export function getLatestPrizes(): { season: string; prizes: Prize[] } | undefined {
   const season = Object.keys(PRIZE_WINNERS).sort().reverse()[0];
   return season ? { season, prizes: PRIZE_WINNERS[season] } : undefined;
+}
+
+// ── Prize Tracker (2026 and beyond) ──
+
+/**
+ * One prize line: what it pays, and who is winning or has won it.
+ *
+ * **`amount` is a number, not a formatted string**, because the page sums it three ways: the
+ * status band's awarded and still-open figures, and the per-team winnings tiles. A tie splits
+ * it evenly across `winners`, which is how every split in the league's history has worked.
+ */
+export interface PrizeLine {
+  label: string;
+  /** Qualifier shown small under the label, e.g. "(lowest strikes)". */
+  note?: string;
+  /** Payout in whole dollars, before any split. */
+  amount: number;
+  /**
+   * Empty or absent until the prize has someone attached to it. More than one name is an
+   * even split. Full team names, as everywhere else; the renderer shortens them to fit.
+   */
+  winners?: string[];
+  /** The number winning it: a point total, a record. Blank for prizes decided by bracket. */
+  stat?: string;
+  /**
+   * Whether the result can still change. A named winner on an unsettled line is a *leader*,
+   * and renders as one, which is the whole difference between this page in October and the
+   * same page in February.
+   */
+  settled?: boolean;
+  /** The season's top payout. Rendered bold with a brass amount. */
+  headline?: boolean;
+}
+
+/**
+ * A labelled run of prize lines, rendered under a divider row inside the one table.
+ *
+ * Groups exist because the result column means different things in different parts of the
+ * list (a point total above the line, a win-loss record below it), and because that split
+ * happens to be the same line as computed-from-Sleeper versus settled-by-hand.
+ */
+export interface PrizeGroup {
+  label: string;
+  prizes: PrizeLine[];
+}
+
+/** One season's prize pool: what was put in, what it pays out, and how current that is. */
+export interface PrizeSeason {
+  /** Per owner. Stated on the page, never used in a subtraction. */
+  entryFee: number;
+  /**
+   * What the entry fees make. Shown beside the awarded and still-open figures rather than
+   * having either derived from it: the prize list has historically totalled more than the
+   * pot, and a "remaining" number computed against the pot would render as a negative and
+   * read as a bug rather than as a fact about the league.
+   */
+  pot: number;
+  /**
+   * How current the numbers are, e.g. "Week 12". Omitted before the season starts, which is
+   * a third state the band renders on its own ("Not started").
+   */
+  through?: string;
+  /** Every line decided. Swaps the status band to its settled treatment and drops "leader". */
+  final?: boolean;
+  groups: PrizeGroup[];
+  /** House rules, listed under the table. */
+  notes?: string[];
+}
+
+/**
+ * The prize pool, per season, from 2026 forward.
+ *
+ * **2023–2025 are deliberately absent.** They ran a different structure (three partial-season
+ * points windows, two Survivor contests) that the 2026 rules replaced, and they are already
+ * recorded in `ARCHIVE_LINKS.prizeSheet`, which the page links at the bottom. Carrying them
+ * here would mean maintaining a second prize shape forever to render a table that will never
+ * change again.
+ */
+export const PRIZE_SEASONS: Record<string, PrizeSeason> = {
+  "2026": {
+    entryFee: 160,
+    pot: 1600,
+    // No `through` and no `final`: the season has not started, so every line is open. As
+    // results land, set `through` each week and flip `settled` on the lines that close.
+    groups: [
+      {
+        // Every line here is derivable from `/league/{id}/matchups/{week}`, which is why the
+        // 2026 rules could drop the partial-season windows the old sheet called hard to total.
+        label: "Points",
+        prizes: [
+          { label: "Total points, regular season", amount: 200 },
+          { label: "Total points runner-up, regular season", amount: 100 },
+          { label: "Highest points, single week", note: "Regular season", amount: 100 },
+          { label: "Top single player, single week", note: "New for 2026", amount: 100 },
+        ],
+      },
+      {
+        label: "Records & brackets",
+        prizes: [
+          { label: "Finalist Champion", amount: 500, headline: true },
+          { label: "Finalist Runner-Up", amount: 250 },
+          { label: "Best regular season record", amount: 100 },
+          { label: "Division winner — Keepers", amount: 75 },
+          { label: "Division winner — Sleepers", amount: 75 },
+        ],
+      },
+      {
+        label: "Survivor",
+        prizes: [
+          { label: "Survivor winner", note: "All 17 weeks, fewest revives and strikes", amount: 100 },
+        ],
+      },
+    ],
+    notes: [
+      "Owners can win multiple prizes.",
+      "If both finalists agree, they may split the pot or go winner-takes-all, decided before that weekend's games start.",
+      "Side bets are optional and must be posted in the forums.",
+    ],
+  },
+};
+
+/** Seasons with a prize pool recorded, newest first. */
+export function prizeSeasons(): string[] {
+  return Object.keys(PRIZE_SEASONS).sort().reverse();
 }
 
 /**
@@ -272,6 +401,14 @@ export const GALLERY: GalleryPhoto[] = [
 /** Where the pre-Sleeper seasons live. Referenced from the home page footer. */
 export const ARCHIVE_LINKS = {
   tiersSheet: "https://docs.google.com/spreadsheets/d/16rS1aBhJR0xg7xzCQGEzE2_-8_wO9F1MFlMVSGpS4g8/pubhtml",
+  /**
+   * The hand-kept prize workbook, one tab per season. It is the record for 2023–2025, which
+   * the Prize Tracker page deliberately does not carry: those seasons ran a different prize
+   * structure, and re-typing them into `PRIZE_SEASONS` would mean maintaining two shapes to
+   * render a table nobody updates. Linked from the bottom of the tracker and from the home
+   * page's honors footer instead.
+   */
+  prizeSheet: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTK8Z1nYo4iLi97t49Nxgdn6m6dSBQo_OyXw3IXe1FTN8KLiPSFBQICBKvdqv-U1CtLieOB9GIvvpAf/pubhtml",
   myFantasyLeague: "https://www42.myfantasyleague.com/2024/home/30136",
   sleeper: "https://sleeper.com/leagues",
 } as const;

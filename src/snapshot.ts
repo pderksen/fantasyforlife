@@ -673,6 +673,11 @@ export function getHistoryOutputPath(): string {
   return join(DATA_DIR, "..", "output", "history.html");
 }
 
+/** The Prize Tracker page. Flat file at the output root, same rule as the History page. */
+export function getPrizesOutputPath(): string {
+  return join(DATA_DIR, "..", "output", "prizes.html");
+}
+
 // ── Static assets ──
 
 /**
