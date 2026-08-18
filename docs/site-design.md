@@ -73,6 +73,49 @@ season directory (`../history.html`) with no per-page config. Absolute hrefs (th
 pass through untouched, and `tiersHref` skips the prefix because the caller already resolved it
 relative to the page being written.
 
+### The header scrolls away, and every page closes on "Back to top"
+
+`backToTopHtml()` in `html.ts`, one renderer, called by all four page generators. It emits a
+plain `<a href="#top">`; `#top` is the document top by definition, so no page carries an id to
+match it.
+
+**Nothing on this site is sticky except two in-table pins:** the roster `TH` row and the
+History table's frozen Season column. The site header was weighed as a third and passed over:
+
+- **It costs the most where the room is worth the most.** 74px on desktop, and on a phone the
+  header's flex row wraps the wordmark block and the nav onto separate lines, roughly 120–140px
+  of a ~650px viewport. The two longest pages here are tables, and the History table on a 390px
+  phone is already the tightest thing on the site.
+- **On a roster page it would stack a frozen bar on a frozen bar.** `TH` is pinned to the top of
+  the `TABLE_WRAP` scrollport, so a pinned site header sits directly above it and the grid reads
+  as framed rather than scrolled. It would not break the `100dvh - 15rem` cap, which already
+  subtracts the header, so this is an appearance call and not a mechanical one.
+- **The payoff is one keystroke.** The header's only unique content is `SITE_NAV`, four items on
+  a four-page site, and a roster page's chip bar sits beside it at the same scroll depth. A link
+  at the foot reaches both.
+
+**A floating button was passed over for the same kind of reason.** A fixed control has to be
+reasoned about against the roster table's sticky header, the History table's frozen column and
+`.hist-scroll` fade, and the home page's lightbox `<dialog>`, and it needs JS, on a site that is
+previewed over `file://`. iOS already gives status-bar-tap-to-top on the phone case it would
+help most.
+
+**The link is on every page, not gated on an estimated height.** Nothing here renders CSS, so a
+height heuristic would be unverifiable guesswork (see *Verifying Changes* in `CLAUDE.md`), and
+the link hides itself in the only sense that matters: a page that fits the viewport never puts
+it in front of anyone.
+
+**`spacing` is its only knob**, because the four pages close on blocks with different bottom
+margins: `pt-2` under History's `mb-14` sections and under the home and Prize pages' closing
+link rows, `mt-8` on a roster page where it follows the traded picks directly. The home and
+Prize pages gained `pb-16` on their `main` (History already had it) so the link is not flush
+against the bottom of the document.
+
+**On a roster page it returns the document, not the table.** A table scrolling inside its own
+`max-h` stays where it was; what comes back is the page top, which is where the chip bar and the
+Excel button live. The capture timestamp stays the last line, so the link sits above the
+`<footer>` there and below the final section everywhere else.
+
 ---
 
 ## League History Page

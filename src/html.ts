@@ -138,6 +138,29 @@ const LAST_ROW_FLUSH = "[&>tr:last-child>td]:border-b-0";
 const LINK = "text-moss no-underline transition-opacity hover:opacity-70";
 
 /**
+ * The return-to-top link every page closes on. `#top` is the document top with no id to match,
+ * which is why nothing on any page carries one.
+ *
+ * A plain link and not a floating button: a fixed control would have to be reasoned about
+ * against the roster table's sticky header, the History table's frozen column and edge fade,
+ * and the home page's lightbox dialog, all to save a gesture on pages that run two to four
+ * screens. The link costs no viewport and is self-hiding in the only sense that matters, since
+ * a page that fits the screen never puts it in front of anyone.
+ *
+ * It returns the *document*, so on a roster page whose table is scrolling inside its own
+ * `max-h` the table stays where it was and the page top (chip bar, Excel button) is what comes
+ * back. That is the destination worth returning to on every page here.
+ *
+ * `spacing` is the only knob, since the four pages close on blocks with different bottom
+ * margins and the link should sit the same distance off each.
+ */
+function backToTopHtml(spacing = "pt-2"): string {
+  return `    <div class="${spacing}">
+      <a href="#top" class="${LINK} text-sm">&#8593; Back to top</a>
+    </div>`;
+}
+
+/**
  * The palette, as Tailwind v4 theme tokens.
  *
  * v4 has no JS config, so the theme block is the config — every `bg-forest` / `text-stone`
@@ -502,6 +525,7 @@ ${dataRows.join("\n")}
   </table>
   </div>${tableNotes(rosters, columnOrderNote(snapshot, grid))}
 ${tradedPicksSection(tradedPicks)}
+${backToTopHtml("mt-8")}
   <footer class="mt-8 text-xs text-stone">Data retrieved ${esc(formatPacificTime(snapshot.capturedAt))}</footer>
   </div>
 </body>
@@ -951,8 +975,9 @@ ${htmlHead({
   })}
 <body class="bg-cream text-ink font-sans antialiased">
 ${siteHeader(chrome)}
-  <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14">
+  <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
 ${honorsHtml()}${heroHtml(latest, draftOrder?.season)}${columnsHtml}${survivorNoticeHtml()}${siteLinksHtml(navLinks, latest)}
+${backToTopHtml()}
   </main>
 ${lightboxHtml()}
 ${COUNTDOWN_SCRIPT}
@@ -1025,11 +1050,6 @@ function historyNavHtml(): string {
 ${items}
     </nav>`;
 }
-
-/** Bottom-of-page return to the sub-nav. `#top` is the document top with no id to match. */
-const BACK_TO_TOP = `    <div class="pt-2">
-      <a href="#top" class="${LINK} text-sm">&#8593; Back to top</a>
-    </div>`;
 
 /**
  * The League History table's two cell styles, lifted from the draft order card in
@@ -1358,7 +1378,7 @@ ${siteHeader(chrome)}
   <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
     <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-8">League History</h1>
 ${historyNavHtml()}
-${newest ? honorBlocks(newest) : ""}${allTime}${earlier.map(honorBlocks).join("")}${pastLeaguesHtml()}${BACK_TO_TOP}
+${newest ? honorBlocks(newest) : ""}${allTime}${earlier.map(honorBlocks).join("")}${pastLeaguesHtml()}${backToTopHtml()}
   </main>
 </body>
 </html>`;
@@ -1718,10 +1738,11 @@ ${htmlHead({
   })}
 <body class="bg-cream text-ink font-sans antialiased">
 ${siteHeader(chrome)}
-  <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14">
+  <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
     <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-8">Prize Tracker</h1>
 ${prizesNavHtml(seasons, allTime !== "")}
 ${blocks}${prizeArchiveHtml()}
+${backToTopHtml()}
   </main>
 </body>
 </html>`;
