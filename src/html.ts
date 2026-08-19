@@ -980,25 +980,28 @@ function ruleChangesHtml(): string {
       headline ? `${money(headline.amount)} to the champion` : "",
     ].filter(Boolean).join(" &middot; ");
 
+    // Carries its own line break so an absent note leaves no blank line in the markup.
     const pending = rules.prizeNote
-      ? `<span class="text-sm text-stone">${esc(rules.prizeNote)}</span>`
+      ? `
+              <span class="text-sm text-stone">${esc(rules.prizeNote)}</span>`
       : "";
 
     footer += `
             <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1.5">
               <span class="${LABEL_TYPE}">${esc(season)} Prizes</span>
-              <span class="text-[15px]">${figures}</span>
-              ${pending}
+              <span class="text-[15px]">${figures}</span>${pending}
               <a href="prizes.html" class="${LINK} text-sm">Full Prize Tracker &#8594;</a>
             </div>`;
   }
 
-  footer += `
+  // Nothing at all without a rules document, rather than the inert span the site nav already
+  // carries for that page: one "coming soon" per destination is the whole of what it can say.
+  if (rules.rulesHref) {
+    footer += `
             <div class="text-sm">
-              ${rules.rulesHref
-                ? `<a href="${esc(rules.rulesHref)}" class="${LINK}">Official ${esc(season)} rules &#8594;</a>`
-                : `<span class="${PLANNED}" title="Coming soon">Official ${esc(season)} rules, in full &#8594;</span>`}
+              <a href="${esc(rules.rulesHref)}" class="${LINK}">Official ${esc(season)} rules &#8594;</a>
             </div>`;
+  }
 
   return `    <section class="mb-14">
       <h2 class="${SECTION_H2}">${esc(season)} Rule Changes</h2>
@@ -1009,9 +1012,9 @@ function ruleChangesHtml(): string {
           <div class="mt-6 grid gap-x-12 gap-y-6 md:grid-cols-2">
 ${ruleListHtml("What's changing", rules.changed)}
 ${ruleListHtml("Staying the same", rules.unchanged)}
-          </div>
+          </div>${footer ? `
           <div class="mt-6 pt-4 border-t border-rule flex flex-col gap-2.5">${footer}
-          </div>
+          </div>` : ""}
         </div>
       </div>
     </section>

@@ -490,8 +490,11 @@ scan, which is the reason the card splits at all rather than running one list of
 read out of `PRIZE_SEASONS`, so neither can contradict the Keeper Tiers hub or the Prize Tracker.
 What is hand-written is only what no other page holds: the rules themselves and the
 commissioner's note. `RuleChanges.prizeNote` is the whole provisional treatment on the prize
-figures, so deleting that one string marks the pool settled, and `rulesHref` turns the inert
-"Official rules" span into a link the same way `NavItem.href` does in the header.
+figures, present only while a pool is unsettled, and `rulesHref` puts the rules-document link on
+the card the same way `NavItem.href` lights up a nav item. Absent, `rulesHref` renders nothing
+rather than the inert "coming soon" span the header already carries for that page: two of those
+on one page is the site saying the same thing twice. With neither field set the footer's whole
+divider goes with them, so the card never closes on an empty rule.
 
 It is a white `CARD` with a `bg-shell` strip, the same idiom as the draft order card below it,
 rather than a second brass band. The Survivor notice owns that treatment as the page's one

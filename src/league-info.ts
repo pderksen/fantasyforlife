@@ -502,13 +502,15 @@ export interface RuleChanges {
   changed: RuleNote[];
   unchanged: RuleNote[];
   /**
-   * Why the prize figures beside it aren't final yet. Present means the card tags them as
-   * provisional; deleting the line is the whole edit that marks the pool settled.
+   * Why the prize figures beside it aren't final yet, when they aren't. Present tags them as
+   * provisional on the card; absent, which is 2026's state, they stand as stated.
    */
   prizeNote?: string;
   /**
-   * The full rules document, once there is one to link. Absent renders the inert span
-   * `SITE_NAV`'s "Official Rules" item already renders, so filling this in is one edit.
+   * The full rules document, once there is one to link. Absent renders **nothing** rather than
+   * the inert span `SITE_NAV`'s "Official Rules" item carries: the nav already says that page is
+   * coming, and a second "coming soon" on the same page is the site saying it twice. Filling
+   * this in is the one edit that puts the link on the card.
    */
   rulesHref?: string;
 }
@@ -523,7 +525,7 @@ export interface RuleChanges {
 export const RULE_CHANGES: Record<string, RuleChanges> = {
   "2026": {
     intro:
-      "These are the calls for 2026, made after the owner survey. Some were lopsided, some were close enough that I had to make a judgment call, so odds are something here went against your vote. If you can work with it, great. If it's going to be a real issue, bring it up sooner rather than later. Trying to keep this fun and competitive for the league as a whole.",
+      "These are the calls for 2026, made after the owner survey. Some were lopsided, some were close enough that I had to make a judgment call, so odds are something here went against your vote. Trying to keep this fun and competitive for the league as a whole.",
     changed: [
       {
         label: "No more divisions.",
@@ -553,10 +555,9 @@ export const RULE_CHANGES: Record<string, RuleChanges> = {
       },
       {
         label: "Draft slot selection runs as it always has.",
-        detail: "Want a later slot than you were awarded? Throw your games in the losers bracket without punishment, trade away most or all of your picks, or both.",
+        detail: "Want a later slot than you were awarded? Throw your games in the losers bracket without punishment, or trade draft picks with another owner.",
       },
     ],
-    prizeNote: "Still being finalized",
   },
 };
 
