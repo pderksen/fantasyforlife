@@ -146,8 +146,8 @@ Four pieces, all in `html.ts` and all declared above their first use:
 |---|---|---|---|
 | League History, Trophy Case, Retired Owners | yes | yes, seam to `lg` | `w-max min-w-full` |
 | All-Time Winnings (prizes) | yes | yes, seam always | `w-max min-w-full` |
-| Season prize ledger | yes | no | `w-full` |
-| Traded Picks (roster pages) | yes, on cream | no | `w-auto` |
+| Season prize ledger | yes | no | `w-full min-w-[420px]` |
+| Traded Picks (roster pages) | yes, on cream | no | `w-auto`, cells `nowrap` |
 | Roster grid | no | its own sticky header | `TABLE_WRAP` |
 
 - **The fade self-hides, which is why it can go on a table that rarely overflows.** The two cover
@@ -181,6 +181,28 @@ Four pieces, all in `html.ts` and all declared above their first use:
   take `w-max min-w-full` (or `w-auto`, which sizes to content). The prize ledger keeps `w-full`
   because its label column is supposed to wrap: `w-max` there would turn a tall cell into a wide
   one and undo the thing that makes the page readable on a phone.
+- **A wrapping column needs a width floor, or the wrap goes past useful into unreadable.** This is
+  the Aug 2026 mobile pass. `w-full` alone gives the label column whatever the other three leave,
+  and on a phone that was about 90px: "Total points, regular season" came out one word per line,
+  six lines tall. The floor is `min-w-[420px]`, which is the three short columns' phone widths
+  (~100 + ~66 + ~64) plus ~190px of label, about 24 characters a line at 13px and a two-line wrap
+  for the longest prize name there is. Below 420px the table scrolls, which is the same trade
+  every other table on the site already makes.
+- **`whitespace-nowrap` on an identity column is what makes a table scroll at all**, and its
+  absence is a silent failure rather than a visible one. A `w-auto` table only overflows while its
+  *min-content* width exceeds the measure, and a wrappable team name has almost none, so the
+  Traded Picks table used to squeeze itself to a phone and stack "Dinkey Creek Dirt Clods" four
+  words tall. Its cells carry `nowrap` now, like the History table's, and the table overflows into
+  its own scroll instead. Fixed in the same Aug 2026 pass.
+- **Padding and type step down a notch below `md` on all three of these tables.** `HIST_EDGE` had
+  it already; `PRZ_EDGE` and `TP_EDGE` are the same idea for the Prize Tracker and Traded Picks
+  (`px-2 md:px-4`-ish, and 13px body type below `md`). On a phone that padding is width the
+  columns need more than the whitespace.
+- **`PRZ_TH_BASE` carries no `whitespace-nowrap`, unlike `HIST_TH_BASE`.** "Leader or Winner" is
+  16 uppercase characters at 0.12em tracking, roughly 120px, and holding it on one line set a
+  floor for a column whose rows mostly hold an em dash, which is most of what squeezed the label
+  column. Wrapped, that header costs two short lines once rather than width on every row. The
+  all-time winnings table is unaffected: its headers are years and two five-letter words.
 - **Header cells split their alignment out.** `HIST_TH_BASE` and `PRZ_TH_BASE` carry none;
   `HIST_TH` and `PRZ_TH` are those plus `text-left`. Appending `text-right` to the aligned form
   puts two `text-align` utilities on one element, which resolve by stylesheet order rather than
@@ -824,7 +846,10 @@ with the cell.
 
 `<h2>` heading + a `TBL_SCROLL` wrapper on every snapshot type (contents differ per the display
 rules in `CLAUDE.md`), or "None" when empty. Table uses `w-auto` (not full-width) so it only spans
-its content, which is also what lets it overflow rather than squeeze.
+its content, which is also what lets it overflow rather than squeeze, but only alongside
+`whitespace-nowrap` on the cells, since `w-auto` overflows on min-content width and a wrappable
+name has almost none. Both owner columns keep their **full** team names at every width; the fix
+for a phone is the scroll, not an abbreviation. See Scrolling Tables.
 
 It is the one table on the site that sits on the cream page body instead of inside a white card,
 so its wrapper adds `TBL_ON_CREAM` — without it the fade's covers paint white rectangles over the

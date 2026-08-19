@@ -216,9 +216,22 @@ const SUB_H3 = "text-[17px] font-bold tracking-tight text-ink mt-0 mb-3";
  * Both places it appears today point at pages `SITE_NAV` also lists as planned.
  */
 const PLANNED = "text-stone cursor-default";
-const TP_TH = "text-left text-xs font-medium uppercase tracking-wide text-stone px-3 pb-2.5 border-b border-line";
-/** Cell geometry with no color, so a cell that needs a different one can take it without a conflict. */
-const TP_TD_BOX = "px-3 py-2.5 border-b border-rule";
+/**
+ * The traded-picks cells' horizontal padding, tightened a step below `md` — `HIST_EDGE`'s job on
+ * the History tables, for the same reason. Five columns, two of them full team names, is more
+ * than a phone's measure holds, so the padding is width spent on nothing.
+ */
+const TP_EDGE = "px-2 md:px-3";
+const TP_TH = `text-left text-xs font-medium uppercase tracking-wide text-stone ${TP_EDGE} pb-2.5 border-b border-line whitespace-nowrap`;
+/**
+ * Cell geometry with no color, so a cell that needs a different one can take it without a conflict.
+ *
+ * **`whitespace-nowrap` is what makes the table scroll instead of shredding.** Without it a phone
+ * squeezes a `w-auto` table down to its container and "Dinkey Creek Dirt Clods" stacks one word
+ * per line — a `w-auto` table only overflows while its *min-content* width exceeds the measure,
+ * and a wrappable name has almost none. Same rule the History table's cells live by.
+ */
+const TP_TD_BOX = `${TP_EDGE} py-2.5 border-b border-rule whitespace-nowrap`;
 const TP_TD = `${TP_TD_BOX} text-ink`;
 /**
  * The cell for a fact that isn't recorded, carrying the em dash that stands in for it.
@@ -425,14 +438,14 @@ function tradedPicksTable(picks: ResolvedTradedPick[]): string {
         .map((v) => `<td class="${TP_TD}">${esc(v)}</td>`);
       if (showTradedOn) {
         cells.push(p.tradedOn
-          ? `<td class="${TP_TD} whitespace-nowrap">${esc(formatPacificDate(p.tradedOn))}</td>`
+          ? `<td class="${TP_TD}">${esc(formatPacificDate(p.tradedOn))}</td>`
           : `<td class="${TP_TD_MUTED}">&mdash;</td>`);
       }
       return `      <tr>${cells.join("")}</tr>`;
     })
     .join("\n");
   return `  <div class="${TBL_SCROLL} ${TBL_ON_CREAM} -mx-1">
-  <table class="text-sm w-auto">
+  <table class="text-[13px] md:text-sm w-auto">
     <thead><tr>${headers}</tr></thead>
     <tbody class="${LAST_ROW_FLUSH}">
 ${rows}
@@ -1599,9 +1612,9 @@ function shortenForHistory(name: string): string {
 }
 
 /**
- * One history cell's team name at two lengths: the city word on a phone, `shortenForHistory()`
- * from `sm` up. Both are in the markup and a Tailwind visibility pair picks one, so nothing here
- * decides over the data and a name is still written once, from one source value.
+ * One team name at two lengths: the city word on a phone, `shortenForHistory()` above the
+ * caller's `from` breakpoint. Both are in the markup and a Tailwind visibility pair picks one, so
+ * nothing here decides over the data and a name is still written once, from one source value.
  *
  * **The phone measure is what forces it.** Five `whitespace-nowrap` columns of full names run
  * about 880px, two and a half screens of sideways travel on a 390px viewport, and the scrollbar
@@ -1614,14 +1627,23 @@ function shortenForHistory(name: string): string {
  * **`abbreviate: false` skips `HISTORY_SHORT_NAMES` and spells the wide form out in full.** That
  * map exists to buy width for the History table's five name columns; the Trophy Case has one name
  * column beside four narrow counts and about 340px of slack at `lg`, so it can afford "South Town
- * Freedom Fighters" written the way the league writes it. The phone tier is unaffected: below `lg`
- * both tables still drop to the city word.
+ * Freedom Fighters" written the way the league writes it. The phone tier is unaffected: below the
+ * switch both tables still drop to the city word.
+ *
+ * **`from` is where the wide form takes over, and it is per table, not per site.** `lg` is the
+ * History and Trophy tables, which spend their whole measure on name columns. The Prize Tracker's
+ * ledger carries one name column beside three narrow ones, so it has room for the wide form from
+ * `md` and only the phone needs the city word. Both strings are in the markup either way — the
+ * breakpoint only picks which one shows, so nothing here decides over the data.
  */
-function historyNameHtml(name: string, { abbreviate = true } = {}): string {
+function historyNameHtml(name: string, { abbreviate = true, from = "lg" }: { abbreviate?: boolean; from?: "md" | "lg" } = {}): string {
   const wide = esc(abbreviate ? shortenForHistory(name) : name);
   const narrow = esc(cityWords(name));
   if (wide === narrow) return wide;
-  return `<span class="lg:hidden">${narrow}</span><span class="hidden lg:inline">${wide}</span>`;
+  const [hideNarrow, showWide] = from === "md"
+    ? ["md:hidden", "hidden md:inline"]
+    : ["lg:hidden", "hidden lg:inline"];
+  return `<span class="${hideNarrow}">${narrow}</span><span class="${showWide}">${wide}</span>`;
 }
 
 /**
@@ -2210,9 +2232,21 @@ ${tiles}
  * `text-right` to a `PRZ_TH` that already says `text-left` puts two `text-align` utilities on one
  * element, and those resolve by stylesheet order rather than attribute order.
  */
-const PRZ_TH_BASE = "px-4 first:pl-5 last:pr-5 py-[9px] text-[11px] font-medium tracking-[0.12em] uppercase text-stone whitespace-nowrap";
+/**
+ * The prize tables' horizontal padding and type, both tightened a step below `md`. Straight copy
+ * of `HIST_EDGE`'s reasoning: on a phone that padding is width the four columns need more.
+ */
+const PRZ_EDGE = "px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5";
+/**
+ * **No `whitespace-nowrap`, unlike `HIST_TH_BASE`.** "Leader or Winner" is 16 uppercase characters
+ * at 0.12em tracking, about 120px, and held on one line it sets a floor for a column whose rows
+ * mostly hold an em dash — which is what squeezed the label column down to one word per line on a
+ * phone. Wrapped, the header costs two short lines once instead of width on every row. The
+ * all-time winnings table is unaffected: its headers are years and two five-letter words.
+ */
+const PRZ_TH_BASE = `${PRZ_EDGE} py-[9px] text-[11px] font-medium tracking-[0.12em] uppercase text-stone`;
 const PRZ_TH = `${PRZ_TH_BASE} text-left`;
-const PRZ_TD = "px-4 first:pl-5 last:pr-5 py-3 border-t border-rule text-[15px] align-top";
+const PRZ_TD = `${PRZ_EDGE} py-3 border-t border-rule text-[13px] md:text-[15px] align-top`;
 const PRZ_TD_TIGHT = `${PRZ_TD} whitespace-nowrap`;
 
 /**
@@ -2246,8 +2280,10 @@ const LEADING_TAG = `<span class="ml-2 align-middle inline-block bg-brass text-f
  * provisional tag beside it. An unsettled line's amount is muted for the same reason — that
  * money has not moved yet.
  *
- * Names run through `shortenForHistory()`, so a split renders as city words and South Town
- * loses its nickname, exactly as in the History table and for the same width reason.
+ * Names run through `historyNameHtml()` at `from: "md"`, so a phone reads city words and every
+ * width above it reads `shortenForHistory()` — a split as city words, South Town without its
+ * nickname. Same renderer as the History table, one breakpoint earlier: this table spends only
+ * one of its four columns on a name, so it has the room from `md` that History does not.
  */
 function prizeTableHtml(ps: PrizeSeason): string {
   const winnerHeader = ps.final ? "Winner" : "Leader or Winner";
@@ -2258,10 +2294,13 @@ function prizeTableHtml(ps: PrizeSeason): string {
   const body = prizeLines(ps)
     .map((line) => {
       const named = (line.winners?.length ?? 0) > 0;
-      const label = `<td class="${PRZ_TD}${line.headline ? " font-semibold" : ""}">${esc(line.label)}${line.note ? `<span class="block text-[13px] text-stone">${esc(line.note)}</span>` : ""}</td>`;
+      const label = `<td class="${PRZ_TD}${line.headline ? " font-semibold" : ""}">${esc(line.label)}${line.note ? `<span class="block text-[12px] md:text-[13px] text-stone">${esc(line.note)}</span>` : ""}</td>`;
 
+      // The name holds its line, the Leading tag is free to drop below it. A `nowrap` cell would
+      // add the tag's ~65px to this column's floor on the one page where width is scarcest, and
+      // that floor would be paid on a phone all season.
       const winner = named
-        ? `<td class="${PRZ_TD_TIGHT}">${esc(shortenForHistory(line.winners!.join(" & ")))}${line.settled ? "" : LEADING_TAG}</td>`
+        ? `<td class="${PRZ_TD}"><span class="whitespace-nowrap">${historyNameHtml(line.winners!.join(" & "), { from: "md" })}</span>${line.settled ? "" : LEADING_TAG}</td>`
         : `<td class="${PRZ_TD_TIGHT} text-stone">&mdash;</td>`;
 
       const result = line.stat
@@ -2283,12 +2322,17 @@ ${ps.notes.map((n) => `        <li>${esc(n)}</li>`).join("\n")}
 
   // `TBL_SCROLL` but still `w-full`, which is the one place this site's tables split. The label
   // column wraps on purpose (see CLAUDE.md), so at most widths the table fits and the fade shows
-  // nothing at all — it self-hides, which is exactly why hanging it here is free. On a phone the
-  // three `nowrap` columns can still push past the measure, and that is the case it is here for.
+  // nothing at all — it self-hides, which is exactly why hanging it here is free.
   // `w-max` would be wrong: it would stop the label wrapping and turn a tall cell into a wide one.
+  //
+  // `min-w-[420px]` is the floor that keeps the wrap readable. A bare `w-full` table has no floor
+  // at all: the three short columns take their content, the label column takes whatever is left,
+  // and on a 390px phone that left "Total points, regular season" stacked one word per line. The
+  // number is the three short columns' phone widths (~100 + ~66 + ~64) plus ~190px of label, which
+  // is about 24 characters a line at 13px — a two-line wrap for the longest prize name there is.
   return `      <div class="${CARD} overflow-hidden">
         <div class="${TBL_SCROLL}">
-          <table class="w-full text-left">
+          <table class="w-full min-w-[420px] text-left">
             <thead><tr class="bg-shell">${headers}</tr></thead>
             <tbody>
 ${body}
