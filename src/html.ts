@@ -1293,11 +1293,16 @@ function tiersRowHtml(season: string, links: NavLink[], currentHref?: string): s
 
 /**
  * The second line under the archive pill: where the pre-Sleeper drafts are, which is not where
- * that pill goes. Small stone text rather than a pill, because it points sideways to another
- * page of this site instead of naming an entry in this list, and because the card has no fill
- * level left below `PILL_ON_CARD`.
+ * that pill goes. Small text rather than a pill, because it points sideways to another page of
+ * this site instead of naming an entry in this list, and because the card has no fill level
+ * left below `PILL_ON_CARD`.
+ *
+ * Moss and underlined, which makes it the only underlined link on the site. It shipped in stone
+ * at the same weight as the muted labels around it and read as a caption, and the usual moss-
+ * with-no-underline treatment is not enough on its own at 13px next to a pill. The underline is
+ * `decoration-moss/40` so the rule reads as an affordance rather than as emphasis.
  */
-const ARCHIVE_NOTE = "text-[13px] text-stone no-underline transition-colors hover:text-moss";
+const ARCHIVE_NOTE = "text-[13px] text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70";
 
 /**
  * The Keeper Tiers hub: one row per season with its stages as pills, closing on the row for

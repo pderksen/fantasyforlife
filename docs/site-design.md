@@ -661,12 +661,20 @@ in the card: the stages are what this page is for, and the board is where you go
 
 **The archive row's second line is the one thing on it not typed like a season.** Those years'
 drafts are not on the sheet its pill opens (they are on the MyFantasyLeague sites the League
-History page already lists), so the row carries a 13px stone link (`ARCHIVE_NOTE`) under the pill
+History page already lists), so the row carries a 13px link (`ARCHIVE_NOTE`) under the pill
 reading "Drafts linked on past MFL sites" and pointing at `history.html#past-leagues`. A second
 pill there was the obvious symmetry and is wrong twice over: it would claim MFL was an equal
 destination in this card, and it would point sideways at this site's own page using the treatment
 every other link in the card uses to leave it. The right-hand span becomes a `flex-col items-end`
 to stack the two, the same call the home page's Past Seasons row makes for its two hosts.
+
+It is the one underlined link on the site, and it earned that by failing twice. Stone at 13px is
+the colour of the muted labels around it, so it read as a caption under the pill rather than a
+destination; moss at 13px is the site's link colour but sits directly under a bordered pill,
+which takes the whole row's "this is clickable" signal for itself. The underline is what settles
+it, kept at `decoration-moss/40` so the rule reads as an affordance and not as emphasis. Nothing
+else on the site needs it: every other link is either a pill, a nav item, or moss text at 15px
+or larger with room around it.
 
 **The Throwback Year badge is back, it is computed now, and the League History page reuses it.**
 `isThrowbackSeason()` in `league-info.ts` reads the five-year cadence from `THROWBACK_FIRST`
