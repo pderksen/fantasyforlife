@@ -2368,9 +2368,14 @@ ${pills}
  * a link sitting on the cream page background. So it reads as a destination rather than as a
  * footnote, without inventing a style: three seasons the tracker does not carry are worth more
  * than 14px of moss text, and `PILL_ON_CARD` was never an option here since nothing is a card.
+ *
+ * The negative top margin pulls it back under the house-rule notes it follows. A season section
+ * carries `mb-14` because that is what separates one season from the next, and this pill is not
+ * a section: left at its own positive margin it floated 80px below the last note and read as
+ * unattached to anything. `-mt-8` nets ~24px, close enough to belong to the block above it.
  */
 function prizeArchiveHtml(): string {
-  return `    <div class="mt-6 pb-12">
+  return `    <div class="-mt-8 pb-12">
       <a href="${ARCHIVE_LINKS.prizeSheet}" target="_blank" rel="noopener noreferrer" class="${PILL_LINK}">Prize winnings 2023&ndash;2025 &#x2197;</a>
     </div>`;
 }
