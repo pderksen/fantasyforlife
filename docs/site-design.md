@@ -879,7 +879,16 @@ fetch, so the crawler never reads the `noindex` and the URL can still be listed 
 inbound link. Staying crawlable is what makes the directive work. Unfurlers ignore robots
 rules, so previews are unaffected.
 
-**No favicon**, by choice. `/favicon.ico` 404s harmlessly.
+**Favicon**: three PNG cuts of the header mark, linked from every page's `<head>`. 32 and 16
+go in as `rel="icon"`, 180 as `rel="apple-touch-icon"`. **No `.ico`**: every page carries the
+link tags, so a browser never falls back to a bare `/favicon.ico` request, and the site ships
+PNG marks and nothing else. 16 and 32 are each cut from `ffl-avatar-512.png` directly rather
+than letting a browser downscale the 32, which reads worse. At 16px the shield is a blur and
+the FFL letters are gone. That is accepted rather than designed around, since a tab on any
+HiDPI screen asks for the 32 and that one reads cleanly. The icon links take `htmlHead`'s `base`,
+the one option only the roster generator sets (`"../"`), so they resolve from a season
+directory too. Unlike the header mark there is no `hasSiteMark()` guard: a missing file is a
+404 and a blank tab, not a broken image, and every cut rides the same `assets/` mirror.
 
 ---
 

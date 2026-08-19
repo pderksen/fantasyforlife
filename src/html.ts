@@ -306,6 +306,8 @@ interface HeadOptions {
   ogTitle?: string;
   description: string;
   siteName: string;
+  /** Path prefix to the output root, for the icon links. `""` on a root page, `"../"` from a season directory. */
+  base?: string;
   extraStyles?: string;
 }
 
@@ -318,15 +320,24 @@ interface HeadOptions {
  * Open Graph tags are unaffected — chat and social unfurlers don't honor robots
  * rules, so previews still render.
  *
- * No favicon by choice; browsers 404 on `/favicon.ico` and move on.
+ * The favicon is three PNG cuts of the header mark, not an `.ico`: every page carries
+ * the link tags, so nothing ever falls back to a bare `/favicon.ico` request, and the
+ * marks ship as PNG and nothing else. 16 and 32 are both cut from `ffl-avatar-512.png`
+ * directly, since a browser downscaling the 32 to 16 reads worse than lanczos from the
+ * source; 180 is the iOS home-screen size. There is deliberately no `hasSiteMark()`
+ * guard here the way the header has one. A missing icon file costs a 404 and a blank tab,
+ * not a broken image, and every cut rides the same `assets/` mirror as the mark.
  */
-function htmlHead({ title, ogTitle, description, siteName, extraStyles = "" }: HeadOptions): string {
+function htmlHead({ title, ogTitle, description, siteName, base = "", extraStyles = "" }: HeadOptions): string {
   return `<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${esc(title)}</title>
   <meta name="description" content="${esc(description)}">
   <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/png" sizes="32x32" href="${base}assets/ffl-favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="${base}assets/ffl-favicon-16.png">
+  <link rel="apple-touch-icon" href="${base}assets/ffl-favicon-180.png">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="${esc(siteName)}">
   <meta property="og:title" content="${esc(ogTitle ?? title)}">
@@ -663,6 +674,7 @@ ${htmlHead({
     ogTitle: `${snapshot.season} ${typeLabel}`,
     description: (OG_DESCRIPTIONS[snapshot.snapshotType] ?? (() => `${snapshot.season} rosters.`))(snapshot.season),
     siteName: snapshot.leagueName,
+    base: chrome.base,
     extraStyles: styles,
   })}
 <body class="bg-cream text-ink font-sans antialiased">

@@ -180,12 +180,18 @@ deleting the inbox copies.
 | `assets/ffl-avatar-128.png` | 128×128 | 17.3 KB | The site header mark, rendered at 42 CSS px |
 | `assets/ffl-avatar-512.png` | 512×512 | 329 KB | Social card, `og:image`, re-uploading the Sleeper avatar |
 | `assets/ffl-logo-999.png` | 999×333 | 331 KB | Banner at full column width, 1x |
+| `assets/ffl-favicon-180.png` | 180×180 | 34.4 KB | `apple-touch-icon`, the iOS home-screen size |
+| `assets/ffl-favicon-32.png` | 32×32 | 2.0 KB | The tab icon a HiDPI screen actually asks for |
+| `assets/ffl-favicon-16.png` | 16×16 | 0.8 KB | The tab icon at 1x |
 
-677 KB in total, down from 3.2 MB of masters. `output/` is committed and `assets/` is mirrored
+714 KB in total, down from 3.2 MB of masters. `output/` is committed and `assets/` is mirrored
 into it, so every byte here is stored **twice** in git forever — which is the only real argument
 against the format, since nobody is waiting on the download.
 
-Only `ffl-avatar-128.png` is referenced by a page today. The other two are staged.
+`ffl-avatar-128.png` and the three favicon cuts are referenced by every page. The 512 and the
+banner are staged. All three favicons come from the 512 rather than from each other, and both
+small ones are cut from it directly: a 32 downscaled to 16 by the browser reads worse than
+lanczos from the source, and at 16px there is nothing left to lose.
 
 Five decisions worth not re-litigating:
 
