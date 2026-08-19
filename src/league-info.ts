@@ -16,6 +16,21 @@ export const SITE = {
 } as const;
 
 /**
+ * Refresh cadence, shown on the newest tiers page only.
+ *
+ * That page is the one people open to see whether a keeper or a trade has landed yet, so it is
+ * the only page where the answer to "how current is this?" is worth the line. Every other roster
+ * page is a sealed record and its footer timestamp already says when it stopped moving.
+ *
+ * Hand-maintained rather than derived from `.github/workflows/refresh.yml`: the schedule there is
+ * two cron expressions (daily through August for the keeper watch, Thursdays September through
+ * January in season, nothing February through July), and a renderer that guessed at which one is
+ * live would state a cadence the workflow was not actually keeping. Reword this when the season
+ * turns over.
+ */
+export const REFRESH_NOTE = "Updated nightly or upon request";
+
+/**
  * Site header navigation.
  *
  * Items with no `href` and no `tiers` flag render dimmed and inert — the page is planned but

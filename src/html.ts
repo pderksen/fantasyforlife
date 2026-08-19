@@ -7,6 +7,7 @@ import { buildRosterGrid, columnOrderNote, type DraftRoundLookup, type GridRow }
 import { exportFileName, newestNavLink } from "./snapshot.js";
 import {
   SITE,
+  REFRESH_NOTE,
   SITE_NAV,
   SURVIVOR,
   ARCHIVE_LINKS,
@@ -610,6 +611,22 @@ const ROUND_COL_STYLE = `    tr:not(.tier) > td:first-child { text-align: center
 
 // ── Page generators ──
 
+/**
+ * Is this the newest tiers page the site has — the one the home page's hero card points at?
+ *
+ * Answered from the page's own nav links rather than the filesystem, since `buildNavLinks()`
+ * already listed every page that exists and `newestNavLink()` already owns the definition of
+ * "newest" the hero card uses. Matched on season and type, not `href`: a nav link to the page
+ * you are standing on is a bare filename while every other season's is `../<season>/...`.
+ *
+ * Advances on its own. The 2026 pre-draft page carries the note today; the run that first writes
+ * the 2026 post-draft page moves the note there and off this one, with no edit here.
+ */
+function isNewestPage(snapshot: Snapshot, navLinks: NavLink[]): boolean {
+  const newest = newestNavLink(navLinks);
+  return newest?.season === snapshot.season && newest?.page === snapshot.snapshotType;
+}
+
 export function generateHtml(
   snapshot: Snapshot,
   navLinks: NavLink[] = [],
@@ -630,6 +647,9 @@ export function generateHtml(
   const dataRows = renderGridRows(rows, rosters.length + (hasRoundColumn ? 1 : 0), hasRoundColumn);
 
   const navHtml = navBar(navLinks, snapshot.season, `${chrome.base}tiers.html`);
+  const refreshHtml = isNewestPage(snapshot, navLinks)
+    ? ` <span class="text-stone/70">&middot; ${esc(REFRESH_NOTE)}</span>`
+    : "";
   // Sibling file, written by the same run that writes this page.
   const exportHtml = exportRowHtml(exportFileName(snapshot.season, snapshot.snapshotType));
 
@@ -649,7 +669,7 @@ ${htmlHead({
 ${siteHeader(chrome)}
   <div class="px-3 sm:px-5 pt-5 sm:pt-6 pb-10">
   <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-ink mb-1">${esc(snapshot.season)} ${esc(typeLabel)}</h1>
-  <div class="text-sm text-stone mb-4">${esc(snapshot.leagueName)}</div>
+  <div class="text-sm text-stone mb-4">${esc(snapshot.leagueName)}${refreshHtml}</div>
 ${navHtml}
   <div class="${TABLE_WRAP}">
   <table class="border-collapse bg-white text-xs">

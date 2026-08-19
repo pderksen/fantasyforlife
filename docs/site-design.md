@@ -711,6 +711,19 @@ it changed.
 
 ### Chrome details
 
+- **Refresh note**: `REFRESH_NOTE` from `league-info.ts` ("Updated nightly or upon request"),
+  appended to the league-name line under the `<h1>` as a dimmed `&middot;` clause. It renders on
+  **one page**, the newest stage of the newest season, which `isNewestPage()` decides by asking
+  `newestNavLink()` the same question the home page's hero card asks. That page is the one people
+  open to see whether a keeper or a trade has landed, and it is the only page where the answer to
+  "how current is this?" is worth a line; every older page is a sealed record whose footer
+  timestamp already says when it stopped moving. It advances on its own, so the run that first
+  writes 2026 post-draft moves the note there and off the pre-draft page.
+  Riding on the existing league-name line rather than taking a line of its own is what keeps it
+  from reading as the descriptive subheading these pages deliberately don't carry.
+  The string is hand-maintained, not derived from `.github/workflows/refresh.yml`: that schedule
+  is nightly through August and Thursdays September through January, so the wording needs a look
+  when the season turns over.
 - **Nav bar** (`navBar()`): an `← All Keeper Tiers` pill back to the hub, then this season's
   own stages, the current one as a filled `PILL_ACTIVE` span. It lists **only this season** —
   the hub is the one page that crosses seasons, which is what lets this row stay a fixed three
