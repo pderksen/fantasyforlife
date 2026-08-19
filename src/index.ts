@@ -13,7 +13,6 @@ import type { DraftRoundLookup } from "./roster-grid.js";
 // Point this at the current season's league; earlier ones are reachable by walking that
 // chain (see getLeagueLineage). 2025: 1220634180434526208.
 const DEFAULT_LEAGUE_ID = "1331127568820109312";  // 2026
-const LEAGUE_NAME = "Fantasy For Life (FFL)";
 const SNAPSHOT_TYPES: SnapshotType[] = ["pre-draft", "post-draft", "end-of-season"];
 
 function isSnapshotType(value: string): value is SnapshotType {
@@ -89,7 +88,7 @@ async function regenerateIndex(): Promise<void> {
   const navLinks = buildIndexNavLinks();
   if (navLinks.length === 0) return;
 
-  const html = generateIndexHtml(LEAGUE_NAME, navLinks, getLatestDraftOrder(), hasSiteMark());
+  const html = generateIndexHtml(navLinks, getLatestDraftOrder(), hasSiteMark());
   const outputPath = getIndexOutputPath();
   await writeHtml(html, outputPath);
   console.log(`Index written: ${outputPath}`);
@@ -103,7 +102,7 @@ async function regenerateIndex(): Promise<void> {
  */
 async function regenerateTiers(): Promise<void> {
   const outputPath = getTiersOutputPath();
-  await writeHtml(generateTiersHtml(LEAGUE_NAME, buildIndexNavLinks(), hasSiteMark()), outputPath);
+  await writeHtml(generateTiersHtml(buildIndexNavLinks(), hasSiteMark()), outputPath);
   console.log(`Tiers written: ${outputPath}`);
 }
 
@@ -113,7 +112,7 @@ async function regenerateTiers(): Promise<void> {
  */
 async function regenerateHistory(): Promise<void> {
   const outputPath = getHistoryOutputPath();
-  await writeHtml(generateHistoryHtml(LEAGUE_NAME, buildIndexNavLinks(), hasSiteMark()), outputPath);
+  await writeHtml(generateHistoryHtml(buildIndexNavLinks(), hasSiteMark()), outputPath);
   console.log(`History written: ${outputPath}`);
 }
 
@@ -124,7 +123,7 @@ async function regenerateHistory(): Promise<void> {
  */
 async function regeneratePrizes(): Promise<void> {
   const outputPath = getPrizesOutputPath();
-  await writeHtml(generatePrizesHtml(LEAGUE_NAME, buildIndexNavLinks(), hasSiteMark()), outputPath);
+  await writeHtml(generatePrizesHtml(buildIndexNavLinks(), hasSiteMark()), outputPath);
   console.log(`Prizes written: ${outputPath}`);
 }
 

@@ -42,7 +42,7 @@ unreferenced, staged for slots not yet built; the ladder is in `docs/photos.md`.
 ## Site Header
 
 The green bar every page opens with, from `siteHeader()` in `html.ts`. Avatar, wordmark
-("Fantasy for Life" / "est. 2006" from `SITE`), then `SITE_NAV`.
+("Fantasy For Life" / "est. 2006" from `SITE`), then `SITE_NAV`.
 
 Its per-page inputs are a `SiteChrome` object, passed in rather than derived, because they
 differ per page:
@@ -862,16 +862,51 @@ When it appears:
 ## Page Head Metadata
 
 `htmlHead()` takes a `HeadOptions` object (`title`, optional `ogTitle`, `description`,
-`siteName`, optional `extraStyles`) and emits the same block on every page.
+`siteName`, optional `base`, optional `path`, optional `extraStyles`) and emits the same block
+on every page.
 
-**Open Graph**: `og:type`, `og:site_name`, `og:title`, `og:description`, plus `twitter:card` =
-`summary` (no image exists, so `summary` is correct) and a plain `<meta name="description">`.
-Roster pages pass `ogTitle` as just `"<season> <label>"` — the league name is already the
-`og:site_name`, so repeating it wastes the preview card's bold line. Per-page copy comes from
+**The audience is an unfurl card, not a search result.** Every page is `noindex` (below), so
+none of these strings ever reaches a SERP. The only place they render is the preview card a
+chat client draws when someone drops a link in the league group or on Sleeper's message board,
+which is why the descriptions are written against a **~100 character** clip point rather than
+the 155 a search snippet allows. Two of them were over that and were cut; the League History
+and Prize Tracker lines were already short enough to leave alone.
+
+**The site is named once.** `SITE.wordmark` ("Fantasy For Life") supplies every `<title>` and
+every `og:site_name`, so the tab, the preview card, and the header a visitor actually reads
+cannot disagree. They did until Aug 2026: the four root-page generators took a `leagueName`
+parameter fed from a `LEAGUE_NAME` constant in `index.ts` reading `"Fantasy For Life (FFL)"`,
+against a header saying "Fantasy for Life". That constant and the parameter are both gone.
+The registered Sleeper name survives in exactly one place, the line under a roster page's h1,
+where it is quoting the league rather than naming the site, and it reads that off
+`snapshot.leagueName` where the fact actually comes from. The parenthetical is not in a title:
+it spends six characters of a clipping card abbreviating a name printed beside it.
+
+**Titles are `<wordmark> — <page>`**, em dash, with the home page taking the bare wordmark.
+Roster pages pass `ogTitle` as just `"<season> <label>"`, since the site name is already the
+`og:site_name` and repeating it wastes the preview card's bold line. Per-page copy comes from
 `OG_DESCRIPTIONS` in `html.ts`, keyed by snapshot type.
 
-**No `og:url` / `og:image`**: the deployed hostname isn't recorded anywhere in the repo, and a
-wrong canonical URL unfurls worse than none. No artwork exists.
+**Open Graph**: `og:type`, `og:site_name`, `og:title`, `og:description`, `og:url`, and the
+`og:image` set, plus `twitter:card` = `summary` and a plain `<meta name="description">`.
+
+**`og:url` and `og:image` are gated on `SITE.origin`**, and they are the site's only two
+absolute URLs. Everything else stays relative so the pages still open over `file://` during
+local preview, but an unfurler has no page to resolve a relative reference against, so these
+two cannot. `SITE.origin` in `league-info.ts` holds the Cloudflare Pages host with no trailing
+slash; each generator passes its own `path` (`""` on the home page, `"tiers.html"`,
+`"2026/rosters-pre-draft.html"`). Setting `origin` to `""` drops both tags rather than emitting
+a broken absolute URL, which is the state this sat in until Aug 2026, when the host was written
+down for the first time: a wrong canonical URL in a preview card unfurls worse than an absent
+one. **Exercise both directions after touching it**: mutate `SITE.origin` to `""` from a
+scratchpad script, re-render, and assert the tags are gone before restoring.
+
+**The card image is `ffl-avatar-512.png`, and that is why `twitter:card` stays `summary`.**
+It is 512 square, which is the small-thumbnail card's shape. `summary_large_image` wants a
+1.91:1 banner and would letterbox the shield inside grey bars, so switching the card type means
+cutting a new banner asset first, not just changing the string. The avatar carries
+`og:image:width` / `height` so a client can lay the card out before the image lands, and an
+`og:image:alt`. It is the one asset reference on the site that does not take `base`.
 
 **`noindex`**: `<meta name="robots" content="noindex, nofollow">`. The site is deliberately not
 Googleable. **Do not "reinforce" this with a `robots.txt` `Disallow`.** Disallowing blocks the

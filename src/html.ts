@@ -4,7 +4,7 @@ import type { Snapshot, SnapshotType, SnapshotRoster, SnapshotPlayer, NavLink, T
 import { SNAPSHOT_TYPE_LABELS } from "./types.js";
 import type { DraftOrder } from "./tiers.js";
 import { buildRosterGrid, columnOrderNote, type DraftRoundLookup, type GridRow } from "./roster-grid.js";
-import { exportFileName, newestNavLink } from "./snapshot.js";
+import { exportFileName, newestNavLink, pageFileName } from "./snapshot.js";
 import {
   SITE,
   REFRESH_NOTE,
@@ -308,6 +308,11 @@ interface HeadOptions {
   siteName: string;
   /** Path prefix to the output root, for the icon links. `""` on a root page, `"../"` from a season directory. */
   base?: string;
+  /**
+   * This page's path from the output root, for `og:url`: `""` for the home page,
+   * `"tiers.html"`, `"2026/rosters-pre-draft.html"`. Unused when `SITE.origin` is empty.
+   */
+  path?: string;
   extraStyles?: string;
 }
 
@@ -327,8 +332,21 @@ interface HeadOptions {
  * source; 180 is the iOS home-screen size. There is deliberately no `hasSiteMark()`
  * guard here the way the header has one. A missing icon file costs a 404 and a blank tab,
  * not a broken image, and every cut rides the same `assets/` mirror as the mark.
+ *
+ * `og:url` and `og:image` are the two tags that need an absolute URL, since an unfurler has
+ * no page to resolve a relative one against, and they render only while `SITE.origin` is set.
+ * The image is the 512px avatar, which is square and so is paired with `twitter:card:
+ * summary` (the small thumbnail card); `summary_large_image` wants a 1.91:1 banner and would
+ * letterbox the shield. It is the one asset reference on the site that does not take `base`.
  */
-function htmlHead({ title, ogTitle, description, siteName, base = "", extraStyles = "" }: HeadOptions): string {
+function htmlHead({ title, ogTitle, description, siteName, base = "", path = "", extraStyles = "" }: HeadOptions): string {
+  const absolute = SITE.origin
+    ? `\n  <meta property="og:url" content="${esc(`${SITE.origin}/${path}`)}">` +
+      `\n  <meta property="og:image" content="${esc(`${SITE.origin}/assets/ffl-avatar-512.png`)}">` +
+      `\n  <meta property="og:image:width" content="512">` +
+      `\n  <meta property="og:image:height" content="512">` +
+      `\n  <meta property="og:image:alt" content="${esc(`${SITE.wordmark} shield`)}">`
+    : "";
   return `<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -341,7 +359,7 @@ function htmlHead({ title, ogTitle, description, siteName, base = "", extraStyle
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="${esc(siteName)}">
   <meta property="og:title" content="${esc(ogTitle ?? title)}">
-  <meta property="og:description" content="${esc(description)}">
+  <meta property="og:description" content="${esc(description)}">${absolute}
   <meta name="twitter:card" content="summary">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -670,11 +688,12 @@ export function generateHtml(
   return `<!DOCTYPE html>
 <html lang="en">
 ${htmlHead({
-    title: `${snapshot.leagueName} - ${snapshot.season} ${typeLabel}`,
+    title: `${SITE.wordmark} \u2014 ${snapshot.season} ${typeLabel}`,
     ogTitle: `${snapshot.season} ${typeLabel}`,
     description: (OG_DESCRIPTIONS[snapshot.snapshotType] ?? (() => `${snapshot.season} rosters.`))(snapshot.season),
-    siteName: snapshot.leagueName,
+    siteName: SITE.wordmark,
     base: chrome.base,
+    path: `${snapshot.season}/${pageFileName(snapshot.snapshotType)}`,
     extraStyles: styles,
   })}
 <body class="bg-cream text-ink font-sans antialiased">
@@ -1258,7 +1277,6 @@ function siteLinksHtml(): string {
  * and navigation reads fine second.
  */
 export function generateIndexHtml(
-  leagueName: string,
   navLinks: NavLink[],
   draftOrder?: DraftOrder,
   hasMark = false,
@@ -1279,9 +1297,9 @@ ${[draftOrderHtml(draftOrder), galleryHtml(chrome)].filter(Boolean).join("\n")}
   return `<!DOCTYPE html>
 <html lang="en">
 ${htmlHead({
-    title: leagueName,
-    description: "Season honors, roster tiers, draft order, and photos from the league. Est. 2006.",
-    siteName: leagueName,
+    title: SITE.wordmark,
+    description: "Keeper tiers, draft order, champions, and prize money for a 10-team keeper league running since 2006.",
+    siteName: SITE.wordmark,
   })}
 <body class="bg-cream text-ink font-sans antialiased">
 ${siteHeader(chrome)}
@@ -1362,7 +1380,7 @@ const ARCHIVE_NOTE = "text-[13px] text-moss underline underline-offset-2 decorat
  * Rows come straight from `discoverPages()` by way of the nav links, so a season appears the
  * run after its first snapshot lands and gains a pill per stage with no edit here.
  */
-export function generateTiersHtml(leagueName: string, navLinks: NavLink[], hasMark = false): string {
+export function generateTiersHtml(navLinks: NavLink[], hasMark = false): string {
   const chrome: SiteChrome = { base: "", hasMark };
 
   // Newest season first, keeping `discoverPages()`' newest-stage-first order within each one.
@@ -1395,10 +1413,11 @@ export function generateTiersHtml(leagueName: string, navLinks: NavLink[], hasMa
   return `<!DOCTYPE html>
 <html lang="en">
 ${htmlHead({
-    title: `${leagueName} - Keeper Tiers & Drafts`,
+    title: `${SITE.wordmark} \u2014 Keeper Tiers & Drafts`,
     ogTitle: "Keeper Tiers & Drafts",
-    description: "Roster tiers for every season and every stage of it, from pre-draft keepers to final rosters, plus each season's draft board.",
-    siteName: leagueName,
+    description: "Every season's roster tiers, from pre-draft keepers to final rosters, plus each season's draft board.",
+    siteName: SITE.wordmark,
+    path: "tiers.html",
   })}
 <body class="bg-cream text-ink font-sans antialiased">
 ${siteHeader(chrome)}
@@ -2013,7 +2032,7 @@ ${mflLinks}
  * sub-nav: it is where to go when this page does not have what you came for, so it reads as the
  * exit rather than as another record.
  */
-export function generateHistoryHtml(leagueName: string, navLinks: NavLink[], hasMark = false): string {
+export function generateHistoryHtml(navLinks: NavLink[], hasMark = false): string {
   const chrome: SiteChrome = { base: "", hasMark };
 
   const seasons = Object.keys(SEASON_HONORS).sort().reverse();
@@ -2037,10 +2056,11 @@ ${table}
   return `<!DOCTYPE html>
 <html lang="en">
 ${htmlHead({
-    title: `${leagueName} - League History`,
+    title: `${SITE.wordmark} \u2014 League History`,
     ogTitle: "League History",
     description: "Champions, runners-up, and season honors for every recorded season.",
-    siteName: leagueName,
+    siteName: SITE.wordmark,
+    path: "history.html",
     extraStyles: TABLE_SCROLL_STYLES,
   })}
 <body class="bg-cream text-ink font-sans antialiased">
@@ -2430,7 +2450,7 @@ function prizeArchiveHtml(): string {
  * same two reasons: the season people came for opens the page, and the all-time table holds a
  * fixed position instead of sinking another screen every August.
  */
-export function generatePrizesHtml(leagueName: string, navLinks: NavLink[], hasMark = false): string {
+export function generatePrizesHtml(navLinks: NavLink[], hasMark = false): string {
   const chrome: SiteChrome = { base: "", hasMark };
 
   const seasons = prizeSeasons();
@@ -2446,10 +2466,11 @@ export function generatePrizesHtml(leagueName: string, navLinks: NavLink[], hasM
   return `<!DOCTYPE html>
 <html lang="en">
 ${htmlHead({
-    title: `${leagueName} - Prize Tracker`,
+    title: `${SITE.wordmark} \u2014 Prize Tracker`,
     ogTitle: "Prize Tracker",
     description: "Prize winners by season, plus all-time winnings.",
-    siteName: leagueName,
+    siteName: SITE.wordmark,
+    path: "prizes.html",
     extraStyles: TABLE_SCROLL_STYLES,
   })}
 <body class="bg-cream text-ink font-sans antialiased">

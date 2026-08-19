@@ -9,10 +9,24 @@
  * Everything here is keyed by season so old years stay put as new ones land.
  */
 
-/** Wordmark and tagline for the site header. Distinct from the league's Sleeper name. */
+/**
+ * Wordmark, tagline, and public origin. Distinct from the league's Sleeper name
+ * ("Fantasy For Life (FFL)"), which stays verbatim wherever the registered league is
+ * being quoted rather than the site being named, which is now exactly one place: the league
+ * line under a roster page's h1, read off `snapshot.leagueName`.
+ *
+ * `origin` is the Cloudflare Pages host, no trailing slash, and it exists for exactly one
+ * job: `og:url` and `og:image` are the only two things on the site that cannot be a
+ * relative path, since an unfurler resolves them against nothing. Everything else stays
+ * relative so the pages still open over `file://` during local preview. Setting it to `""`
+ * drops both tags rather than emitting a broken absolute URL, which is the state this
+ * project sat in until the host was written down: a wrong canonical URL in a preview card
+ * is worse than an absent one.
+ */
 export const SITE = {
-  wordmark: "Fantasy for Life",
+  wordmark: "Fantasy For Life",
   tagline: "est. 2006",
+  origin: "https://fantasyforlife.pages.dev",
 } as const;
 
 /**
