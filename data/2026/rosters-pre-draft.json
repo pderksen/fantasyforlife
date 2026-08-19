@@ -3,7 +3,7 @@
   "leagueName": "Fantasy For Life (FFL)",
   "season": "2026",
   "snapshotType": "pre-draft",
-  "capturedAt": "2026-08-18T11:43:55.148Z",
+  "capturedAt": "2026-08-19T11:43:47.558Z",
   "rosters": [
     {
       "ownerName": "Clovis Jets",
@@ -372,7 +372,8 @@
         {
           "name": "Burrow, Joe",
           "position": "QB",
-          "team": "CIN"
+          "team": "CIN",
+          "keeper": true
         },
         {
           "name": "Mayfield, Baker",
@@ -412,12 +413,14 @@
         {
           "name": "Shakir, Khalil",
           "position": "WR",
-          "team": "BUF"
+          "team": "BUF",
+          "keeper": true
         },
         {
           "name": "Smith, DeVonta",
           "position": "WR",
-          "team": "PHI"
+          "team": "PHI",
+          "keeper": true
         },
         {
           "name": "St. Brown, Amon-Ra",
@@ -585,7 +588,7 @@
         {
           "name": "Allen, Keenan",
           "position": "WR",
-          "team": "FA"
+          "team": "IND"
         },
         {
           "name": "Flowers, Zay",
