@@ -98,6 +98,28 @@ export function getDraftDate(season: string): string | undefined {
 }
 
 /**
+ * Sleeper's draft id per season, which is all a public draft board needs.
+ *
+ * Hand-kept and added the season a draft finishes, deliberately not read out of
+ * `data/<season>/draft-picks.json`: a season's row should link its results because the draft
+ * happened, not because a snapshot of it landed, and the ids are already written down in
+ * CLAUDE.md's League table. A season with no entry simply renders no link, which is the state
+ * every upcoming season sits in until its draft runs.
+ *
+ * Sleeper seasons only. 2006-2024 drafted on MyFantasyLeague, whose boards are reachable from
+ * the Past Leagues section of the League History page instead.
+ */
+export const SLEEPER_DRAFT_IDS: Record<string, string> = {
+  "2025": "1220634181302767616",
+};
+
+/** A season's public Sleeper draft board, or undefined until that draft has run. */
+export function draftResultsUrl(season: string): string | undefined {
+  const id = SLEEPER_DRAFT_IDS[season];
+  return id ? `https://sleeper.com/draft/nfl/${id}` : undefined;
+}
+
+/**
  * Glyph in an honor card's circle. The paths live in `HONOR_ICONS` in `html.ts`; naming the
  * keys here rather than there makes a typo or a missing glyph a compile error.
  */

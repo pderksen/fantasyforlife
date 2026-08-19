@@ -22,6 +22,7 @@ import {
   TEAM_ALIASES,
   ACTIVE_TEAMS,
   PRIZE_SEASONS,
+  draftResultsUrl,
   getDraftDate,
   getLatestHonors,
   isThrowbackSeason,
@@ -1161,14 +1162,29 @@ function tiersRowHtml(season: string, links: NavLink[], currentHref?: string): s
     .join("\n            ");
   const badge = throwbackBadgeHtml(season);
   const badgeLine = badge ? `\n          ${badge}` : "";
+  // Last in the row, after the stages, and carrying the arrow every off-site pill on this site
+  // carries. It is `PILL_ON_CARD` like the stages beside it because there is no fourth level of
+  // fill available here, and a season's draft board is a peer of its stages, not a step above.
+  const draftHref = draftResultsUrl(season);
+  const draftPill = draftHref
+    ? `\n            <a href="${draftHref}" target="_blank" rel="noopener noreferrer" class="${PILL_ON_CARD}">Draft Results &#x2197;</a>`
+    : "";
 
   return `        <div class="flex items-center gap-3 flex-wrap px-5 py-3.5 border-t border-rule">
           <span class="text-[19px] font-bold tracking-tight">${esc(season)}</span>${badgeLine}
           <span class="ml-auto flex gap-2 flex-wrap justify-end">
-            ${pills}
+            ${pills}${draftPill}
           </span>
         </div>`;
 }
+
+/**
+ * The second line under the archive pill: where the pre-Sleeper drafts are, which is not where
+ * that pill goes. Small stone text rather than a pill, because it points sideways to another
+ * page of this site instead of naming an entry in this list, and because the card has no fill
+ * level left below `PILL_ON_CARD`.
+ */
+const ARCHIVE_NOTE = "text-[13px] text-stone no-underline transition-colors hover:text-moss";
 
 /**
  * The Keeper Tiers hub: one row per season with its stages as pills, closing on the row for
@@ -1203,29 +1219,36 @@ export function generateTiersHtml(leagueName: string, navLinks: NavLink[], hasMa
   // Typed exactly like a season row, because it is one: those years' tiers are the next
   // entries in this list and only the destination differs. A lighter year or a plain text
   // link would file them as a footnote to the list instead of a member of it.
+  //
+  // The note under the pill is the one place the row is *not* typed like a season: those years'
+  // drafts are not on the sheet the pill opens, they are on the MFL sites the League History
+  // page already lists, and a second pill would claim they were an equal destination in this
+  // card. Small stone text pointing sideways at that section says where they are without
+  // promising this page holds them.
   const archiveRow = `        <div class="flex items-center gap-3 flex-wrap px-5 py-3.5 border-t border-rule">
           <span class="text-[19px] font-bold tracking-tight">${esc(LEAGUE_FIRST_SEASON)}&ndash;${Number(SLEEPER_FIRST_SEASON) - 1}</span>
-          <span class="ml-auto flex gap-2 flex-wrap justify-end">
+          <span class="ml-auto flex flex-col items-end gap-1.5">
             <a href="${ARCHIVE_LINKS.tiersSheet}" target="_blank" rel="noopener noreferrer" class="${PILL_ON_CARD}">Google Sheets Archive &#x2197;</a>
+            <a href="history.html#past-leagues" class="${ARCHIVE_NOTE}">Drafts linked on past MFL sites</a>
           </span>
         </div>`;
 
   return `<!DOCTYPE html>
 <html lang="en">
 ${htmlHead({
-    title: `${leagueName} - Keeper Tiers`,
-    ogTitle: "Keeper Tiers",
-    description: "Roster tiers for every season and every stage of it, from pre-draft keepers to final rosters.",
+    title: `${leagueName} - Keeper Tiers & Drafts`,
+    ogTitle: "Keeper Tiers & Drafts",
+    description: "Roster tiers for every season and every stage of it, from pre-draft keepers to final rosters, plus each season's draft board.",
     siteName: leagueName,
   })}
 <body class="bg-cream text-ink font-sans antialiased">
 ${siteHeader(chrome)}
   <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
-    <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-8">Keeper Tiers</h1>
+    <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-8">Keeper Tiers &amp; Drafts</h1>
     <div class="${CARD} overflow-hidden">
       <div class="flex items-center justify-between gap-3 px-5 py-[9px] bg-shell text-[11px] font-medium tracking-[0.12em] uppercase text-stone">
         <span>Season</span>
-        <span>Stage</span>
+        <span>Stages &amp; Drafts</span>
       </div>
 ${rows}
 ${archiveRow}

@@ -560,8 +560,8 @@ level, so it takes the index's chrome (`base: ""`, no `fullBleed`) and the same 
 A flat file rather than `tiers/index.html`, the same call the History and Prize pages make: it
 opens over `file://` during local preview.
 
-The page is a single card. A `bg-shell` header strip ("Season" / "Stage"), then one row per
-season newest-first, then a row for the pre-Sleeper archive. Each season row is the year at
+The page is a single card. A `bg-shell` header strip ("Season" / "Stages & Drafts"), then one row
+per season newest-first, then a row for the pre-Sleeper archive. Each season row is the year at
 17–19px bold on the left, a Throwback Year badge where one applies, and that season's stages as
 `PILL_ON_CARD` pills pushed right with `ml-auto`. Same card idiom as the home page's draft order
 list and the History table: `CARD` over `bg-shell`, rows on `border-t border-rule` hairlines.
@@ -601,6 +601,34 @@ and the trailing arrow differ. A lighter year or a plain text link there filed t
 era as a footnote to the list rather than a member of it, which is backwards: it is 19 of the
 league's 21 seasons. The range is derived from `LEAGUE_FIRST_SEASON` and `SLEEPER_FIRST_SEASON`,
 so it cannot claim years the sheet doesn't hold and the site doesn't serve.
+
+**The draft board is the last pill on a season's row.** The h1 is "Keeper Tiers & Drafts" because
+the page now answers both questions a reader has about a past season, and the second one is one
+link: `SLEEPER_DRAFT_IDS` in `league-info.ts` maps a season to its Sleeper draft id, and
+`draftResultsUrl()` turns that into the public board. A season with no id renders no pill, so an
+upcoming season needs no placeholder and no `undefined` in the markup. 2026 gets its entry the
+day the draft finishes.
+
+The id is hand-kept rather than read out of `data/<season>/draft-picks.json`, which does carry it.
+Deriving it would tie the link to a *snapshot* of the draft rather than to the draft, so a season
+captured late would have run its draft with nothing on this page pointing at it, and a season
+whose picks file arrives before anyone has checked the board would link it anyway. The ids are
+already written down in CLAUDE.md's League table, so the hand-kept version costs one line a year.
+
+It is `PILL_ON_CARD` with the `↗` and a new tab, identical to the archive row's link and to the
+stage pills beside it. There is no fill level left below the stages and none above them short of
+`PILL_CURRENT`, which belongs to the newest stage; and a draft board is a peer of that season's
+stages, not a rank above them. It sits last in the row for the same reason the archive sits last
+in the card: the stages are what this page is for, and the board is where you go when they aren't.
+
+**The archive row's second line is the one thing on it not typed like a season.** Those years'
+drafts are not on the sheet its pill opens (they are on the MyFantasyLeague sites the League
+History page already lists), so the row carries a 13px stone link (`ARCHIVE_NOTE`) under the pill
+reading "Drafts linked on past MFL sites" and pointing at `history.html#past-leagues`. A second
+pill there was the obvious symmetry and is wrong twice over: it would claim MFL was an equal
+destination in this card, and it would point sideways at this site's own page using the treatment
+every other link in the card uses to leave it. The right-hand span becomes a `flex-col items-end`
+to stack the two, the same call the home page's Past Seasons row makes for its two hosts.
 
 **The Throwback Year badge is back, it is computed now, and the League History page reuses it.**
 `isThrowbackSeason()` in `league-info.ts` reads the five-year cadence from `THROWBACK_FIRST`
