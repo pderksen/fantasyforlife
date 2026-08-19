@@ -445,10 +445,10 @@ held to a 1080px measure. Exact classes live in `html.ts`; this documents struct
 2. **Hero** — two cards. Left: shortcut to the newest tiers (`newestNavLink()`). Right: the
    next draft's date and a live countdown. Either can be absent and the row carries whichever
    it has.
-3. **"20XX Rule Changes"** — one full-width card: a `bg-shell` strip, the commissioner's note,
-   then "What's changing" and "Staying the same" side by side at `md`, then a footer carrying
-   the season's prize figures and the pointer to the rules document. Copy from `RULE_CHANGES`
-   in `league-info.ts`.
+3. **"What's new in 20XX"** — one full-width card holding "What's changing" and "Staying the
+   same" side by side at `md`, then a footer that appears only once there is a rules document to
+   point at. No header strip, and an optional `intro` paragraph that can sit above the split;
+   2026 sets neither. Copy from `RULE_CHANGES` in `league-info.ts`.
 4. **"20XX Draft Order" + "From the gallery"** — side by side on wide screens, stacked below
    ~900px. Draft order from `DRAFT_ORDERS` in `tiers.ts`, photos from `GALLERY` in
    `league-info.ts`.
@@ -470,35 +470,68 @@ slot; at the 1080px measure the browser would upscale them by 1.75x, which is pr
 resampling those files were cut at 900px to avoid (`docs/photos.md`). Running the two photos
 side by side instead would fix the width and break the framing, since they are a 1.69 and a 1.20
 aspect and equal heights crop the near-square trophy frame hard, which is the failure
-`GALLERY_MAX_H` was raised to 860 to fix in the first place. The second problem is mass: the
-draft order is ten fixed rows, about 443px, and eight rules under a paragraph run past 600px in
-a half-width column, so the pair would sit tall-beside-short with dead space under the shorter
-one. Given the full measure the two lists split into columns instead, and the announcement gets
-the width its intro paragraph wants.
+`GALLERY_MAX_H` was raised to 860 to fix in the first place. The second problem is shape: the draft
+order is one column of ten short rows, about 443px, while these are seven rules that each run to
+a sentence, so a half-width column puts most of them on three lines. Given the full measure they
+split into two columns and most fall to two, which is what makes seven rules read as two short
+lists rather than one long one.
 
 It sits **below the hero cards rather than above them**. The countdown is the most time-sensitive
 thing on the page in the weeks before a draft and the honors are what the page opens on, so the
 rules take the position directly above the draft order, which three of their own lines concern.
+
+**The card is the two lists and nothing else.** `RuleChanges.intro` is optional and 2026 sets
+none. A paragraph framing the list as decisions somebody made reads as an opening for a reply,
+and a generated page is the one place an owner cannot give one, so that ask belongs in league
+chat. Set `intro` on a future season and the paragraph returns above the split with no other
+edit.
+
+The `bg-shell` header strip went the same way. It read "From the commissioner", then "After the
+owner survey", and both were answers to a question the rules do not raise: an owner opening this
+card wants to know what changed, not who decided it or on what basis. The `SECTION_H2` above the
+card already names it and the two `SUB_H3`s name its halves, so a third label was the page
+explaining itself three times. This is the one card on the home page without a strip, and it is
+also the only one whose contents are self-describing.
+
+The heading above it reads "What's new in 20XX" rather than "20XX Rule Changes". Half the card is
+rules that did not change, so naming the whole thing after changes described one column and
+contradicted the other.
 
 **Both halves of the split are load-bearing.** Four of the 2026 survey questions came back as
 "leave it alone", and a card listing only what changed gives an owner no way to tell an upheld
 rule from one nobody raised. Listing both is also what keeps the changed column short enough to
 scan, which is the reason the card splits at all rather than running one list of eight.
 
-**The card derives everything it can.** The throwback year it names comes from
-`isThrowbackSeason()`'s cadence, and the entry fee, pot and champion's share in its footer are
-read out of `PRIZE_SEASONS`, so neither can contradict the Keeper Tiers hub or the Prize Tracker.
-What is hand-written is only what no other page holds: the rules themselves and the
-commissioner's note. `RuleChanges.prizeNote` is the whole provisional treatment on the prize
-figures, present only while a pool is unsettled, and `rulesHref` puts the rules-document link on
-the card the same way `NavItem.href` lights up a nav item. Absent, `rulesHref` renders nothing
-rather than the inert "coming soon" span the header already carries for that page: two of those
-on one page is the site saying the same thing twice. With neither field set the footer's whole
-divider goes with them, so the card never closes on an empty rule.
+**The card states no number another page owns.** The throwback year it names comes from
+`isThrowbackSeason()`'s cadence, so it cannot contradict the Keeper Tiers hub. Everything else
+is hand-written, because nothing else here exists anywhere else on the site.
 
-It is a white `CARD` with a `bg-shell` strip, the same idiom as the draft order card below it,
-rather than a second brass band. The Survivor notice owns that treatment as the page's one
-standing announcement, and a second brass block would leave neither reading as the exception.
+Prizes are the case that had to be decided twice. The footer carried the season's entry fee, pot
+and champion's share, read out of `PRIZE_SEASONS` so the figures could not drift, and that was
+still the wrong content: it restated part of a table the Prize Tracker renders in full, on a card
+nobody opens to look up a payout. What owners need from this card is that the prize structure
+moved, and that is a rule like the other six. So it became one, carrying a `RuleNote.link` to
+`prizes.html` at the end of its sentence. The card now quotes no prize figure at all, which is a
+stronger guarantee against the two pages disagreeing than deriving one was.
+
+`RuleNote.link` renders inside the sentence rather than on a line of its own. A rule that points
+somewhere is still a rule, and a block-level link under it would read as the list's navigation
+rather than as part of what the rule says. It takes `RULE_LINK`, which is `LINK` plus weight and
+`whitespace-nowrap`: moss at 15px, arriving after a sentence that opened on a bold lead-in, does
+not read as clickable on its own. The tiers hub solves the same problem with an underline, and
+that fix is spoken for here, since `ARCHIVE_NOTE` is deliberately the site's only underlined link
+and a second one would stop the first from marking anything.
+
+`rulesHref` puts the rules-document link on the card the same way `NavItem.href` lights up a nav
+item. Absent, it renders nothing rather than the inert "coming soon" span the header already
+carries for that page: two of those on one page is the site saying the same thing twice. Since it
+is now the footer's only occupant, an unset `rulesHref` takes the whole divider with it, and the
+card closes on its lists.
+
+It is a plain white `CARD` rather than a second brass band. The Survivor notice owns that
+treatment as the page's one standing announcement, and a second brass block would leave neither
+reading as the exception. It also drops `overflow-hidden`, which existed only to clip the header
+strip to the card's radius.
 
 **Honor card tones.** `HONOR_TONES` in `html.ts`, keyed by `Honor.tone`: `champion` is the forest
 card with a brass disc, `toilet` the clay card at the other end of the season, and an absent tone

@@ -940,6 +940,17 @@ function honorsHtml(): string {
 }
 
 /**
+ * The pointer at the end of a rule that another page spells out.
+ *
+ * `LINK` plus weight, and `nowrap` so the label and its arrow never split across lines. Moss
+ * alone at 15px, sitting after a sentence that opens on a bold lead-in, does not read as
+ * clickable — the same problem `ARCHIVE_NOTE` solves with an underline on the tiers hub. An
+ * underline is not available here: that one is the site's only underlined link, and a second
+ * would stop the first from meaning anything.
+ */
+const RULE_LINK = `${LINK} font-semibold whitespace-nowrap`;
+
+/**
  * A list of rules under its own sub-heading, one half of the rule changes card's split.
  *
  * No bullet markers: every line opens on a bold lead-in that already sets it apart, and a
@@ -947,7 +958,14 @@ function honorsHtml(): string {
  */
 function ruleListHtml(title: string, notes: RuleNote[]): string {
   const items = notes
-    .map((n) => `                <li class="text-[15px] leading-snug"><span class="font-semibold">${esc(n.label)}</span> ${esc(n.detail)}</li>`)
+    .map((n) => {
+      // Inside the sentence rather than on its own line: a rule that points somewhere is still
+      // a rule, and a block-level link under it would read as the list's own navigation.
+      const link = n.link
+        ? ` <a href="${esc(n.link.href)}" class="${RULE_LINK}">${esc(n.link.label)} &#8594;</a>`
+        : "";
+      return `                <li class="text-[15px] leading-snug"><span class="font-semibold">${esc(n.label)}</span> ${esc(n.detail)}${link}</li>`;
+    })
     .join("\n");
 
   return `            <div>
@@ -965,54 +983,43 @@ ${items}
  * planned. Two things ruled that out. The photo column next to that card renders 900px cuts
  * into a ~618px slot, so moving the photos below to make room would have them upscaled at the
  * 1080px measure, which is the exact resampling `docs/photos.md` cut those files to avoid. And
- * the two cards are not the same mass: the draft order is ten fixed rows and this is eight
- * rules under a paragraph, so side by side leaves white space under the shorter one. At the
- * full measure the lists can sit in two columns instead, which is what makes eight rules read
- * as two short lists rather than one long one.
+ * the two cards do not share a shape: the draft order is one column of ten short rows, and this
+ * is seven rules that each run to a sentence, so half the measure puts most of them on three
+ * lines. At the full width they sit in two columns and most fall to two, which is what makes
+ * seven rules read as two short lists rather than one long one.
  *
  * **Below the hero cards, not above them.** The countdown is the most time-sensitive thing on
  * the page in the weeks before a draft, and the honors above it are what the page opens on.
  * This sits directly above the draft order, which three of its own lines are about.
  *
- * A white `CARD` with a `bg-shell` strip, the same idiom as the draft order card below it,
- * rather than the brass band the Survivor notice uses: that band is the page's one
- * announcement treatment, and a second would leave neither reading as the exception.
+ * **The card is the two lists and nothing else.** `RuleChanges.intro` is optional and 2026 sets
+ * none, and the `bg-shell` header strip the other cards carry is gone too. It read "From the
+ * commissioner", then "After the owner survey", and both were answering a question the rules
+ * do not raise: an owner opening this wants to know what changed, not who decided it or how.
+ * The `SECTION_H2` above the card says what it is, and the two `SUB_H3`s say what each half is,
+ * so a third label was the page explaining itself three times. Set `intro` on a future season
+ * and the paragraph returns above the split with no other edit.
  *
- * The prize figures in the footer are read out of `PRIZE_SEASONS`, never written here, so the
- * summary cannot drift from the Prize Tracker it links. `prizeNote` is the whole provisional
- * treatment: delete it and the figures stand as settled.
+ * **The prize change is a rule in the list, not a figures row in the footer.** The footer
+ * carried the entry fee, pot and champion's share read out of `PRIZE_SEASONS` until Aug 2026.
+ * What owners need from this card is that the prize structure moved, which is a rule like any
+ * other, and the Prize Tracker is one click away through `RuleNote.link` rather than being
+ * partially restated here. That is also what stops the two pages disagreeing: this one now
+ * quotes no prize figure at all.
+ *
+ * A plain white `CARD`, rather than the brass band the Survivor notice uses: that band is the
+ * page's one announcement treatment, and a second would leave neither reading as the exception.
+ * No `overflow-hidden` either, which was only ever there to clip the strip to the radius.
+ *
+ * `rulesHref` is now the footer's only occupant, so an unset one takes the divider with it and
+ * the card closes on its lists.
  */
 function ruleChangesHtml(): string {
   const latest = latestRuleChanges();
   if (!latest) return "";
   const { season, rules } = latest;
 
-  const prizes = PRIZE_SEASONS[season];
   let footer = "";
-
-  if (prizes) {
-    const headline = prizes.prizes.find((p) => p.headline);
-    // Three figures, not the eight-line ledger: the Prize Tracker renders that table, and a
-    // second copy of it here would be a sync cost for a page nobody opens to read prize rules.
-    const figures = [
-      `${money(prizes.entryFee)} entry`,
-      `${money(prizes.pot)} pot`,
-      headline ? `${money(headline.amount)} to the champion` : "",
-    ].filter(Boolean).join(" &middot; ");
-
-    // Carries its own line break so an absent note leaves no blank line in the markup.
-    const pending = rules.prizeNote
-      ? `
-              <span class="text-sm text-stone">${esc(rules.prizeNote)}</span>`
-      : "";
-
-    footer += `
-            <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1.5">
-              <span class="${LABEL_TYPE}">${esc(season)} Prizes</span>
-              <span class="text-[15px]">${figures}</span>${pending}
-              <a href="prizes.html" class="${LINK} text-sm">Full Prize Tracker &#8594;</a>
-            </div>`;
-  }
 
   // Nothing at all without a rules document, rather than the inert span the site nav already
   // carries for that page: one "coming soon" per destination is the whole of what it can say.
@@ -1024,12 +1031,11 @@ function ruleChangesHtml(): string {
   }
 
   return `    <section class="mb-14">
-      <h2 class="${SECTION_H2}">${esc(season)} Rule Changes</h2>
-      <div class="${CARD} overflow-hidden">
-        <div class="px-5 sm:px-6 py-[9px] bg-shell text-[11px] font-medium tracking-[0.12em] uppercase text-stone">From the commissioner</div>
-        <div class="px-5 sm:px-6 py-5">
-          <p class="m-0 max-w-[68ch] text-[15px] leading-relaxed">${esc(rules.intro)}</p>
-          <div class="mt-6 grid gap-x-12 gap-y-6 md:grid-cols-2">
+      <h2 class="${SECTION_H2}">What's new in ${esc(season)}</h2>
+      <div class="${CARD}">
+        <div class="px-5 sm:px-6 py-5">${rules.intro ? `
+          <p class="m-0 max-w-[68ch] text-[15px] leading-relaxed">${esc(rules.intro)}</p>` : ""}
+          <div class="${rules.intro ? "mt-6 " : ""}grid gap-x-12 gap-y-6 md:grid-cols-2">
 ${ruleListHtml("What's changing", rules.changed)}
 ${ruleListHtml("Staying the same", rules.unchanged)}
           </div>${footer ? `

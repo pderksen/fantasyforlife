@@ -494,6 +494,12 @@ export interface RuleNote {
   label: string;
   /** What it means in practice. */
   detail: string;
+  /**
+   * Where the rule is spelled out in full, when another page holds the detail this line only
+   * summarises. Renders at the end of the sentence, so a rule that needs one reads as prose
+   * with a pointer rather than as a list item with a button.
+   */
+  link?: { href: string; label: string };
 }
 
 /**
@@ -509,18 +515,14 @@ export interface RuleNote {
  */
 export interface RuleChanges {
   /**
-   * The commissioner's note above the two lists, and the only first-person voice on the site.
-   * It is what asks owners to raise an objection now rather than in November, and that ask
-   * does not survive being rewritten into the third person the rest of the pages use.
+   * An optional note above the two lists, and the site's one place for a first-person voice.
+   * 2026 carries none: the rules say what they say, and a paragraph framing them as decisions
+   * somebody made belongs in league chat, where an owner can actually answer it. Set it and
+   * the paragraph appears above the split with no other edit.
    */
-  intro: string;
+  intro?: string;
   changed: RuleNote[];
   unchanged: RuleNote[];
-  /**
-   * Why the prize figures beside it aren't final yet, when they aren't. Present tags them as
-   * provisional on the card; absent, which is 2026's state, they stand as stated.
-   */
-  prizeNote?: string;
   /**
    * The full rules document, once there is one to link. Absent renders **nothing** rather than
    * the inert span `SITE_NAV`'s "Official Rules" item carries: the nav already says that page is
@@ -539,8 +541,6 @@ export interface RuleChanges {
  */
 export const RULE_CHANGES: Record<string, RuleChanges> = {
   "2026": {
-    intro:
-      "These are the calls for 2026, made after the owner survey. Some were lopsided, some were close enough that I had to make a judgment call, so odds are something here went against your vote. Trying to keep this fun and competitive for the league as a whole.",
     changed: [
       {
         label: "No more divisions.",
@@ -557,6 +557,11 @@ export const RULE_CHANGES: Record<string, RuleChanges> = {
       {
         label: "No trading picks into a throwback year.",
         detail: "Draft picks that land on a throwback season can't change hands. The next throwback year is 2030, five years after the last.",
+      },
+      {
+        label: "Prizes are simplified and updated.",
+        detail: "Fewer lines and bigger payouts. The two division prizes retired along with the divisions, and that money went into the points ladder.",
+        link: { href: "prizes.html", label: "See Prize Tracker" },
       },
     ],
     unchanged: [
