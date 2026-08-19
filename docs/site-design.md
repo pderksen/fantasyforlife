@@ -86,14 +86,15 @@ match it.
 **Nothing on this site is sticky except two in-table pins:** the roster `TH` row and the
 History table's frozen Season column. The site header was weighed as a third and passed over:
 
-- **It costs the most where the room is worth the most.** 74px on desktop, and on a phone the
-  header's flex row wraps the wordmark block and the nav onto separate lines, roughly 120–140px
-  of a ~650px viewport. The two longest pages here are tables, and the History table on a 390px
-  phone is already the tightest thing on the site.
+- **It costs the most where the room is worth the most.** The header is three heights, and its
+  wrap points are not Tailwind breakpoints: 74px above ~930px, ~106px from ~930px down to ~690px
+  once the nav drops under the wordmark, and ~138px below that once the nav itself wraps onto two
+  rows. So on a phone it is ~138px of a ~650px viewport. The two longest pages here are tables,
+  and the History table on a 390px phone is already the tightest thing on the site.
 - **On a roster page it would stack a frozen bar on a frozen bar.** `TH` is pinned to the top of
   the `TABLE_WRAP` scrollport, so a pinned site header sits directly above it and the grid reads
-  as framed rather than scrolled. It would not break the `100dvh - 15rem` cap, which already
-  subtracts the header, so this is an appearance call and not a mechanical one.
+  as framed rather than scrolled. It would not break `TABLE_WRAP`'s cap, which already subtracts
+  the header, so this is an appearance call and not a mechanical one.
 - **The payoff is one keystroke.** The header's only unique content is `SITE_NAV`, four items on
   a four-page site, and a roster page's chip bar sits beside it at the same scroll depth. A link
   at the foot reaches both.
@@ -830,17 +831,62 @@ height. An overflow container is the scrollport its sticky descendants pin to, s
 that never scrolls vertically means a header that never sticks. Dropping the `max-h` silently
 kills it; that was the original bug.
 
-The cap is `100dvh - 15rem`, where 15rem is everything above the table: site header bar, page
-padding, h1, league name, nav. It was 10rem before the site header existed, so anything that
-changes the header's height should move it again.
+The cap is `100dvh`: one whole screen, with nothing subtracted.
+
+It subtracted the block above the table (site header bar, page padding, h1, league name, nav) for
+most of the site's life, first as 10rem, then as 15rem once the site header existed, then briefly
+as a `20rem` / `md:17rem` / `lg:15rem` ladder measured against that block's three wrapped heights.
+All of those were the wrong shape, and the ladder was the wrong shape measured carefully. What the
+subtraction reserves is room for furniture that **scrolls away the moment the page scrolls**, and
+the reservation is permanent while the furniture is not, so the box stays smaller than the window
+for the whole session. Against the grids we actually render, that reservation was the entire
+problem:
+
+| Page | Table height |
+|---|---|
+| 2026 pre-draft | 669px |
+| 2025 post-draft | 619px |
+| 2025 end-of-season | 694px |
+
+On an 822px window every one of those fits on screen, and a 15rem subtraction capped the box at
+582px and put a second scrollbar beside a table that had no need of one.
+
+At `100dvh` the box is scrollable only when the grid genuinely cannot fit a screen, which is the
+same moment the sticky header starts earning its keep. Below that the wrapper is simply as tall as
+its table and the page does all the scrolling. With the current grids the inner scrollbar shows up
+only on viewports shorter than ~710px, which is roughly a 1366×768 laptop and below. The cap no
+longer has any relationship to the site header's height, so changing that header no longer means
+re-measuring this.
 
 Separately, `border-collapse` hands cell borders to the table, so a pinned `th` loses its own
 borders mid-scroll. `th.sticky` redraws the right and bottom edges as a box-shadow that travels
 with the cell.
 
-**Expect to see no effect on a desktop monitor.** The roster table renders ~695px tall, so at
-1080p and up it fits inside the cap and never scrolls. It engages on short viewports (a
-1280×800 laptop gets ~165px of scroll). That is the intended range, not a bug.
+**The cap governs the inner scrollbar at the table's right edge, not the page's own.** That
+distinction is worth holding onto, because the page always has a vertical scrollbar and it is
+not this. A roster page carries ~640px below the table (keeper legend and column note, the Excel
+pill, the Traded Picks heading and its table, Back to top, the timestamp footer, `pb-10`), so the
+document exceeds the viewport whatever the cap is. Nothing short of removing content removes it.
+
+### Why the nested scroll container stays
+
+Dropping the wrapper altogether is the obvious simplification, and it does not work. Three
+requirements collide, and CSS lets you have any two:
+
+1. **The grid must scroll sideways.** Ten or eleven columns of full team names come to well over
+   2000px, which no viewport has.
+2. **That sideways scroll should be contained.** If the page takes it instead, the site header,
+   the nav chips, the footnotes and the Traded Picks table all slide sideways along with the grid,
+   and the full-bleed forest header runs out of background partway across.
+3. **The column headers should stay visible while reading down the grid.** A row here has no
+   identity of its own, so a column that has lost its heading is unreadable.
+
+(2) needs `overflow-x` on a wrapper. A box with one axis scrollable computes the other axis from
+`visible` to `auto`, so that wrapper is a scroll container in both directions, and a scroll
+container is the scrollport every sticky descendant inside it pins to. So (3) can only be served
+by scrolling *that box*, never by pinning to the viewport. The inner vertical scrollbar is the
+price of (2) and (3) together. What the `100dvh` cap buys is that the price is only paid when (3)
+is actually in play.
 
 ### Traded Picks section
 

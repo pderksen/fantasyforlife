@@ -74,13 +74,27 @@ function esc(text: string): string {
 const CELL = "border border-gray-300 px-2 py-1 whitespace-nowrap";
 const TH = `${CELL} bg-forest text-parchment sticky top-0 z-10`;
 /**
- * Roster table wrapper. The max-height is what makes `sticky top-0` on the header work:
- * an overflow container is the scrollport its sticky descendants pin to, so without a
- * height cap the box never scrolls vertically and the header never sticks. 15rem is the
- * block above the table (site header bar + page padding + h1 + league name + nav), so the
- * box runs to the bottom of the viewport. Horizontal scrolling on mobile is unchanged.
+ * Roster table wrapper. The max-height is what makes `sticky top-0` on the header work: an
+ * overflow container is the scrollport its sticky descendants pin to, so a wrapper that never
+ * scrolls vertically is a header that never sticks.
+ *
+ * The cap is a whole screen, deliberately not "a screen minus the block above the table". That
+ * subtraction is what this replaced, and it was the wrong shape: it reserved ~240px for page
+ * furniture that scrolls away the moment the page scrolls, then held the box to 582px of an
+ * 822px window for the rest of the session. The grids render 619-694px, so the reservation
+ * alone was enough to put a second scrollbar beside a table that would otherwise have fitted
+ * the screen. At `100dvh` the box is scrollable only when the grid genuinely cannot fit a
+ * screen, which is the same moment the sticky header starts earning its keep; below that the
+ * wrapper is simply as tall as its table and the page does all the scrolling.
+ *
+ * The nested scroll container itself is not optional, and that is a CSS constraint rather than
+ * a preference: the grid is wider than any viewport, containing that sideways scroll needs
+ * `overflow-x`, and a box with one axis scrollable computes the other from `visible` to `auto`
+ * and so becomes the scrollport for every sticky descendant. Contained horizontal scroll and a
+ * viewport-pinned header cannot both be had. Handing the horizontal scroll to the page instead
+ * would slide the site header, the footnotes and the Traded Picks table sideways with the grid.
  */
-const TABLE_WRAP = "overflow-auto max-h-[calc(100dvh_-_15rem)]";
+const TABLE_WRAP = "overflow-auto max-h-[100dvh]";
 
 /**
  * The one rule on this site that Tailwind utilities genuinely cannot state, and the reason every
