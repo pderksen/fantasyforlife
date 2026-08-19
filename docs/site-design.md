@@ -198,6 +198,43 @@ Four pieces, all in `html.ts` and all declared above their first use:
 cards, then Past Leagues, and a "Back to top" link closing the page. Content is hand-written in
 `league-info.ts` as the history is settled, which is why most of it is still blank.
 
+**A throwback season is badged on its honor cards and starred in the table.** Both come from
+`isThrowbackSeason()`, so neither is a hand-kept list and 2030 marks itself. The chip is the same
+`THROWBACK_BADGE` the Keeper Tiers hub uses, hung on the `honorsSection()` heading rather than
+added as a fifth card: the other four cards are results, and this is a fact about the year the
+results happened in.
+
+**The badge is passed in, not computed by `honorsSection()`, and that is what keeps it off the
+home page.** The shared renderer takes an `opts.badge` string; this page passes
+`throwbackBadgeHtml(season)` and the home page passes nothing. Computing it inside would have put
+it on both, which was built first and read as clutter above the fold: the home page shows one
+season's results and has the Keeper Tiers hub a nav click away for what kind of season it was.
+The heading only takes its `flex items-center gap-2.5` when a badge is present, so a heading
+without one is byte-identical to the heading that shipped before any of this.
+
+In the all-time table the same fact has to survive a twenty-row scan, so the row is filled clay
+and its season cell carries a `HIST_FOOTMARK` star tying it to a `★ Throwback year` legend under
+the table. The fill is what finds the row; the star is what says the fill means something. A full
+chip in that cell was the obvious alternative and was not built, since the Season column is frozen
+and the four name columns are already sized to within ~40px of the 1024px measure: the star spends
+~8px of that where a chip would spend ten times it.
+
+**The legend names the rows and stops.** It ran a full sentence of the rule for an afternoon and
+read as the page explaining the league to the league. What a throwback year *is* belongs on the
+chip's `title` and on the Keeper Tiers page, where a season showing two stage pills instead of
+three actually raises the question; here the reader only needs to know the tint isn't decoration.
+
+**Clay, not a new token, and not a brass wash.** The fill has to be opaque, because the season cell
+is sticky and slides over the rows beside it, so `bg-brass/12` was out from the start. Brass at any
+plausible strength over white lands within a shade of `--color-clay` anyway, so the palette gets no
+near-duplicate; the clay comment now reads "warm fill" rather than naming the toilet-bowl card it
+was minted for. Two knock-ons, both in `html.ts` and both silent if missed: `HIST_TD_SEASON` had to
+split into `HIST_TD_SEASON_BASE` + a fill so the throwback variant *swaps* `bg-white` instead of
+stacking a second `background-color` on it (the `PILL_EXPORT` trap), and an opaque row interrupts
+the `.tbl-scroll` edge shadow across its own line, since that fade is painted on the scroll
+container behind cells that are otherwise transparent. The gap is 13px of 14%-opacity ink on one
+row in twenty, and it is the price of the tint.
+
 **The sub-nav lists the page's sections, not its seasons.** `HISTORY_SECTIONS` in `html.ts` is the
 list: Full League History, Records, Past Leagues. It carried a pill per recorded season until Aug
 2026, which was dropped because a row that grows by one every August wraps to a second line in the
@@ -298,7 +335,7 @@ them. Two tables today, `SUB_H3` headings over each: **Trophy Case** for the ten
   Streaks & Droughts, Head-to-Head, Draft Records.
 
 **Past Leagues closes the page**, from `pastLeaguesHtml()`. One card, two labelled blocks: Sleeper
-from `SLEEPER_FIRST_SEASON` on, then one `YEAR_TILE` per MyFantasyLeague season in
+from `SLEEPER_FIRST_SEASON` on, then one `PILL_ON_CARD` tile per MyFantasyLeague season in
 `MFL_SEASONS`, newest first.
 
 - **Neither host hands you a season, and the copy says so.** Sleeper mints a new league per year
@@ -321,8 +358,9 @@ from `SLEEPER_FIRST_SEASON` on, then one `YEAR_TILE` per MyFantasyLeague season 
 - **Tiles, not a table and no longer a comma list.** One link per row is four words of content in
   a five-column frame, and the all-time table above already carries the page's tabular weight. The
   years ran as a comma-separated line first: at nineteen of them that reads as prose and gives the
-  eye nothing to land on. `YEAR_TILE` is `PILL`'s geometry with a `bg-shell` fill, because a white
-  pill inside this white card is a border and nothing else.
+  eye nothing to land on. `PILL_ON_CARD` is `PILL`'s geometry with a `bg-shell` fill, because a
+  white pill inside this white card is a border and nothing else. The Keeper Tiers hub's stage
+  pills are the same constant, which is why it is no longer named for the years.
 - **It sits last, matching its place in the sub-nav.** It is where to go when the page doesn't
   have what you came for, so it reads as the exit rather than as another record.
 
@@ -524,9 +562,25 @@ opens over `file://` during local preview.
 
 The page is a single card. A `bg-shell` header strip ("Season" / "Stage"), then one row per
 season newest-first, then a row for the pre-Sleeper archive. Each season row is the year at
-17–19px bold on the left, a Throwback badge where one applies, and that season's stages as
-`PILL_LINK` pills pushed right with `ml-auto`. Same card idiom as the home page's draft order
+17–19px bold on the left, a Throwback Year badge where one applies, and that season's stages as
+`PILL_ON_CARD` pills pushed right with `ml-auto`. Same card idiom as the home page's draft order
 list and the History table: `CARD` over `bg-shell`, rows on `border-t border-rule` hairlines.
+
+**Three levels of fill, and that is the whole visual system of the page.** The card is white, the
+stage pills are `bg-shell` a step down from it, and the one pill pointing at the newest stage of
+the newest season is filled forest. `PILL_LINK` is white because it normally sits on the cream
+page background, where white is what lifts it off the page; inside a white card that same pill is
+a border and nothing else, which is the call `YEAR_TILE` already made for the Past Leagues years.
+So the constant was generalised to `PILL_ON_CARD` and both lists use it. There is no fourth level
+available, which is why the archive row's link sits at the same weight as a season's stages.
+
+**The current pill says `(current)` as well as showing it.** A fill only means something beside
+the pills it is being compared with, and on a phone the newest season's row can be the only row
+on screen. It is `PILL_CURRENT`, not `PILL_ACTIVE`: same forest fill, but `PILL_ACTIVE` marks the
+page you are already on and is never a link, so it carries no hover, while this one is always a
+link out. Which pill gets it comes from `newestNavLink()` matched on href, the same function the
+home page's hero card points at, so the mark moves on its own the run after a new snapshot lands
+and no season/stage pair is written down here.
 
 **Why the hub exists.** Every roster page's own nav lists only its season's stages, and this is
 the one page that crosses seasons — which is what lets that nav stay three chips as the league
@@ -542,14 +596,16 @@ newest-stage-first order within each one — the same ordering the home page's c
 **The archive is a row in the same card, not a section of its own, and it is typed like one.**
 The 2006–2024 seasons' tiers really are the next entries in this list; they just live in a Google
 Sheet (`ARCHIVE_LINKS.tiersSheet`). So the range takes the same 19px bold as a season year, and
-its destination is a `PILL_LINK` sitting where a season's stage pills sit — only the label and
-the trailing arrow differ. A lighter year or a plain text link there filed the whole pre-Sleeper
+its destination is a `PILL_ON_CARD` sitting where a season's stage pills sit — only the label
+and the trailing arrow differ. A lighter year or a plain text link there filed the whole pre-Sleeper
 era as a footnote to the list rather than a member of it, which is backwards: it is 19 of the
 league's 21 seasons. The range is derived from `LEAGUE_FIRST_SEASON` and `SLEEPER_FIRST_SEASON`,
 so it cannot claim years the sheet doesn't hold and the site doesn't serve.
 
-**The Throwback badge is back, and it is computed now.** `isThrowbackSeason()` in
-`league-info.ts` reads the five-year cadence from `THROWBACK_FIRST` (2025). The pre-redesign
+**The Throwback Year badge is back, it is computed now, and the League History page reuses it.**
+`isThrowbackSeason()` in `league-info.ts` reads the five-year cadence from `THROWBACK_FIRST`
+(2025); `throwbackBadgeHtml()` in `html.ts` is the one chip both callers render, and its `title`
+carries the rule the label doesn't have room for. The pre-redesign
 badge inferred a throwback year from a *missing pre-draft page*, which is true today and wrong
 the first time a pre-draft capture is simply skipped — a silent failure, since a wrong badge
 looks exactly like a right one. It is a filled forest chip rather than an outline: it is the one

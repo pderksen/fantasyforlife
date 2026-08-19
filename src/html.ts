@@ -148,12 +148,28 @@ const PILL_LINK_COLORS = "text-ink bg-white border border-line transition-colors
 const PILL_LINK = `${PILL} ${PILL_LINK_COLORS}`;
 const PILL_ACTIVE = `${PILL} text-parchment bg-forest border border-forest`;
 /**
- * A year in the Past Leagues list. `PILL`'s geometry with a `bg-shell` fill instead of white,
- * because these sit inside a white card and a white pill there is a border and nothing else.
- * Nineteen of them wrap to three rows in the card's measure, which is the point: a comma list
- * of that length reads as prose and gives the eye nothing to land on.
+ * A pill sitting inside a white card: `PILL`'s geometry with a `bg-shell` fill instead of white,
+ * because a white pill on a white card is a border and nothing else. `PILL_LINK` stays white for
+ * the pills that sit on the cream page background, where white is what separates them from it.
+ *
+ * Two users, both lists inside a card: the years in Past Leagues (nineteen of them, wrapping to
+ * three rows, which is the point — a comma list of that length reads as prose and gives the eye
+ * nothing to land on) and the stage pills on the Keeper Tiers hub.
  */
-const YEAR_TILE = `${PILL} bg-shell border border-line text-ink no-underline transition-colors hover:border-moss hover:text-moss`;
+const PILL_ON_CARD = `${PILL} bg-shell border border-line text-ink no-underline transition-colors hover:border-moss hover:text-moss`;
+
+/**
+ * The one pill on the Keeper Tiers hub that points at the newest stage of the newest season.
+ *
+ * Filled forest, a step darker again than the `PILL_ON_CARD` pills beside it, so the page has
+ * three levels: the card, the stages on it, and the one worth opening first. It says `(current)`
+ * as well as showing it, since a fill alone only means something next to the pills it is being
+ * compared with, and the row it lands on can be the only row on screen.
+ *
+ * `PILL_ACTIVE` is the same fill and is deliberately not reused: that one marks the page you are
+ * already on and is never a link, so it carries no hover. This one is always a link.
+ */
+const PILL_CURRENT = `${PILL} text-parchment bg-forest border border-forest no-underline transition-colors hover:bg-moss hover:border-moss`;
 /**
  * The Excel export pill. `inline-flex` replaces `inline-block` rather than joining it — two
  * `display` utilities on one element resolve by stylesheet order, not attribute order, so
@@ -255,7 +271,7 @@ const THEME = `    @theme {
       --color-rule: #e9e7dd;       /* hairline row dividers */
       --color-brass: #c9a53c;      /* the season's top honor */
       --color-shell: #eeece2;      /* neutral fill: honor icon discs, table header strips */
-      --color-clay: #f0ead8;       /* toilet-bowl honor card: fill */
+      --color-clay: #f0ead8;       /* warm fill: toilet-bowl honor card, throwback history row */
       --color-clay-line: #ddd3b8;  /* toilet-bowl honor card: border */
       --color-clay-ink: #8a7a4a;   /* toilet-bowl honor card: label and glyph */
     }
@@ -760,6 +776,31 @@ function survivorNoticeHtml(): string {
 }
 
 /**
+ * The badge on a season that drafts fresh.
+ *
+ * Filled forest rather than an outline: on the tiers hub it is the one thing on the row that
+ * isn't a link, and an outlined chip beside three outlined pills would read as a fourth
+ * destination.
+ *
+ * Two callers, and they are deliberately the same chip: the tiers hub's season row, and the
+ * heading over a season's honor cards, which puts it on the League History page beside every
+ * throwback year and on the home page while the newest season is one. `isThrowbackSeason()`
+ * decides in both, so no season is ever badged by hand and 2030 badges itself.
+ *
+ * The word alone only means something to a reader who already knows the rule, so the chip
+ * carries its own explanation in a `title` and the League History table spells it out in full
+ * under the star on its throwback rows.
+ */
+const THROWBACK_BADGE = "inline-block rounded-md bg-forest text-parchment text-[11px] font-medium tracking-[0.08em] uppercase px-2 py-[3px]";
+
+/** The chip for a throwback season, or an empty string for the four years in five that aren't. */
+function throwbackBadgeHtml(season: string): string {
+  return isThrowbackSeason(season)
+    ? `<span class="${THROWBACK_BADGE}" title="No keepers: the whole league drafted fresh">Throwback Year</span>`
+    : "";
+}
+
+/**
  * Lucide glyphs for the honor cards, inlined — the project ships no icon font or sprite.
  *
  * Stroked in `currentColor`, so each card's tone sets the glyph colour along with its label
@@ -797,7 +838,11 @@ const HONOR_TONES: Record<"default" | "champion" | "toilet", { card: string; dis
  * two calls: it brings `scroll-mt` with it, since a bare anchor jump lands the heading flush
  * against the top of the viewport.
  */
-function honorsSection(season: string, honors: Honor[], opts: { id?: string; footer?: string } = {}): string {
+function honorsSection(
+  season: string,
+  honors: Honor[],
+  opts: { id?: string; footer?: string; badge?: string } = {},
+): string {
   const cards = honors
     .map((h) => {
       const tone = HONOR_TONES[h.tone ?? "default"];
@@ -813,9 +858,17 @@ function honorsSection(season: string, honors: Honor[], opts: { id?: string; foo
   const anchor = opts.id ? ` id="${esc(opts.id)}"` : "";
   const scrollMargin = opts.id ? " scroll-mt-6" : "";
 
+  // The badge rides on the heading rather than in the card grid: it is a fact about the year,
+  // not a result, and a fifth card would sit it among the four that are. Passed in rather than
+  // computed here, because only the League History page wants it — the home page shows one
+  // season and says what that season was elsewhere. The flex only appears with the badge, so a
+  // heading without one is exactly the heading it always was.
+  const badge = opts.badge ?? "";
+  const headingClass = badge ? `${SECTION_H2} flex items-center gap-2.5` : SECTION_H2;
+
   return `
     <section${anchor} class="mb-10${scrollMargin}">
-      <h2 class="${SECTION_H2}">${esc(season)} Season Honors</h2>
+      <h2 class="${headingClass}">${esc(season)} Season Honors${badge}</h2>
       <div class="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(230px,1fr))]">
 ${cards}
       </div>${opts.footer ?? ""}
@@ -1091,24 +1144,26 @@ ${LIGHTBOX_SCRIPT}
 // ── Keeper Tiers hub ──
 
 /**
- * The badge on a season that drafts fresh.
+ * A row of the tiers hub: the season, whatever badge it earns, and its stages on the right.
  *
- * Filled forest rather than an outline: it is the one thing on the row that isn't a link, and
- * an outlined chip beside three outlined pills would read as a fourth destination.
+ * `currentHref` is the newest stage of the newest season, from `newestNavLink()`, so exactly one
+ * pill on the page is marked and the mark moves on its own the run after a new snapshot lands.
+ * Matching on the href rather than on a season/type pair keeps the rule in one place: whatever
+ * that function calls newest is what this row marks.
  */
-const THROWBACK_BADGE = "inline-block rounded-md bg-forest text-parchment text-[11px] font-medium tracking-[0.08em] uppercase px-2 py-[3px]";
-
-/** A row of the tiers hub: the season, whatever badge it earns, and its stages on the right. */
-function tiersRowHtml(season: string, links: NavLink[]): string {
+function tiersRowHtml(season: string, links: NavLink[], currentHref?: string): string {
   const pills = links
-    .map((l) => `<a href="${esc(l.href)}" class="${PILL_LINK}">${esc(l.chip)}</a>`)
+    .map((l) => {
+      const current = l.href === currentHref;
+      const label = current ? `${l.chip} (current)` : l.chip;
+      return `<a href="${esc(l.href)}" class="${current ? PILL_CURRENT : PILL_ON_CARD}">${esc(label)}</a>`;
+    })
     .join("\n            ");
-  const badge = isThrowbackSeason(season)
-    ? `\n          <span class="${THROWBACK_BADGE}" title="Throwback year: no keepers, the whole league drafts fresh">Throwback</span>`
-    : "";
+  const badge = throwbackBadgeHtml(season);
+  const badgeLine = badge ? `\n          ${badge}` : "";
 
   return `        <div class="flex items-center gap-3 flex-wrap px-5 py-3.5 border-t border-rule">
-          <span class="text-[19px] font-bold tracking-tight">${esc(season)}</span>${badge}
+          <span class="text-[19px] font-bold tracking-tight">${esc(season)}</span>${badgeLine}
           <span class="ml-auto flex gap-2 flex-wrap justify-end">
             ${pills}
           </span>
@@ -1140,8 +1195,9 @@ export function generateTiersHtml(leagueName: string, navLinks: NavLink[], hasMa
   for (const link of navLinks) {
     bySeason.set(link.season, [...(bySeason.get(link.season) ?? []), link]);
   }
+  const currentHref = newestNavLink(navLinks)?.href;
   const rows = [...bySeason.keys()].sort().reverse()
-    .map((season) => tiersRowHtml(season, bySeason.get(season)!))
+    .map((season) => tiersRowHtml(season, bySeason.get(season)!, currentHref))
     .join("\n");
 
   // Typed exactly like a season row, because it is one: those years' tiers are the next
@@ -1150,7 +1206,7 @@ export function generateTiersHtml(leagueName: string, navLinks: NavLink[], hasMa
   const archiveRow = `        <div class="flex items-center gap-3 flex-wrap px-5 py-3.5 border-t border-rule">
           <span class="text-[19px] font-bold tracking-tight">${esc(LEAGUE_FIRST_SEASON)}&ndash;${Number(SLEEPER_FIRST_SEASON) - 1}</span>
           <span class="ml-auto flex gap-2 flex-wrap justify-end">
-            <a href="${ARCHIVE_LINKS.tiersSheet}" target="_blank" rel="noopener noreferrer" class="${PILL_LINK}">Google Sheets Archive &#x2197;</a>
+            <a href="${ARCHIVE_LINKS.tiersSheet}" target="_blank" rel="noopener noreferrer" class="${PILL_ON_CARD}">Google Sheets Archive &#x2197;</a>
           </span>
         </div>`;
 
@@ -1278,7 +1334,35 @@ const HIST_TD = `${HIST_EDGE} py-2.5 border-t border-rule text-[13px] md:text-[1
  * scrolls under anything.
  */
 const HIST_TH_SEASON = `${HIST_TH} sticky left-0 z-20 bg-shell ${FREEZE_SEAM_TO_LG}`;
-const HIST_TD_SEASON = `${HIST_TD} sticky left-0 z-10 bg-white font-medium ${FREEZE_SEAM_TO_LG}`;
+const HIST_TD_SEASON_BASE = `${HIST_TD} sticky left-0 z-10 font-medium ${FREEZE_SEAM_TO_LG}`;
+const HIST_TD_SEASON = `${HIST_TD_SEASON_BASE} bg-white`;
+
+/**
+ * A throwback season's row: warm clay behind every cell, so the year the whole league drafted
+ * fresh is findable in a twenty-row scan rather than only in the star it carries.
+ *
+ * The fill is split off `HIST_TD_SEASON` rather than appended to it. Two `background-color`
+ * utilities on one element resolve by stylesheet order and not attribute order, so `bg-white
+ * bg-clay` would pick a winner silently — the `PILL_EXPORT` trap. The other cells carry no fill
+ * of their own, so they may take `HIST_TD_ON` freely.
+ *
+ * It has to be an opaque colour, not `bg-brass/12`: the season cell is sticky, and a translucent
+ * fill would let the rows it slides over show through it. Clay is the palette's one warm fill and
+ * is reused here rather than minting a near-identical token — a brass wash over white lands
+ * within a shade of it anyway.
+ */
+const HIST_TD_ON = "bg-clay";
+const HIST_TD_SEASON_ON = `${HIST_TD_SEASON_BASE} ${HIST_TD_ON}`;
+
+/**
+ * The superscript tying a cell to a note under its table: the star on a throwback season in the
+ * League History table, the number on a renamed team in the Trophy Case.
+ *
+ * `font-normal` against the `font-medium` cell it hangs off, and `text-stone` against the ink, so
+ * it reads as an annotation rather than as part of the year or the name. The cell is
+ * `whitespace-nowrap` already, so it can never wrap away from what it marks.
+ */
+const HIST_FOOTMARK = "text-[10px] font-normal text-stone";
 
 /**
  * Names shortened for the League History table only, where four columns of team names have to
@@ -1419,13 +1503,19 @@ function leagueHistoryTableHtml(): string {
 
   const tableRows = rows
     .map((r) => {
+      // A throwback row is marked twice on purpose: the fill finds it in a scan, the star ties it
+      // to the note under the table that says what it means.
+      const throwback = isThrowbackSeason(r.season);
+      const td = throwback ? `${HIST_TD} ${HIST_TD_ON}` : HIST_TD;
       const cells = HISTORY_COLUMNS.map((c) => {
         const v = c.value(r);
         return v
-          ? `<td class="${HIST_TD}">${historyNameHtml(v)}</td>`
-          : `<td class="${HIST_TD} text-stone">&mdash;</td>`;
+          ? `<td class="${td}">${historyNameHtml(v)}</td>`
+          : `<td class="${td} text-stone">&mdash;</td>`;
       });
-      return `                <tr><td class="${HIST_TD_SEASON}">${esc(r.season)}</td>${cells.join("")}</tr>`;
+      const star = throwback ? `<sup class="${HIST_FOOTMARK}">&#9733;</sup>` : "";
+      const seasonCell = throwback ? HIST_TD_SEASON_ON : HIST_TD_SEASON;
+      return `                <tr><td class="${seasonCell}">${esc(r.season)}${star}</td>${cells.join("")}</tr>`;
     })
     .join("\n");
 
@@ -1434,6 +1524,15 @@ function leagueHistoryTableHtml(): string {
   const earliest = [...LEAGUE_HISTORY].sort((a, b) => a.season.localeCompare(b.season))[0].season;
   const missing = Number(earliest) > Number(LEAGUE_FIRST_SEASON)
     ? `\n      <p class="text-sm text-stone mt-3">${esc(LEAGUE_FIRST_SEASON)}&ndash;${esc(String(Number(earliest) - 1))} are still being compiled.</p>`
+    : "";
+
+  // The star's legend, naming the tinted rows and nothing more: the rule itself is the badge's
+  // `title` and the Keeper Tiers hub's job, and a sentence of it here would be a paragraph of
+  // explanation hanging off one row in twenty. Derived from the rows, so 2030 brings it back on
+  // its own and it takes itself off if this table ever stops reaching a throwback year.
+  // Whole-table note first, per-row note second, as the Trophy Case orders its own.
+  const throwbackNote = rows.some((r) => isThrowbackSeason(r.season))
+    ? `\n      <p class="text-sm text-stone mt-3">&#9733; Throwback year</p>`
     : "";
 
   const headers = ["Season", ...HISTORY_COLUMNS.map((c) => c.header)]
@@ -1449,7 +1548,7 @@ ${tableRows}
             </tbody>
           </table>
         </div>
-      </div>${missing}`;
+      </div>${missing}${throwbackNote}`;
 }
 
 /**
@@ -1532,15 +1631,6 @@ function trophyCounts(): { rows: TrophyRow[]; rawNames: Set<string> } {
 function scoredColumns(rows: TrophyRow[]): number[] {
   return HISTORY_COLUMNS.map((_, i) => i).filter((i) => rows.some((r) => r.counts[i] > 0));
 }
-
-/**
- * The superscript tying a team's line to a numbered note under the table.
- *
- * `font-normal` against the `font-medium` name it hangs off, and `text-stone` against the ink, so
- * it reads as an annotation rather than as part of the team's name. The cell is `whitespace-nowrap`
- * already, so it can never wrap away from the name it marks.
- */
-const HIST_FOOTMARK = "text-[10px] font-normal text-stone";
 
 /**
  * One Trophy Case table: a team column and one count column per entry in `columnIndexes`.
@@ -1682,7 +1772,7 @@ ${notes}${retiredBlock}
  * not a route — so the only way in is the app's own Previous Leagues screen, and the copy has to
  * say that rather than pretend a link exists. MyFantasyLeague does have per-season URLs, but
  * they are per-season *ids* with no chain between them, so `MFL_SEASONS` records each one by
- * hand and this renders each as its own `YEAR_TILE`, newest first.
+ * hand and this renders each as its own `PILL_ON_CARD` tile, newest first.
  *
  * Tiles and not a table: one link per row is four words of content in a five-column frame, and
  * the History table above is already carrying the page's tabular weight. They were a
@@ -1700,7 +1790,7 @@ function pastLeaguesHtml(): string {
     : "";
   const mflLinks = byNewest
     .map(({ season, id }) =>
-      `            <a href="${esc(mflHomeUrl(season, id))}" target="_blank" rel="noopener noreferrer" class="${YEAR_TILE}">${esc(season)}</a>`,
+      `            <a href="${esc(mflHomeUrl(season, id))}" target="_blank" rel="noopener noreferrer" class="${PILL_ON_CARD}">${esc(season)}</a>`,
     )
     .join("\n");
 
@@ -1758,7 +1848,8 @@ export function generateHistoryHtml(leagueName: string, navLinks: NavLink[], has
 
   // Every season's cards close with the same prize pointer the home page carries, so the two
   // pages stay a pair and each year routes to whichever record actually holds its money.
-  const honorBlocks = (s: string) => honorsSection(s, SEASON_HONORS[s], { id: `s${s}`, footer: prizePointerHtml(s) });
+  const honorBlocks = (s: string) =>
+    honorsSection(s, SEASON_HONORS[s], { id: `s${s}`, badge: throwbackBadgeHtml(s), footer: prizePointerHtml(s) });
   const table = leagueHistoryTableHtml();
 
   const allTime = table
