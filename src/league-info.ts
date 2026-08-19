@@ -400,18 +400,6 @@ export interface PrizeLine {
   headline?: boolean;
 }
 
-/**
- * A labelled run of prize lines, rendered under a divider row inside the one table.
- *
- * Groups exist because the result column means different things in different parts of the
- * list (a point total above the line, a win-loss record below it), and because that split
- * happens to be the same line as computed-from-Sleeper versus settled-by-hand.
- */
-export interface PrizeGroup {
-  label: string;
-  prizes: PrizeLine[];
-}
-
 /** One season's prize pool: what was put in, what it pays out, and how current that is. */
 export interface PrizeSeason {
   /** Per owner. Stated on the page, never used in a subtraction. */
@@ -430,7 +418,14 @@ export interface PrizeSeason {
   through?: string;
   /** Every line decided. Swaps the status band to its settled treatment and drops "leader". */
   final?: boolean;
-  groups: PrizeGroup[];
+  /**
+   * Every prize line, in render order: the ones a Sleeper endpoint settles on its own, then
+   * the bracket and record lines, then Survivor. These ran under three labelled divider rows
+   * ("Points", "Records & brackets", "Survivor") until Aug 2026, when the labels went: eight
+   * lines do not need chapter headings, and the only thing the grouping ever decided was this
+   * order, which is now just the order of this array.
+   */
+  prizes: PrizeLine[];
   /** House rules, listed under the table. */
   notes?: string[];
 }
@@ -450,39 +445,23 @@ export const PRIZE_SEASONS: Record<string, PrizeSeason> = {
     pot: 1600,
     // No `through` and no `final`: the season has not started, so every line is open. As
     // results land, set `through` each week and flip `settled` on the lines that close.
-    groups: [
-      {
-        // Every line here is derivable from `/league/{id}/matchups/{week}`, which is why the
-        // 2026 rules could drop the partial-season windows the old sheet called hard to total.
-        label: "Points",
-        prizes: [
-          { label: "Total points, regular season", amount: 200 },
-          { label: "Total points runner-up, regular season", amount: 100 },
-          { label: "Highest points, single week", note: "Regular season", amount: 100 },
-          { label: "Top single player, single week", note: "New for 2026", amount: 100 },
-        ],
-      },
-      {
-        label: "Records & brackets",
-        prizes: [
-          { label: "Finalist Champion", amount: 500, headline: true },
-          { label: "Finalist Runner-Up", amount: 250 },
-          { label: "Best regular season record", amount: 100 },
-          { label: "Division winner — Keepers", amount: 75 },
-          { label: "Division winner — Sleepers", amount: 75 },
-        ],
-      },
-      {
-        label: "Survivor",
-        prizes: [
-          { label: "Survivor winner", note: "All 17 weeks, fewest revives and strikes", amount: 100 },
-        ],
-      },
+    prizes: [
+      // The four points lines are all derivable from `/league/{id}/matchups/{week}`, which is
+      // why the 2026 rules could drop the partial-season windows the old sheet called hard to
+      // total. The bracket and record lines below them are settled by hand.
+      { label: "Total points, regular season", amount: 300 },
+      { label: "Total points runner-up, regular season", amount: 150 },
+      { label: "Highest points, single week, regular season", amount: 100 },
+      { label: "Top single player, single week", amount: 100 },
+      { label: "Finalist Champion", amount: 500, headline: true },
+      { label: "Finalist Runner-Up", amount: 250 },
+      { label: "Best regular season record", amount: 100 },
+      { label: "Survivor winner", note: "All 17 weeks, fewest revives and strikes", amount: 100 },
     ],
     notes: [
       "Owners can win multiple prizes.",
       "If both finalists agree, they may split the pot or go winner-takes-all, decided before that weekend's games start.",
-      "Side bets are optional and must be posted in the forums.",
+      "Side bets are optional and must be declared in chat or text group.",
     ],
   },
 };
@@ -490,6 +469,101 @@ export const PRIZE_SEASONS: Record<string, PrizeSeason> = {
 /** Seasons with a prize pool recorded, newest first. */
 export function prizeSeasons(): string[] {
   return Object.keys(PRIZE_SEASONS).sort().reverse();
+}
+
+// -- Rule changes --
+
+/** One rule, as a bold lead-in and the sentence that qualifies it. */
+export interface RuleNote {
+  /** The rule in a few words, rendered bold. Ends in a period; it is read as a sentence opener. */
+  label: string;
+  /** What it means in practice. */
+  detail: string;
+}
+
+/**
+ * What a season's rules do and don't change, as the home page announces them.
+ *
+ * Hand-kept like `SURVIVOR` and `DRAFT_ORDERS`: no Sleeper endpoint carries a league's own
+ * decisions, and half of these describe a scheduler setting that has no API at all.
+ *
+ * **`unchanged` is not filler.** Four of the 2026 survey questions came back as "leave it
+ * alone", and an owner scanning a list of changes has no way to tell a rule that was upheld
+ * from one nobody asked about. Listing both is what makes the first column short enough to
+ * read, which is the whole reason the card splits in two.
+ */
+export interface RuleChanges {
+  /**
+   * The commissioner's note above the two lists, and the only first-person voice on the site.
+   * It is what asks owners to raise an objection now rather than in November, and that ask
+   * does not survive being rewritten into the third person the rest of the pages use.
+   */
+  intro: string;
+  changed: RuleNote[];
+  unchanged: RuleNote[];
+  /**
+   * Why the prize figures beside it aren't final yet. Present means the card tags them as
+   * provisional; deleting the line is the whole edit that marks the pool settled.
+   */
+  prizeNote?: string;
+  /**
+   * The full rules document, once there is one to link. Absent renders the inert span
+   * `SITE_NAV`'s "Official Rules" item already renders, so filling this in is one edit.
+   */
+  rulesHref?: string;
+}
+
+/**
+ * Rules by season, so 2027's card replaces 2026's without deleting what 2026 was told.
+ *
+ * The home page renders the newest entry only. Nothing else reads this: the throwback cadence
+ * the list mentions is computed by `isThrowbackSeason()`, and the prize figures beside it come
+ * from `PRIZE_SEASONS`, so neither number can drift out of step with the page that owns it.
+ */
+export const RULE_CHANGES: Record<string, RuleChanges> = {
+  "2026": {
+    intro:
+      "These are the calls for 2026, made after the owner survey. Some were lopsided, some were close enough that I had to make a judgment call, so odds are something here went against your vote. If you can work with it, great. If it's going to be a real issue, bring it up sooner rather than later. Trying to keep this fun and competitive for the league as a whole.",
+    changed: [
+      {
+        label: "No more divisions.",
+        detail: "The top two records take the top two seeds and the first-round byes.",
+      },
+      {
+        label: "The schedule is random.",
+        detail: "Without divisions, which opponents you play once and which you play twice is drawn at random.",
+      },
+      {
+        label: "Week 14 is a random rematch.",
+        detail: "A second meeting with an opponent, also drawn at random. Sleeper gives no way to set it.",
+      },
+      {
+        label: "No trading picks into a throwback year.",
+        detail: "Draft picks that land on a throwback season can't change hands. The next throwback year is 2030, five years after the last.",
+      },
+    ],
+    unchanged: [
+      {
+        label: "Superflex stays.",
+        detail: "For 2027 and beyond, along with the 4 QB roster limit.",
+      },
+      {
+        label: "One IR slot.",
+        detail: "Doubtful and Out designations only.",
+      },
+      {
+        label: "Draft slot selection runs as it always has.",
+        detail: "Want a later slot than you were awarded? Throw your games in the losers bracket without punishment, trade away most or all of your picks, or both.",
+      },
+    ],
+    prizeNote: "Still being finalized",
+  },
+};
+
+/** The newest season with rules recorded, or undefined before any are. */
+export function latestRuleChanges(): { season: string; rules: RuleChanges } | undefined {
+  const season = Object.keys(RULE_CHANGES).sort().reverse()[0];
+  return season ? { season, rules: RULE_CHANGES[season] } : undefined;
 }
 
 /**

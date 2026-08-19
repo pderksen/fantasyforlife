@@ -26,8 +26,10 @@ import {
   getDraftDate,
   getLatestHonors,
   isThrowbackSeason,
+  latestRuleChanges,
   prizeSeasons,
   type Honor,
+  type RuleNote,
   type HonorIcon,
   type NavItem,
   type PrizeSeason,
@@ -196,6 +198,17 @@ const ROW_LABEL = `${LABEL_TYPE} w-[130px]`;
  */
 const CARD_BASE = "bg-white border border-line";
 const CARD = `${CARD_BASE} rounded-xl`;
+/**
+ * A sub-heading inside a section, for the sections that hold more than one thing.
+ *
+ * Most sections on these pages are a `SECTION_H2` eyebrow over a single card, so a second
+ * heading level rarely comes up. Two need it: the League History page's Records, which holds
+ * two tables and will hold more, and the home page's rule changes card, whose two lists only
+ * work as a split if each says what it is. Three identical uppercase eyebrows would flatten
+ * either set into one another. Sentence case at 17px bold reads as the name of the block
+ * directly beneath it while staying plainly subordinate to the h1.
+ */
+const SUB_H3 = "text-[17px] font-bold tracking-tight text-ink mt-0 mb-3";
 /**
  * A destination that hasn't been built yet, in body copy. Same call as `NAV_PLANNED` in the
  * site nav: an inert span rather than a link to nowhere, so it never invites a dead click.
@@ -907,6 +920,105 @@ function honorsHtml(): string {
 }
 
 /**
+ * A list of rules under its own sub-heading, one half of the rule changes card's split.
+ *
+ * No bullet markers: every line opens on a bold lead-in that already sets it apart, and a
+ * marker column beside that would spend width the second column needs on a phone.
+ */
+function ruleListHtml(title: string, notes: RuleNote[]): string {
+  const items = notes
+    .map((n) => `                <li class="text-[15px] leading-snug"><span class="font-semibold">${esc(n.label)}</span> ${esc(n.detail)}</li>`)
+    .join("\n");
+
+  return `            <div>
+              <h3 class="${SUB_H3}">${esc(title)}</h3>
+              <ul class="m-0 p-0 list-none flex flex-col gap-3">
+${items}
+              </ul>
+            </div>`;
+}
+
+/**
+ * The season's rule changes, full width between the hero cards and the draft order row.
+ *
+ * **Full width rather than a column beside the draft order**, which is where it was first
+ * planned. Two things ruled that out. The photo column next to that card renders 900px cuts
+ * into a ~618px slot, so moving the photos below to make room would have them upscaled at the
+ * 1080px measure, which is the exact resampling `docs/photos.md` cut those files to avoid. And
+ * the two cards are not the same mass: the draft order is ten fixed rows and this is eight
+ * rules under a paragraph, so side by side leaves white space under the shorter one. At the
+ * full measure the lists can sit in two columns instead, which is what makes eight rules read
+ * as two short lists rather than one long one.
+ *
+ * **Below the hero cards, not above them.** The countdown is the most time-sensitive thing on
+ * the page in the weeks before a draft, and the honors above it are what the page opens on.
+ * This sits directly above the draft order, which three of its own lines are about.
+ *
+ * A white `CARD` with a `bg-shell` strip, the same idiom as the draft order card below it,
+ * rather than the brass band the Survivor notice uses: that band is the page's one
+ * announcement treatment, and a second would leave neither reading as the exception.
+ *
+ * The prize figures in the footer are read out of `PRIZE_SEASONS`, never written here, so the
+ * summary cannot drift from the Prize Tracker it links. `prizeNote` is the whole provisional
+ * treatment: delete it and the figures stand as settled.
+ */
+function ruleChangesHtml(): string {
+  const latest = latestRuleChanges();
+  if (!latest) return "";
+  const { season, rules } = latest;
+
+  const prizes = PRIZE_SEASONS[season];
+  let footer = "";
+
+  if (prizes) {
+    const headline = prizes.prizes.find((p) => p.headline);
+    // Three figures, not the eight-line ledger: the Prize Tracker renders that table, and a
+    // second copy of it here would be a sync cost for a page nobody opens to read prize rules.
+    const figures = [
+      `${money(prizes.entryFee)} entry`,
+      `${money(prizes.pot)} pot`,
+      headline ? `${money(headline.amount)} to the champion` : "",
+    ].filter(Boolean).join(" &middot; ");
+
+    const pending = rules.prizeNote
+      ? `<span class="text-sm text-stone">${esc(rules.prizeNote)}</span>`
+      : "";
+
+    footer += `
+            <div class="flex flex-wrap items-baseline gap-x-5 gap-y-1.5">
+              <span class="${LABEL_TYPE}">${esc(season)} Prizes</span>
+              <span class="text-[15px]">${figures}</span>
+              ${pending}
+              <a href="prizes.html" class="${LINK} text-sm">Full Prize Tracker &#8594;</a>
+            </div>`;
+  }
+
+  footer += `
+            <div class="text-sm">
+              ${rules.rulesHref
+                ? `<a href="${esc(rules.rulesHref)}" class="${LINK}">Official ${esc(season)} rules &#8594;</a>`
+                : `<span class="${PLANNED}" title="Coming soon">Official ${esc(season)} rules, in full &#8594;</span>`}
+            </div>`;
+
+  return `    <section class="mb-14">
+      <h2 class="${SECTION_H2}">${esc(season)} Rule Changes</h2>
+      <div class="${CARD} overflow-hidden">
+        <div class="px-5 sm:px-6 py-[9px] bg-shell text-[11px] font-medium tracking-[0.12em] uppercase text-stone">From the commissioner</div>
+        <div class="px-5 sm:px-6 py-5">
+          <p class="m-0 max-w-[68ch] text-[15px] leading-relaxed">${esc(rules.intro)}</p>
+          <div class="mt-6 grid gap-x-12 gap-y-6 md:grid-cols-2">
+${ruleListHtml("What's changing", rules.changed)}
+${ruleListHtml("Staying the same", rules.unchanged)}
+          </div>
+          <div class="mt-6 pt-4 border-t border-rule flex flex-col gap-2.5">${footer}
+          </div>
+        </div>
+      </div>
+    </section>
+`;
+}
+
+/**
  * Numbered pick order for the upcoming draft, as a bordered card with a header strip.
  *
  * A card rather than a bare table because it now shares a row with the photo column, and the
@@ -1099,9 +1211,10 @@ function siteLinksHtml(): string {
 /**
  * The home page.
  *
- * Sections, in order: the season's honors, the two hero cards, the draft order beside the photo
- * gallery, the Survivor notice, then the closing link rows. Honors lead because a finished season is the
- * thing worth opening on; the hero cards are navigation, and navigation reads fine second.
+ * Sections, in order: the season's honors, the two hero cards, the season's rule changes, the
+ * draft order beside the photo gallery, the Survivor notice, then the closing link rows. Honors
+ * lead because a finished season is the thing worth opening on; the hero cards are navigation,
+ * and navigation reads fine second.
  */
 export function generateIndexHtml(
   leagueName: string,
@@ -1132,7 +1245,7 @@ ${htmlHead({
 <body class="bg-cream text-ink font-sans antialiased">
 ${siteHeader(chrome)}
   <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
-${honorsHtml()}${heroHtml(latest, draftOrder?.season)}${columnsHtml}${survivorNoticeHtml()}${siteLinksHtml()}
+${honorsHtml()}${heroHtml(latest, draftOrder?.season)}${ruleChangesHtml()}${columnsHtml}${survivorNoticeHtml()}${siteLinksHtml()}
 ${backToTopHtml()}
   </main>
 ${lightboxHtml()}
@@ -1574,15 +1687,6 @@ ${tableRows}
       </div>${missing}${throwbackNote}`;
 }
 
-/**
- * A sub-heading inside a section, for the one section that has more than one thing in it.
- *
- * Every other section on these pages is a `SECTION_H2` eyebrow over a single card, so a second
- * heading level never came up. Records holds two tables and will hold more, and three identical
- * uppercase eyebrows would flatten them into one another. Sentence case at 17px bold reads as
- * the name of the table directly beneath it while staying plainly subordinate to the h1.
- */
-const SUB_H3 = "text-[17px] font-bold tracking-tight text-ink mt-0 mb-3";
 
 /** One team's line in the Trophy Case: a name and one count per `HISTORY_COLUMNS` entry. */
 interface TrophyRow {
@@ -1912,9 +2016,14 @@ function money(n: number): string {
   return `$${n.toLocaleString("en-US", { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: 2 })}`;
 }
 
-/** Every prize line in a season, flattened out of its groups. */
+/**
+ * Every prize line in a season.
+ *
+ * A pass-through since the labelled groups went (Aug 2026), kept because three callers read
+ * the list and naming it once leaves one place to change if a season ever nests them again.
+ */
 function prizeLines(ps: PrizeSeason) {
-  return ps.groups.flatMap((g) => g.prizes);
+  return ps.prizes;
 }
 
 /**
@@ -2039,8 +2148,6 @@ const PRZ_TH_BASE = "px-4 first:pl-5 last:pr-5 py-[9px] text-[11px] font-medium 
 const PRZ_TH = `${PRZ_TH_BASE} text-left`;
 const PRZ_TD = "px-4 first:pl-5 last:pr-5 py-3 border-t border-rule text-[15px] align-top";
 const PRZ_TD_TIGHT = `${PRZ_TD} whitespace-nowrap`;
-/** The group divider: the page background showing through the card, carrying the group's name. */
-const PRZ_GROUP = `px-5 py-2 border-t border-rule bg-cream ${LABEL_TYPE}`;
 
 /**
  * The all-time winnings table's frozen Team column, the Prize Tracker's answer to
@@ -2060,7 +2167,11 @@ const PRZ_TD_TEAM = `${PRZ_TD_TIGHT} sticky left-0 z-10 bg-white font-medium ${F
 const LEADING_TAG = `<span class="ml-2 align-middle inline-block bg-brass text-forest rounded px-1.5 py-px text-[10px] font-semibold tracking-[0.08em] uppercase">Leading</span>`;
 
 /**
- * One season's prizes, as a single table divided into labelled groups.
+ * One season's prizes, as one flat table.
+ *
+ * It carried three labelled divider rows until Aug 2026 ("Points", "Records & brackets",
+ * "Survivor"). Eight lines never needed chapter headings, and the only thing the grouping
+ * decided was the order, which the list itself now carries.
  *
  * The three states a line can be in are carried by the winner cell rather than by a fifth
  * status column, which keeps the table at four columns on a page where width is already the
@@ -2078,30 +2189,23 @@ function prizeTableHtml(ps: PrizeSeason): string {
     .map((h, i) => `<th class="${i === 3 ? `${PRZ_TH_BASE} text-right` : PRZ_TH}">${esc(h)}</th>`)
     .join("");
 
-  const body = ps.groups
-    .map((group) => {
-      const rows = group.prizes
-        .map((line) => {
-          const named = (line.winners?.length ?? 0) > 0;
-          const label = `<td class="${PRZ_TD}${line.headline ? " font-semibold" : ""}">${esc(line.label)}${line.note ? `<span class="block text-[13px] text-stone">${esc(line.note)}</span>` : ""}</td>`;
+  const body = prizeLines(ps)
+    .map((line) => {
+      const named = (line.winners?.length ?? 0) > 0;
+      const label = `<td class="${PRZ_TD}${line.headline ? " font-semibold" : ""}">${esc(line.label)}${line.note ? `<span class="block text-[13px] text-stone">${esc(line.note)}</span>` : ""}</td>`;
 
-          const winner = named
-            ? `<td class="${PRZ_TD_TIGHT}">${esc(shortenForHistory(line.winners!.join(" & ")))}${line.settled ? "" : LEADING_TAG}</td>`
-            : `<td class="${PRZ_TD_TIGHT} text-stone">&mdash;</td>`;
+      const winner = named
+        ? `<td class="${PRZ_TD_TIGHT}">${esc(shortenForHistory(line.winners!.join(" & ")))}${line.settled ? "" : LEADING_TAG}</td>`
+        : `<td class="${PRZ_TD_TIGHT} text-stone">&mdash;</td>`;
 
-          const result = line.stat
-            ? `<td class="${PRZ_TD_TIGHT} tabular-nums">${esc(line.stat)}</td>`
-            : `<td class="${PRZ_TD_TIGHT} text-stone">&mdash;</td>`;
+      const result = line.stat
+        ? `<td class="${PRZ_TD_TIGHT} tabular-nums">${esc(line.stat)}</td>`
+        : `<td class="${PRZ_TD_TIGHT} text-stone">&mdash;</td>`;
 
-          const amountTone = line.settled ? (line.headline ? "font-semibold" : "") : "text-stone";
-          const amount = `<td class="${PRZ_TD_TIGHT} text-right tabular-nums ${amountTone}">${esc(money(line.amount))}</td>`;
+      const amountTone = line.settled ? (line.headline ? "font-semibold" : "") : "text-stone";
+      const amount = `<td class="${PRZ_TD_TIGHT} text-right tabular-nums ${amountTone}">${esc(money(line.amount))}</td>`;
 
-          return `              <tr>${label}${winner}${result}${amount}</tr>`;
-        })
-        .join("\n");
-
-      return `              <tr><td colspan="4" class="${PRZ_GROUP}">${esc(group.label)}</td></tr>
-${rows}`;
+      return `              <tr>${label}${winner}${result}${amount}</tr>`;
     })
     .join("\n");
 
@@ -2246,18 +2350,23 @@ ${pills}
 }
 
 /**
- * The closing link row: where the seasons this page does not carry actually live.
+ * The closing link: where the seasons this page does not carry actually live.
  *
  * 2023–2025 ran a different prize structure and are settled for good, so they stay in the
  * hand-kept workbook rather than being re-typed into `PRIZE_SEASONS` to render a table that
- * will never change again. Styled as the home page's closing link rows so it reads as the
- * same kind of pointer.
+ * will never change again. Deliberately *not* the home page's labelled closing rows (Aug
+ * 2026): those carry two or three destinations each and need a label to say what the set is,
+ * while this is one link whose own text says both the years and that it leaves the site.
+ *
+ * It takes `PILL_LINK` rather than the plain `LINK` it started as, which is the same white
+ * pill this page's own season sub-nav uses two screens above it — the site's one treatment for
+ * a link sitting on the cream page background. So it reads as a destination rather than as a
+ * footnote, without inventing a style: three seasons the tracker does not carry are worth more
+ * than 14px of moss text, and `PILL_ON_CARD` was never an option here since nothing is a card.
  */
 function prizeArchiveHtml(): string {
-  return `    <div class="mt-4 border-t border-line pt-5 pb-12 text-sm flex gap-6 flex-wrap items-baseline">
-      <span class="${ROW_LABEL}">Earlier seasons</span>
-      <a href="${ARCHIVE_LINKS.prizeSheet}" target="_blank" rel="noopener noreferrer" class="${LINK}">Prize winnings 2023&ndash;2025 &#x2197;</a>
-      <span class="text-stone">Different prize structure, kept in the league's own workbook</span>
+  return `    <div class="mt-6 pb-12">
+      <a href="${ARCHIVE_LINKS.prizeSheet}" target="_blank" rel="noopener noreferrer" class="${PILL_LINK}">Prize winnings 2023&ndash;2025 &#x2197;</a>
     </div>`;
 }
 

@@ -445,12 +445,16 @@ held to a 1080px measure. Exact classes live in `html.ts`; this documents struct
 2. **Hero** — two cards. Left: shortcut to the newest tiers (`newestNavLink()`). Right: the
    next draft's date and a live countdown. Either can be absent and the row carries whichever
    it has.
-3. **"20XX Draft Order" + "From the gallery"** — side by side on wide screens, stacked below
+3. **"20XX Rule Changes"** — one full-width card: a `bg-shell` strip, the commissioner's note,
+   then "What's changing" and "Staying the same" side by side at `md`, then a footer carrying
+   the season's prize figures and the pointer to the rules document. Copy from `RULE_CHANGES`
+   in `league-info.ts`.
+4. **"20XX Draft Order" + "From the gallery"** — side by side on wide screens, stacked below
    ~900px. Draft order from `DRAFT_ORDERS` in `tiers.ts`, photos from `GALLERY` in
    `league-info.ts`.
-4. **Survivor notice** — one band, no link. `survivorNoticeHtml()`, copy from `SURVIVOR` in
+5. **Survivor notice** — one band, no link. `survivorNoticeHtml()`, copy from `SURVIVOR` in
    `league-info.ts`.
-5. **Closing link rows** — "Past seasons" (Sleeper with the in-app menu path that finds the old
+6. **Closing link rows** — "Past seasons" (Sleeper with the in-app menu path that finds the old
    leagues, then MyFantasyLeague on the line below) and "Help" (Sleeper's fantasy football
    support centre). Both rows point off-site; everything this site publishes is in the header nav.
 
@@ -458,6 +462,40 @@ held to a 1080px measure. Exact classes live in `html.ts`; this documents struct
 where the hero cards came first. A finished season's champion is the thing worth opening on; the
 hero cards are wayfinding, and wayfinding reads fine in second position, especially when the
 green countdown card pulls the eye down to it anyway.
+
+**The rule changes card is full width because the photos are, in effect, load-bearing.** The
+first plan put it to the right of the draft order with the gallery moved full width underneath
+both, and that breaks the photo column twice over. The gallery renders 900px cuts into a ~618px
+slot; at the 1080px measure the browser would upscale them by 1.75x, which is precisely the
+resampling those files were cut at 900px to avoid (`docs/photos.md`). Running the two photos
+side by side instead would fix the width and break the framing, since they are a 1.69 and a 1.20
+aspect and equal heights crop the near-square trophy frame hard, which is the failure
+`GALLERY_MAX_H` was raised to 860 to fix in the first place. The second problem is mass: the
+draft order is ten fixed rows, about 443px, and eight rules under a paragraph run past 600px in
+a half-width column, so the pair would sit tall-beside-short with dead space under the shorter
+one. Given the full measure the two lists split into columns instead, and the announcement gets
+the width its intro paragraph wants.
+
+It sits **below the hero cards rather than above them**. The countdown is the most time-sensitive
+thing on the page in the weeks before a draft and the honors are what the page opens on, so the
+rules take the position directly above the draft order, which three of their own lines concern.
+
+**Both halves of the split are load-bearing.** Four of the 2026 survey questions came back as
+"leave it alone", and a card listing only what changed gives an owner no way to tell an upheld
+rule from one nobody raised. Listing both is also what keeps the changed column short enough to
+scan, which is the reason the card splits at all rather than running one list of eight.
+
+**The card derives everything it can.** The throwback year it names comes from
+`isThrowbackSeason()`'s cadence, and the entry fee, pot and champion's share in its footer are
+read out of `PRIZE_SEASONS`, so neither can contradict the Keeper Tiers hub or the Prize Tracker.
+What is hand-written is only what no other page holds: the rules themselves and the
+commissioner's note. `RuleChanges.prizeNote` is the whole provisional treatment on the prize
+figures, so deleting that one string marks the pool settled, and `rulesHref` turns the inert
+"Official rules" span into a link the same way `NavItem.href` does in the header.
+
+It is a white `CARD` with a `bg-shell` strip, the same idiom as the draft order card below it,
+rather than a second brass band. The Survivor notice owns that treatment as the page's one
+standing announcement, and a second brass block would leave neither reading as the exception.
 
 **Honor card tones.** `HONOR_TONES` in `html.ts`, keyed by `Honor.tone`: `champion` is the forest
 card with a brass disc, `toilet` the clay card at the other end of the season, and an absent tone
