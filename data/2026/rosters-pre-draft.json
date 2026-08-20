@@ -3,7 +3,7 @@
   "leagueName": "Fantasy For Life (FFL)",
   "season": "2026",
   "snapshotType": "pre-draft",
-  "capturedAt": "2026-08-19T16:47:53.553Z",
+  "capturedAt": "2026-08-20T03:55:21.894Z",
   "rosters": [
     {
       "ownerName": "Clovis Jets",
@@ -194,7 +194,8 @@
         {
           "name": "Lawrence, Trevor",
           "position": "QB",
-          "team": "JAX"
+          "team": "JAX",
+          "keeper": true
         },
         {
           "name": "McCarthy, J.J.",
@@ -234,7 +235,8 @@
         {
           "name": "Egbuka, Emeka",
           "position": "WR",
-          "team": "TB"
+          "team": "TB",
+          "keeper": true
         },
         {
           "name": "Odunze, Rome",
@@ -249,7 +251,8 @@
         {
           "name": "Smith-Njigba, Jaxon",
           "position": "WR",
-          "team": "SEA"
+          "team": "SEA",
+          "keeper": true
         },
         {
           "name": "Williams, Jameson",
@@ -819,7 +822,8 @@
         {
           "name": "Brissett, Jacoby",
           "position": "QB",
-          "team": "ARI"
+          "team": "ARI",
+          "keeper": true
         },
         {
           "name": "Hurts, Jalen",
@@ -859,12 +863,14 @@
         {
           "name": "Nacua, Puka",
           "position": "WR",
-          "team": "LAR"
+          "team": "LAR",
+          "keeper": true
         },
         {
           "name": "Pickens, George",
           "position": "WR",
-          "team": "DAL"
+          "team": "DAL",
+          "keeper": true
         },
         {
           "name": "Pittman, Michael",
