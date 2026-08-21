@@ -3,7 +3,7 @@
   "leagueName": "Fantasy For Life (FFL)",
   "season": "2026",
   "snapshotType": "pre-draft",
-  "capturedAt": "2026-08-21T11:45:16.595Z",
+  "capturedAt": "2026-08-21T18:19:17.557Z",
   "rosters": [
     {
       "ownerName": "Clovis Jets",
@@ -11,7 +11,8 @@
         {
           "name": "Dart, Jaxson",
           "position": "QB",
-          "team": "NYG"
+          "team": "NYG",
+          "keeper": true
         },
         {
           "name": "Rivers, Philip",
@@ -61,7 +62,8 @@
         {
           "name": "Jefferson, Justin",
           "position": "WR",
-          "team": "MIN"
+          "team": "MIN",
+          "keeper": true
         },
         {
           "name": "Johnston, Quentin",
@@ -71,7 +73,8 @@
         {
           "name": "Rice, Rashee",
           "position": "WR",
-          "team": "KC"
+          "team": "KC",
+          "keeper": true
         },
         {
           "name": "Worthy, Xavier",
@@ -601,7 +604,8 @@
         {
           "name": "McMillan, Tetairoa",
           "position": "WR",
-          "team": "CAR"
+          "team": "CAR",
+          "keeper": true
         },
         {
           "name": "Meyers, Jakobi",
@@ -621,12 +625,14 @@
         {
           "name": "Watson, Christian",
           "position": "WR",
-          "team": "GB"
+          "team": "GB",
+          "keeper": true
         },
         {
           "name": "Bowers, Brock",
           "position": "TE",
-          "team": "LV"
+          "team": "LV",
+          "keeper": true
         },
         {
           "name": "Parkinson, Colby",
