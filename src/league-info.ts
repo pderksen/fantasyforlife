@@ -118,7 +118,7 @@ export function isThrowbackSeason(season: string): boolean {
  * clock, so a bare local datetime would mean a different moment in every time zone.
  */
 export const DRAFT_DATES: Record<string, string> = {
-  "2026": "2026-08-29T10:00:00-07:00",
+  "2026": "2026-08-29T12:00:00-07:00",
 };
 
 /** Draft date for a season, or undefined if it isn't scheduled yet. */
