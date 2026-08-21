@@ -1009,12 +1009,29 @@ function honorsHtml(): string {
 const RULE_LINK = `${LINK} font-semibold whitespace-nowrap`;
 
 /**
+ * Fills `{entryFee}` in a rule's label or detail from `PRIZE_SEASONS`.
+ *
+ * The one prize figure this card is allowed, and it is not written into `RULE_CHANGES`: the
+ * entry fee is what an owner needs before a season starts, and reading it out of the object
+ * the Prize Tracker renders is what keeps the two pages from ever quoting different numbers.
+ * That is the same reason the derived figures row was dropped, not an exception to it.
+ *
+ * A season with no prize pool recorded leaves the token standing rather than substituting an
+ * empty string, so a missing entry reads as an obvious placeholder instead of a sentence with
+ * a word silently cut out of it.
+ */
+function fillRuleTokens(text: string, season: string): string {
+  const fee = PRIZE_SEASONS[season]?.entryFee;
+  return fee === undefined ? text : text.replaceAll("{entryFee}", money(fee));
+}
+
+/**
  * A list of rules under its own sub-heading, one half of the rule changes card's split.
  *
  * No bullet markers: every line opens on a bold lead-in that already sets it apart, and a
  * marker column beside that would spend width the second column needs on a phone.
  */
-function ruleListHtml(title: string, notes: RuleNote[]): string {
+function ruleListHtml(title: string, notes: RuleNote[], season: string): string {
   const items = notes
     .map((n) => {
       // Inside the sentence rather than on its own line: a rule that points somewhere is still
@@ -1022,7 +1039,7 @@ function ruleListHtml(title: string, notes: RuleNote[]): string {
       const link = n.link
         ? ` <a href="${esc(n.link.href)}" class="${RULE_LINK}">${esc(n.link.label)} &#8594;</a>`
         : "";
-      return `                <li class="text-[15px] leading-snug"><span class="font-semibold">${esc(n.label)}</span> ${esc(n.detail)}${link}</li>`;
+      return `                <li class="text-[15px] leading-snug"><span class="font-semibold">${esc(fillRuleTokens(n.label, season))}</span> ${esc(fillRuleTokens(n.detail, season))}${link}</li>`;
     })
     .join("\n");
 
@@ -1062,8 +1079,14 @@ ${items}
  * carried the entry fee, pot and champion's share read out of `PRIZE_SEASONS` until Aug 2026.
  * What owners need from this card is that the prize structure moved, which is a rule like any
  * other, and the Prize Tracker is one click away through `RuleNote.link` rather than being
- * partially restated here. That is also what stops the two pages disagreeing: this one now
- * quotes no prize figure at all.
+ * partially restated here.
+ *
+ * **The entry fee is the one figure that survived**, in the unchanged list, and it is still
+ * read out of `PRIZE_SEASONS` through the `{entryFee}` token rather than typed into the rule.
+ * A cost to enter is the thing an owner needs before the season starts, where the pot and the
+ * champion's share are a breakdown that belongs on the page holding the ledger, which the rule
+ * links to. Sourcing it is what keeps the two pages from disagreeing, which was the point of
+ * dropping the footer row.
  *
  * A plain white `CARD`, rather than the brass band the Survivor notice uses: that band is the
  * page's one announcement treatment, and a second would leave neither reading as the exception.
@@ -1094,8 +1117,8 @@ function ruleChangesHtml(): string {
         <div class="px-5 sm:px-6 py-5">${rules.intro ? `
           <p class="m-0 max-w-[68ch] text-[15px] leading-relaxed">${esc(rules.intro)}</p>` : ""}
           <div class="${rules.intro ? "mt-6 " : ""}grid gap-x-12 gap-y-6 md:grid-cols-2">
-${ruleListHtml("What's changing", rules.changed)}
-${ruleListHtml("Staying the same", rules.unchanged)}
+${ruleListHtml("What's changing", rules.changed, season)}
+${ruleListHtml("Staying the same", rules.unchanged, season)}
           </div>${footer ? `
           <div class="mt-6 pt-4 border-t border-rule flex flex-col gap-2.5">${footer}
           </div>` : ""}

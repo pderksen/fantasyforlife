@@ -525,17 +525,26 @@ contradicted the other.
 rule from one nobody raised. Listing both is also what keeps the changed column short enough to
 scan, which is the reason the card splits at all rather than running one list of eight.
 
-**The card states no number another page owns.** The throwback year it names comes from
-`isThrowbackSeason()`'s cadence, so it cannot contradict the Keeper Tiers hub. Everything else
-is hand-written, because nothing else here exists anywhere else on the site.
+**The card writes no number another page owns.** The throwback year it names comes from
+`isThrowbackSeason()`'s cadence, so it cannot contradict the Keeper Tiers hub, and the entry fee
+comes from `PRIZE_SEASONS` through the `{entryFee}` token. Everything else is hand-written,
+because nothing else here exists anywhere else on the site.
 
-Prizes are the case that had to be decided twice. The footer carried the season's entry fee, pot
-and champion's share, read out of `PRIZE_SEASONS` so the figures could not drift, and that was
-still the wrong content: it restated part of a table the Prize Tracker renders in full, on a card
-nobody opens to look up a payout. What owners need from this card is that the prize structure
-moved, and that is a rule like the other six. So it became one, carrying a `RuleNote.link` to
-`prizes.html` at the end of its sentence. The card now quotes no prize figure at all, which is a
-stronger guarantee against the two pages disagreeing than deriving one was.
+Prizes are the case that had to be decided three times. The footer carried the season's entry
+fee, pot and champion's share, read out of `PRIZE_SEASONS` so the figures could not drift, and
+that was still the wrong content: it restated part of a table the Prize Tracker renders in full,
+on a card nobody opens to look up a payout. What owners need from this card is that the prize
+structure moved, and that is a rule like the other six. So it became one, carrying a
+`RuleNote.link` to `prizes.html` at the end of its sentence, and the card quoted no figure at all.
+
+The entry fee then came back, and it is the one figure that belongs here. A payout is something
+an owner looks up after a result; a cost to enter is something they need before the season starts,
+which is the same moment they are reading a list of what changed. It is a rule in the unchanged
+list, not a footer, and it still comes out of `PRIZE_SEASONS` rather than being typed into
+`RULE_CHANGES`: `fillRuleTokens()` substitutes `{entryFee}` at render. That keeps the original
+guarantee, since the number on this card is literally the number the Prize Tracker renders. A
+season with no prize pool recorded leaves the token visible instead of substituting an empty
+string, so the gap is obvious on the page rather than reading as a sentence missing a word.
 
 `RuleNote.link` renders inside the sentence rather than on a line of its own. A rule that points
 somewhere is still a rule, and a block-level link under it would read as the list's navigation

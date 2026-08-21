@@ -580,6 +580,18 @@ export const RULE_CHANGES: Record<string, RuleChanges> = {
     ],
     unchanged: [
       {
+        // `{entryFee}` is filled by the renderer from `PRIZE_SEASONS`, never typed here: the
+        // card is allowed one prize figure and it has to be the same object the Prize Tracker
+        // renders, or the two pages can disagree about what a season costs.
+        label: "Entry fee stays at {entryFee}.",
+        detail: "Every dollar of it goes back out as prize money.",
+        link: { href: "prizes.html", label: "See the breakdown" },
+      },
+      {
+        label: "Extras are split as we go.",
+        detail: "The draft board, draft day food and anything else the group takes on are shared at the time, outside the entry fee.",
+      },
+      {
         label: "Superflex stays.",
         detail: "For 2027 and beyond, along with the 4 QB roster limit.",
       },
