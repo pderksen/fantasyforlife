@@ -2192,6 +2192,13 @@ function prizeState(ps: PrizeSeason): { text: string; live: boolean } {
  * Forest while a season is running, the plain card once it is final or has not started —
  * the same tone-per-state idea `HONOR_TONES` uses, so live-versus-done is legible at a glance
  * rather than only in the small print.
+ *
+ * The figures carry no `tabular-nums`, and that is deliberate. Schibsted Grotesk's tabular
+ * figures give the comma a full digit's advance width, so `$1,600` renders with a visible gap
+ * either side of it — a defect at 19px bold, and one nothing here buys off, since these four
+ * sit in a wrapping flex row rather than a column and have no vertical alignment to hold. The
+ * winnings tiles are the same shape and drop it for the same reason. `tabular-nums` stays on
+ * the ledger's and the all-time table's amount columns, where figures really do stack.
  */
 function prizeBandHtml(season: string, ps: PrizeSeason): string {
   const { text, live } = prizeState(ps);
@@ -2206,7 +2213,7 @@ function prizeBandHtml(season: string, ps: PrizeSeason): string {
   const figureLabel = live ? "text-sage" : "text-stone";
 
   const figure = (label: string, value: string) =>
-    `<span class="text-center sm:text-right"><span class="block text-[10px] tracking-[0.12em] uppercase ${figureLabel}">${esc(label)}</span><span class="block text-[19px] font-bold tabular-nums">${esc(value)}</span></span>`;
+    `<span class="text-center sm:text-right"><span class="block text-[10px] tracking-[0.12em] uppercase ${figureLabel}">${esc(label)}</span><span class="block text-[19px] font-bold">${esc(value)}</span></span>`;
 
   return `      <div class="${shell} rounded-[14px] px-6 py-4 mb-8 flex flex-wrap items-center justify-between gap-x-8 gap-y-4">
         <span>
@@ -2241,7 +2248,7 @@ function winningsHtml(ps: PrizeSeason): string {
       const label = lead ? "text-sage" : "text-stone";
       return `        <div class="${box} rounded-xl px-4 py-3.5">
           <div class="text-[11px] tracking-[0.08em] uppercase mb-1 ${label}">${esc(TEAM_CITIES[team] ?? team)}</div>
-          <div class="text-[19px] font-bold tabular-nums">${esc(money(total))}</div>
+          <div class="text-[19px] font-bold">${esc(money(total))}</div>
         </div>`;
     })
     .join("\n");
