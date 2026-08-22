@@ -136,7 +136,7 @@ export function getDraftDate(season: string): string | undefined {
  * every upcoming season sits in until its draft runs.
  *
  * Sleeper seasons only. 2006-2024 drafted on MyFantasyLeague, whose boards are reachable from
- * the Past Leagues section of the League History page instead.
+ * the Old League Sites section of the League History page instead.
  */
 export const SLEEPER_DRAFT_IDS: Record<string, string> = {
   "2025": "1220634181302767616",

@@ -175,9 +175,9 @@ const PILL_ACTIVE = `${PILL} text-parchment bg-forest border border-forest`;
  * because a white pill on a white card is a border and nothing else. `PILL_LINK` stays white for
  * the pills that sit on the cream page background, where white is what separates them from it.
  *
- * Two users, both lists inside a card: the years in Past Leagues (nineteen of them, wrapping to
- * three rows, which is the point — a comma list of that length reads as prose and gives the eye
- * nothing to land on) and the stage pills on the Keeper Tiers hub.
+ * Two users, both lists inside a card: the years in Old League Sites (nineteen of them, wrapping
+ * to three rows, which is the point — a comma list of that length reads as prose and gives the
+ * eye nothing to land on) and the stage pills on the Keeper Tiers hub.
  */
 const PILL_ON_CARD = `${PILL} bg-shell border border-line text-ink no-underline transition-colors hover:border-moss hover:text-moss`;
 
@@ -1470,7 +1470,7 @@ export function generateTiersHtml(navLinks: NavLink[], hasMark = false): string 
           <span class="text-[19px] font-bold tracking-tight">${esc(LEAGUE_FIRST_SEASON)}&ndash;${Number(SLEEPER_FIRST_SEASON) - 1}</span>
           <span class="ml-auto flex flex-col items-end gap-1.5">
             <a href="${ARCHIVE_LINKS.tiersSheet}" target="_blank" rel="noopener noreferrer" class="${PILL_ON_CARD}">Google Sheets Archive &#x2197;</a>
-            <a href="history.html#past-leagues" class="${ARCHIVE_NOTE}">Drafts linked on past MFL sites</a>
+            <a href="history.html#old-league-sites" class="${ARCHIVE_NOTE}">Drafts linked on past MFL sites</a>
           </span>
         </div>`;
 
@@ -1542,16 +1542,23 @@ const TAB_SOON = `<span class="text-[10px] font-semibold tracking-[0.12em] upper
  * gives the h1 above it something to sit on, which a bare row of links did not.
  *
  * Every tab is underlined because underline means "this one works", not "you are here" — nothing
- * observes the sections, so all three light up now that all three exist.
+ * observes the sections, so every one of them lights up now that all four exist.
+ *
+ * A tab's label, the heading it lands on and the section's id all say the same thing, and that
+ * is the rule to hold when one of them moves. All three were rewritten in Aug 2026: "Records"
+ * and "Scoring Records" sat one word apart with nothing to say which held the trophies, and
+ * "Full League History" only repeated the h1 above it. So renaming a section is four edits, the
+ * `href` here, the `id` on the section, its `<h2>`, and any cross-page link. `ARCHIVE_NOTE` on
+ * the Keeper Tiers hub is the only such link today, pointing at `#old-league-sites`.
  *
  * Sits below the h1 rather than at the top of the page so it reads as a switch within League
  * History instead of a second site nav competing with the green bar above it.
  */
 const HISTORY_SECTIONS: { label: string; href?: string }[] = [
-  { label: "Full League History", href: "#all-time" },
-  { label: "Records", href: "#records" },
+  { label: "Season Results", href: "#season-results" },
+  { label: "Trophy Case", href: "#trophy-case" },
   { label: "Scoring Records", href: "#scoring-records" },
-  { label: "Past Leagues", href: "#past-leagues" },
+  { label: "Old League Sites", href: "#old-league-sites" },
 ];
 
 function historyNavHtml(): string {
@@ -1956,7 +1963,7 @@ ${body}
 }
 
 /**
- * The Records section: the same twenty seasons the table above lists, counted per owner.
+ * The Trophy Case section: the same twenty seasons the table above lists, counted per owner.
  *
  * Two tables rather than one, split on `ACTIVE_TEAMS`. A single ranked table would put Chico Pico
  * de Gallo third with three championships and no way to play for a fourth, which reads as a
@@ -1968,22 +1975,23 @@ ${body}
  * gives each table the columns its own rows scored in, which drops Total Points from Retired
  * Owners because nobody in it played a season where that was recorded.
  *
- * Notes under the Trophy Case run in two groups, and only the second is numbered. The unnumbered
+ * Notes under Current Owners run in two groups, and only the second is numbered. The unnumbered
  * one is about the table as a whole (which columns the older seasons never recorded); the numbered
  * ones are about a single line, so they take a superscript on the team they belong to. Both are
  * derived, so both take themselves off when the thing they explain stops being true.
  *
- * Sits directly under the full history table and above the earlier seasons' honor cards, which is
- * the order `HISTORY_SECTIONS` promises: history, records, past leagues.
+ * Sits directly under the season results table and above the earlier seasons' honor cards, which
+ * is the order `HISTORY_SECTIONS` promises: season results, trophy case, scoring records, old
+ * league sites.
  *
  * TODO — more records. The private `FFL History & Records` Google Doc's "FFL Stats & Records"
- * section holds all-time bests and worsts (highest and lowest single-game scores, biggest
- * blowouts, closest finishes) that no page renders yet. It is split across three scoring eras
- * (2006-2011, 2012-2019, 2020-2024 PPR) whose numbers are **not comparable**, so any table built
- * from it has to group by era rather than sort one all-time list. Candidate blocks, each its own
- * `SUB_H3` under this same section: Scoring Records (by era), Streaks & Droughts (title droughts,
- * back-to-back champions, consecutive Toilet Bowls), Head-to-Head (all-time series between two
- * owners), Draft Records (keepers held longest, rounds that produced champions).
+ * section holds all-time bests and worsts that no page renders yet. Scoring Records shipped out
+ * of that doc in Aug 2026 as its own section below this one, and its era-major shape is where
+ * anything else built from the doc has to start: the eras' numbers are **not comparable**, so a
+ * block groups by era rather than sorting one all-time list. Candidates, each its own `SUB_H3`
+ * under this section: Streaks & Droughts (title droughts, back-to-back champions, consecutive
+ * Toilet Bowls), Head-to-Head (all-time series between two owners), Draft Records (keepers held
+ * longest, rounds that produced champions).
  */
 function recordsHtml(): string {
   if (LEAGUE_HISTORY.length === 0) return "";
@@ -1998,7 +2006,7 @@ function recordsHtml(): string {
   const renames = Object.entries(TEAM_ALIASES).filter(([from]) => rawNames.has(from));
   const marks = new Map(renames.map(([, to], i) => [to, i + 1]));
 
-  // Which columns the older seasons simply never recorded, read off the columns the Trophy Case
+  // Which columns the older seasons simply never recorded, read off the columns Current Owners
   // actually renders. Filling in the missing figures retires the line on its own.
   const thin = activeColumns
     .map((i) => {
@@ -2021,9 +2029,9 @@ ${trophyTableHtml(retired, "Owner", scoredColumns(retired), marks)}`
     : "";
 
   return `
-    <section id="records" class="mb-14 scroll-mt-6">
-      <h2 class="${SECTION_H2}">Records</h2>
-      <h3 class="${SUB_H3}">Trophy Case</h3>
+    <section id="trophy-case" class="mb-14 scroll-mt-6">
+      <h2 class="${SECTION_H2}">Trophy Case</h2>
+      <h3 class="${SUB_H3}">Current Owners</h3>
 ${trophyTableHtml(active, "Owner", activeColumns, marks)}
 ${notes}${retiredBlock}
     </section>
@@ -2128,9 +2136,9 @@ ${body}
  * columns it is meant to keep readable. The `.tbl-scroll` fade carries the affordance instead,
  * the same call the prize ledger makes for the same reason.
  *
- * Sits directly under Records and above the earlier seasons' honor cards, matching its place in
- * `HISTORY_SECTIONS`. Everything it renders comes from `STAT_ERAS` and `ALL_YEARS_RECORDS`, so
- * a new era or a filled-in gap is a data edit with nothing to change here.
+ * Sits directly under the Trophy Case and above the earlier seasons' honor cards, matching its
+ * place in `HISTORY_SECTIONS`. Everything it renders comes from `STAT_ERAS` and
+ * `ALL_YEARS_RECORDS`, so a new era or a filled-in gap is a data edit with nothing to change here.
  */
 function statRecordsHtml(): string {
   // Both halves have to be empty before the section goes, not just the eras: the all-years
@@ -2208,8 +2216,8 @@ ${mflLinks}
         </div>`
     : "";
 
-  return `    <section id="past-leagues" class="mb-14 scroll-mt-6">
-      <h2 class="${SECTION_H2}">Past Leagues</h2>
+  return `    <section id="old-league-sites" class="mb-14 scroll-mt-6">
+      <h2 class="${SECTION_H2}">Old League Sites</h2>
       <div class="${CARD} px-5 py-5 max-w-[720px] flex flex-col gap-5">
         <div>
           <div class="${LABEL_TYPE} mb-2.5">${esc(sleeperFrom)}&ndash;present &middot; Sleeper</div>
@@ -2228,16 +2236,16 @@ ${mflLinks}
  *
  * A root-level page like the index, so it takes the same `base: ""` chrome and the same 1080px
  * measure. Sections, in order: the sub-nav, the newest season's honors (the same four cards the
- * home page opens on, from the same renderer), the all-time table, Records, then each earlier
- * season.
+ * home page opens on, from the same renderer), Season Results, the Trophy Case, Scoring Records,
+ * then each earlier season.
  *
- * The all-time table sits second rather than last so it holds its place as seasons accumulate;
- * were it below them it would sink another screen every August. The newest season stays above it
- * because a finished season is the thing worth opening on, which is the home page's reasoning too.
- * Records follows the table it counts, and both sit above the earlier seasons' cards so the three
- * sections the sub-nav names appear in the order it names them.
+ * The season results table sits second rather than last so it holds its place as seasons
+ * accumulate; were it below them it would sink another screen every August. The newest season
+ * stays above it because a finished season is the thing worth opening on, which is the home
+ * page's reasoning too. The Trophy Case follows the table it counts, and both sit above the
+ * earlier seasons' cards so the sections the sub-nav names appear in the order it names them.
  *
- * Past Leagues closes the page, below the oldest season's cards, matching its place in the
+ * Old League Sites closes the page, below the oldest season's cards, matching its place in the
  * sub-nav: it is where to go when this page does not have what you came for, so it reads as the
  * exit rather than as another record.
  */
@@ -2253,10 +2261,10 @@ export function generateHistoryHtml(navLinks: NavLink[], hasMark = false): strin
     honorsSection(s, SEASON_HONORS[s], { id: `s${s}`, badge: throwbackBadgeHtml(s), footer: prizePointerHtml(s) });
   const table = leagueHistoryTableHtml();
 
-  const allTime = table
+  const seasonResults = table
     ? `
-    <section id="all-time" class="mb-14 scroll-mt-6">
-      <h2 class="${SECTION_H2}">Full League History</h2>
+    <section id="season-results" class="mb-14 scroll-mt-6">
+      <h2 class="${SECTION_H2}">Season Results</h2>
 ${table}
     </section>
 `
@@ -2277,7 +2285,7 @@ ${siteHeader(chrome)}
   <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
     <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-8">League History</h1>
 ${historyNavHtml()}
-${newest ? honorBlocks(newest) : ""}${allTime}${recordsHtml()}${statRecordsHtml()}${earlier.map(honorBlocks).join("")}${pastLeaguesHtml()}${backToTopHtml()}
+${newest ? honorBlocks(newest) : ""}${seasonResults}${recordsHtml()}${statRecordsHtml()}${earlier.map(honorBlocks).join("")}${pastLeaguesHtml()}${backToTopHtml()}
   </main>
 </body>
 </html>`;

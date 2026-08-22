@@ -145,7 +145,7 @@ Four pieces, all in `html.ts` and all declared above their first use:
 
 | Table | Fade | Frozen column | Table width |
 |---|---|---|---|
-| League History, Trophy Case, Retired Owners | yes | yes, seam to `lg` | `w-max min-w-full` |
+| Season Results, Current Owners, Retired Owners | yes | yes, seam to `lg` | `w-max min-w-full` |
 | All-Time Winnings (prizes) | yes | yes, seam always | `w-max min-w-full` |
 | Season prize ledger | yes | no | `w-full min-w-[420px]` |
 | Traded Picks (roster pages) | yes, on cream | no | `w-auto`, cells `nowrap` |
@@ -217,8 +217,8 @@ Four pieces, all in `html.ts` and all declared above their first use:
 `regenerateHistory()` in `index.ts` on every run right after the index.
 
 **Sections**, in order: the sub-nav, the newest season's honor cards from the same
-`honorsSection()` the home page uses, the all-time table, Records, then each earlier season's
-cards, then Past Leagues, and a "Back to top" link closing the page. Content is hand-written in
+`honorsSection()` the home page uses, Season Results, the Trophy Case, Scoring Records, then each
+earlier season's cards, then Old League Sites, and a "Back to top" link closing the page. Content is hand-written in
 `league-info.ts` as the history is settled, which is why most of it is still blank.
 
 **A throwback season is badged on its honor cards and starred in the table.** Both come from
@@ -259,7 +259,14 @@ container behind cells that are otherwise transparent. The gap is 13px of 14%-op
 row in twenty, and it is the price of the tint.
 
 **The sub-nav lists the page's sections, not its seasons.** `HISTORY_SECTIONS` in `html.ts` is the
-list: Full League History, Records, Past Leagues. It carried a pill per recorded season until Aug
+list: Season Results, Trophy Case, Scoring Records, Old League Sites. **A tab's label, the
+heading it lands on and the section's id all match**, which is what makes a section renameable
+without guesswork: move the four together (the `href`, the `id`, the `<h2>`, and any cross-page
+link) and nothing is left pointing at a dead anchor. All three were rewritten in Aug 2026, because
+"Records" and "Scoring Records" sat one word apart with nothing to say which held the trophies,
+and "Full League History" only repeated the h1 above it. `ARCHIVE_NOTE` on the Keeper Tiers hub is
+the only cross-page link into this page, at `history.html#old-league-sites`. It carried a pill per
+recorded season until Aug
 2026, which was dropped because a row that grows by one every August wraps to a second line in the
 2030s while saying nothing a reader scrolling the page can't already see. A section that doesn't
 exist yet still gets a tab, inert and carrying a small `TAB_SOON` tag, so the shape of the page is
@@ -283,12 +290,15 @@ this page), then a plain middot-separated text row, which had nothing for the h1
   than breaking one. `gap-y-0` keeps the two lines tight enough to still read as one bar, with the
   live tab's underline on the upper line and the row's rule under the lower.
 
-### Records
+### Trophy Case
 
-`recordsHtml()` in `html.ts`, sitting directly under the all-time table it counts and above the
-earlier seasons' honor cards, so the three sections the sub-nav names appear in the order it names
-them. Two tables today, `SUB_H3` headings over each: **Trophy Case** for the ten teams in
-`ACTIVE_TEAMS`, **Retired Owners** for everyone else the history names.
+`recordsHtml()` in `html.ts`, sitting directly under the Season Results table it counts and above
+the earlier seasons' honor cards, so the sections the sub-nav names appear in the order it names
+them. Two tables today, `SUB_H3` headings over each: **Current Owners** for the ten teams in
+`ACTIVE_TEAMS`, **Retired Owners** for everyone else the history names. The section took the name
+in Aug 2026: the first table was already called it, and "Records" over the pair read as a sibling
+of "Scoring Records" rather than as the thing holding the trophies. The first table became Current
+Owners in the same pass, so the section and its table stopped answering to one name.
 
 - **It counts `HISTORY_COLUMNS`, not a list of its own.** `trophyCounts()` walks `LEAGUE_HISTORY`
   through the same column list the table above renders, so the Trophy Case tallies exactly the
@@ -301,7 +311,7 @@ them. Two tables today, `SUB_H3` headings over each: **Trophy Case** for the ten
   in Aug 2026 gave Canton three of them and Booty Bay one, and the column came back with no edit
   here, which is the argument for deriving it rather than hard-coding "the retired table shows
   three columns". It applies to both tables, so an all-empty column would leave the
-  Trophy Case too, and the notes below read off the columns that table actually rendered.
+  Current Owners too, and the notes below read off the columns that table actually rendered.
 - **The split into two tables is the point, not a tidiness pass.** One ranked table would sit
   Chico Pico de Gallo third on three championships with no way to play for a fourth, which reads
   as a standings error every time it is seen. The top table then answers the question people
@@ -358,7 +368,7 @@ them. Two tables today, `SUB_H3` headings over each: **Trophy Case** for the ten
   Candidates, each a `SUB_H3` plus a table inside this same section: Scoring Records (by era),
   Streaks & Droughts, Head-to-Head, Draft Records.
 
-**Scoring Records is its own section, below Records.** `statRecordsHtml()` renders the league's
+**Scoring Records is its own section, below the Trophy Case.** `statRecordsHtml()` renders the league's
 bests and worsts split into four scoring eras, from `STAT_ERAS` in `league-info.ts`. It carries a
 short All Years block first, then one `SUB_H3` and one table per era, newest first.
 
@@ -415,7 +425,7 @@ short All Years block first, then one `SUB_H3` and one table per era, newest fir
   `LEAGUE_HISTORY` already names for 2025 Total Points. No capture pipeline was added: nothing
   else here reads matchup data, and one season of records does not pay for one.
 
-**Past Leagues closes the page**, from `pastLeaguesHtml()`. One card, two labelled blocks: Sleeper
+**Old League Sites closes the page**, from `pastLeaguesHtml()`. One card, two labelled blocks: Sleeper
 from `SLEEPER_FIRST_SEASON` on, then one `PILL_ON_CARD` tile per MyFantasyLeague season in
 `MFL_SEASONS`, newest first.
 
@@ -744,7 +754,8 @@ list and the History table: `CARD` over `bg-shell`, rows on `border-t border-rul
 stage pills are `bg-shell` a step down from it, and the one pill pointing at the newest stage of
 the newest season is filled forest. `PILL_LINK` is white because it normally sits on the cream
 page background, where white is what lifts it off the page; inside a white card that same pill is
-a border and nothing else, which is the call `YEAR_TILE` already made for the Past Leagues years.
+a border and nothing else, which is the call `YEAR_TILE` already made for the Old League Sites
+years.
 So the constant was generalised to `PILL_ON_CARD` and both lists use it. There is no fourth level
 available, which is why the archive row's link sits at the same weight as a season's stages.
 
@@ -798,7 +809,7 @@ in the card: the stages are what this page is for, and the board is where you go
 **The archive row's second line is the one thing on it not typed like a season.** Those years'
 drafts are not on the sheet its pill opens (they are on the MyFantasyLeague sites the League
 History page already lists), so the row carries a 13px link (`ARCHIVE_NOTE`) under the pill
-reading "Drafts linked on past MFL sites" and pointing at `history.html#past-leagues`. A second
+reading "Drafts linked on past MFL sites" and pointing at `history.html#old-league-sites`. A second
 pill there was the obvious symmetry and is wrong twice over: it would claim MFL was an equal
 destination in this card, and it would point sideways at this site's own page using the treatment
 every other link in the card uses to leave it. The right-hand span becomes a `flex-col items-end`
