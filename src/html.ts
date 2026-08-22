@@ -19,6 +19,10 @@ import {
   LEAGUE_HISTORY,
   LEAGUE_FIRST_SEASON,
   type SeasonResult,
+  STAT_ERAS,
+  ALL_YEARS_RECORDS,
+  type StatRecord,
+  type RecordHolder,
   TEAM_CITIES,
   TEAM_ALIASES,
   ACTIVE_TEAMS,
@@ -1536,6 +1540,7 @@ const TAB_SOON = `<span class="text-[10px] font-semibold tracking-[0.12em] upper
 const HISTORY_SECTIONS: { label: string; href?: string }[] = [
   { label: "Full League History", href: "#all-time" },
   { label: "Records", href: "#records" },
+  { label: "Scoring Records", href: "#scoring-records" },
   { label: "Past Leagues", href: "#past-leagues" },
 ];
 
@@ -2010,7 +2015,138 @@ ${trophyTableHtml(retired, "Owner", scoredColumns(retired), marks)}`
       <h3 class="${SUB_H3}">Trophy Case</h3>
 ${trophyTableHtml(active, "Owner", activeColumns, marks)}
 ${notes}${retiredBlock}
-      <p class="text-sm text-stone mt-6">More records are on the way: scoring highs and lows, streaks, and head-to-head series.</p>
+    </section>
+`;
+}
+
+/** The muted second line under a team or a record label. */
+const STAT_SUB = "text-[12px] text-stone font-normal";
+
+/**
+ * One record's holder lines, and the matching season lines beside them.
+ *
+ * Returned as a pair because a tie renders two of each and the two columns have to stay in
+ * step: the second season cell belongs to the second team cell, and nothing but emitting them
+ * together guarantees that. `Michael Vick in 2010` and `Aaron Rodgers in 2011` share a value
+ * and nothing else, so a single joined cell could not be read.
+ *
+ * Team names go through `historyNameHtml()` at the page default, so this table shortens at
+ * exactly the widths the History table and the Trophy Case do.
+ */
+function statHolderCells(holders: RecordHolder[]): { who: string; when: string } {
+  const who = holders
+    .map((h) => {
+      // The beaten side and the player are the same slot: a record is about one or the other,
+      // never both, so nothing has to decide which wins.
+      const sub = h.player
+        ? esc(h.player)
+        : h.against
+          ? `over ${historyNameHtml(h.against)}${h.score ? ` &middot; ${esc(h.score)}` : ""}`
+          : "";
+      return `<div>${historyNameHtml(h.team)}</div>${sub ? `<div class="${STAT_SUB}">${sub}</div>` : ""}`;
+    })
+    .join('<div class="h-2"></div>');
+
+  const when = holders
+    .map((h) => {
+      const wk = h.week ? ` <span class="${STAT_SUB}">Wk ${esc(h.week)}</span>` : "";
+      // The spacer matches the one above only when that holder also drew a sub-line, which is
+      // why it is measured off the same two conditions rather than emitted unconditionally.
+      const pad = h.player || h.against ? `<div class="${STAT_SUB}">&nbsp;</div>` : "";
+      return `<div>${esc(h.season)}${wk}</div>${pad}`;
+    })
+    .join('<div class="h-2"></div>');
+
+  return { who, when };
+}
+
+/**
+ * One era's table, or the all-years block, which is the same four columns over fewer rows.
+ *
+ * `valueHeader` is a parameter and not a constant because the all-years block scores win-loss
+ * finishes rather than points, and heading a column of `12-2` with "Points" states something
+ * the numbers plainly are not.
+ */
+function statTableHtml(records: StatRecord[], valueHeader = "Points"): string {
+  const body = records
+    .map((r) => {
+      const { who, when } = statHolderCells(r.holders);
+      const scope = r.scope ? `<div class="${STAT_SUB}">${esc(r.scope)}</div>` : "";
+      return `                <tr>
+                  <td class="${HIST_TD} font-medium">${esc(r.label)}${scope}</td>
+                  <td class="${HIST_TD} text-right tabular-nums font-medium align-top">${esc(r.value)}</td>
+                  <td class="${HIST_TD}">${who}</td>
+                  <td class="${HIST_TD} align-top">${when}</td>
+                </tr>`;
+    })
+    .join("\n");
+
+  return `      <div class="${CARD} overflow-hidden">
+        <div class="${TBL_SCROLL}">
+          <table class="w-max min-w-full text-left border-separate border-spacing-0">
+            <thead><tr class="bg-shell">
+              <th class="${HIST_TH}">Record</th>
+              <th class="${HIST_TH_BASE} text-right">${esc(valueHeader)}</th>
+              <th class="${HIST_TH}">Held by</th>
+              <th class="${HIST_TH}">Season</th>
+            </tr></thead>
+            <tbody>
+${body}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+}
+
+/**
+ * The Scoring Records section: the league's bests and worsts, split by scoring era.
+ *
+ * **Four tables and not one sorted list, because the numbers do not compare.** PPR in 2020 and
+ * Superflex in 2025 each lifted every scoring figure at once, so an all-time "highest single
+ * week" would name the newest era every time and read as though 2011 was played badly rather
+ * than played differently. The eras are the point of the section, not a filing convenience,
+ * which is why each one gets its own heading and its own table instead of an era column.
+ *
+ * **Newest era first**, matching `LEAGUE_HISTORY`'s render order and the honor cards above it.
+ * The all-years block leads, because those two records are the only ones on the page that
+ * genuinely survive an era boundary, and saying so first stops the four tables below from
+ * reading like one interrupted list.
+ *
+ * No frozen column here, unlike the three tables above. The row identity is the record label,
+ * which runs to about 270px, and pinning that on a 390px phone would leave 120px for the three
+ * columns it is meant to keep readable. The `.tbl-scroll` fade carries the affordance instead,
+ * the same call the prize ledger makes for the same reason.
+ *
+ * Sits directly under Records and above the earlier seasons' honor cards, matching its place in
+ * `HISTORY_SECTIONS`. Everything it renders comes from `STAT_ERAS` and `ALL_YEARS_RECORDS`, so
+ * a new era or a filled-in gap is a data edit with nothing to change here.
+ */
+function statRecordsHtml(): string {
+  // Both halves have to be empty before the section goes, not just the eras: the all-years
+  // block is a record of its own and would vanish with them under a bare `STAT_ERAS` check.
+  if (STAT_ERAS.length === 0 && ALL_YEARS_RECORDS.length === 0) return "";
+
+  const eraBlocks = [...STAT_ERAS]
+    .reverse()
+    .map((era) => {
+      const heading = era.scoring
+        ? `${esc(era.label)} <span class="${STAT_SUB}">${esc(era.scoring)}</span>`
+        : esc(era.label);
+      return `      <h3 class="${SUB_H3} mt-9">${heading}</h3>
+${statTableHtml(era.records)}`;
+    })
+    .join("\n");
+
+  const allYears = ALL_YEARS_RECORDS.length
+    ? `      <h3 class="${SUB_H3}">All Years</h3>
+${statTableHtml(ALL_YEARS_RECORDS, "Result")}`
+    : "";
+
+  return `
+    <section id="scoring-records" class="mb-14 scroll-mt-6">
+      <h2 class="${SECTION_H2}">Scoring Records</h2>
+${allYears}
+${eraBlocks}
     </section>
 `;
 }
@@ -2127,7 +2263,7 @@ ${siteHeader(chrome)}
   <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
     <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-8">League History</h1>
 ${historyNavHtml()}
-${newest ? honorBlocks(newest) : ""}${allTime}${recordsHtml()}${earlier.map(honorBlocks).join("")}${pastLeaguesHtml()}${backToTopHtml()}
+${newest ? honorBlocks(newest) : ""}${allTime}${recordsHtml()}${statRecordsHtml()}${earlier.map(honorBlocks).join("")}${pastLeaguesHtml()}${backToTopHtml()}
   </main>
 </body>
 </html>`;

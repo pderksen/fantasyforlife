@@ -357,6 +357,41 @@ them. Two tables today, `SUB_H3` headings over each: **Trophy Case** for the ten
   Candidates, each a `SUB_H3` plus a table inside this same section: Scoring Records (by era),
   Streaks & Droughts, Head-to-Head, Draft Records.
 
+**Scoring Records is its own section, below Records.** `statRecordsHtml()` renders the league's
+bests and worsts split into four scoring eras, from `STAT_ERAS` in `league-info.ts`. It carries a
+short All Years block first, then one `SUB_H3` and one table per era, newest first.
+
+- **The eras are the section, not a filing convenience.** PPR arriving in 2020 and Superflex in
+  2025 each lifted every scoring figure at once, so a single all-time list would name the newest
+  era in every row. Splitting it says the earlier eras played a different game rather than played
+  it badly. Nothing sorts across an era boundary anywhere in the section.
+- **All Years leads, and holds exactly two rows.** A win-loss finish is the one figure the scoring
+  changes never touched, so those two records genuinely compare across twenty seasons. Putting
+  them first stops the four tables below from reading as one interrupted list, and the note under
+  them is the only place the page explains why it is split at all.
+- **An era-as-columns matrix was tried on paper and dropped.** Each cell needs a value, a team, a
+  season and a week; four of those across is wider than the League History table, which already
+  runs to about 40px of slack at 1024px. Era-major costs four headings and fits.
+- **The scope qualifier lives on the row, not the table.** 2006-2011 measured a season total over
+  the regular season alone and 2012 onward counts the playoffs, so the row prints "Regular season
+  only" where it applies. A note under the section would be read once and forgotten by the third
+  table, and the difference is exactly the kind that makes two numbers look comparable when they
+  are not.
+- **Ragged coverage is honest coverage.** Only 2006-2011 and 2025 have a bench figure, so that
+  row is absent from the other two tables and they are simply shorter; a row of em dashes would
+  read as a measured zero. The doc's lowest single-week single-player score is carried for no era
+  even though it exists for three, since a bad start is a lineup mistake rather than a league
+  record. Dropping it from every era at once is what stops one table implying the rest never
+  had one.
+- **No frozen column here**, alone among the page's tables. The record label is the row identity
+  and runs about 270px, so pinning it on a phone leaves nothing for the columns it would be
+  conserving. The `.tbl-scroll` fade does the signalling, as it does on the prize ledger.
+- **The 2025 era was computed rather than transcribed.** The doc stops at 2024 and leaves a `TODO`
+  heading for the Superflex era, so those figures came from a one-time sweep of Sleeper's
+  matchups endpoint, cross-checked against `rosters[].settings.fpts` and against the team
+  `LEAGUE_HISTORY` already names for 2025 Total Points. No capture pipeline was added: nothing
+  else here reads matchup data, and one season of records does not pay for one.
+
 **Past Leagues closes the page**, from `pastLeaguesHtml()`. One card, two labelled blocks: Sleeper
 from `SLEEPER_FIRST_SEASON` on, then one `PILL_ON_CARD` tile per MyFantasyLeague season in
 `MFL_SEASONS`, newest first.

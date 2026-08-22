@@ -209,6 +209,18 @@ export const TEAM_CITIES: Record<string, string> = {
   "Collet Winners": "Collet",
   // Not retired: the Riverstone Stoners under their old name. See `TEAM_ALIASES`.
   "Winnemucca Muckers": "Winnemucca",
+  // Retired, and named only by the history doc's "FFL Stats & Records" section: these two hold
+  // one scoring record each and never placed in a bracket, so `LEAGUE_HISTORY` does not carry
+  // them and the Trophy Case never counts them.
+  //
+  // **Both are retired teams in their own right, not old names** (confirmed Aug 2026), so
+  // neither takes a `TEAM_ALIASES` entry. The tiers workbook makes this look otherwise and the
+  // trap is worth knowing: one season's draft-order tab reads `Sanger Skunkheads` in the same
+  // slot its tier tabs read `Arroyo Grande`, with the other nine teams identical and in the
+  // same order. That is a franchise slot changing hands between seasons, not the
+  // Winnemucca-to-Riverstone rename it resembles. Do not fold Arroyo Grande into Sanger.
+  "Arroyo Grande Bottom Feeders": "Arroyo Grande",
+  "Booty Bay Bandits": "Booty Bay",
 };
 
 /**
@@ -340,6 +352,325 @@ export const LEAGUE_HISTORY: SeasonResult[] = [
     // Two teams finished 10-4; the prize was split, so the cell names both. Full names here and
     // in every row: ` & ` is the tie the table's renderer keys on to drop the pair to city words.
     bestRecord: "Vancouver Moose Drool & Visalia Viagra Vipers",
+  },
+];
+
+/**
+ * One holder of a scoring record: who set it, and when.
+ *
+ * A separate shape from the record itself only because of ties. The 2006-2011 single-player
+ * high is held by two teams in two different seasons, so a flat `team`/`season` pair on the
+ * record could not carry it without either dropping a holder or inventing a joined string
+ * that nothing could shorten at render.
+ */
+export interface RecordHolder {
+  /** Full team name, the same string every other join key uses. */
+  team: string;
+  /** The player, on the records that belong to one. */
+  player?: string;
+  /** The beaten side, on the two matchup records. */
+  against?: string;
+  /** Both sides' scores as written, e.g. "175-81". Only meaningful with `against`. */
+  score?: string;
+  season: string;
+  /** Week number as a bare string. Absent on the season-long records. */
+  week?: string;
+}
+
+/**
+ * One line of the scoring records table.
+ *
+ * `value` is a **string, not a number**, and the reason is sharper than a formatting preference:
+ * **the league's scoring precision changed in the middle of an era.** MyFantasyLeague recorded
+ * whole points through 2022 and switched to two decimals in 2023, so the 2020-2024 block holds
+ * `2622` (a 2020 record) beside `210.12` (a 2024 one) and *both are exact*. Storing them as
+ * numbers would force one format across rows that were measured differently, printing "2622.00"
+ * and claiming a precision nobody recorded.
+ *
+ * Verified Aug 2026 against MFL's export API (`TYPE=weeklyResults`): zero decimal scores across
+ * every 2020, 2021 and 2022 week sampled, decimals from 2023 on. The same check confirmed the
+ * doc's 2020 figures are exact rather than rounded, matching week 5 (175-81) and week 14
+ * (164-159, combined 323) to the digit. Do not "add the missing decimals" to a pre-2023 row.
+ */
+export interface StatRecord {
+  /** What the record measures. The league's own nickname where it has one. */
+  label: string;
+  /** Qualifier under the label, e.g. "17 weeks including playoffs". */
+  scope?: string;
+  value: string;
+  /** One entry, or more than one only for a tie. */
+  holders: RecordHolder[];
+}
+
+/**
+ * A scoring era, and the records set inside it.
+ *
+ * **The eras exist because the numbers are not comparable across them**, which is the whole
+ * reason this is four tables rather than one sorted list. PPR arriving in 2020 lifted every
+ * scoring figure at once, and Superflex in 2025 did it again, so an all-time "highest single
+ * week" would only ever name the most recent era and would read as though the earlier ones
+ * were bad at fantasy football rather than playing a different game.
+ *
+ * **What a season total measures also changes**, which is subtler and easier to miss: 2006-2011
+ * recorded the regular season only, and 2012 onward counts the playoff weeks too. That is why
+ * `scope` sits on the record and not on the table, and why the 2006-2011 block says so on its
+ * own line rather than relying on a note under the section.
+ *
+ * Stored oldest-first and rendered newest-first, the same way `LEAGUE_HISTORY` is.
+ */
+export interface StatEra {
+  /** Range label, e.g. "2020-2024". */
+  label: string;
+  /** What this era changed. The first era changed nothing, so it sets none. */
+  scoring?: string;
+  records: StatRecord[];
+}
+
+/**
+ * Scoring records by era, from the "FFL Stats & Records" section of the private
+ * `FFL History & Records` Google Doc, which is the only place the first three eras are written
+ * down. Find it in Drive by name; it is private, so it is not in `ARCHIVE_LINKS`.
+ *
+ * **Coverage is ragged on purpose.** Only 2006-2011 and 2025 have a bench figure. That row is
+ * absent from the other two eras rather than blank, so a reader sees a shorter table instead of
+ * a row of em dashes implying the record is zero. Adding one is a single entry here.
+ *
+ * The doc also records a lowest single-week single-player score for three of the four eras.
+ * It is deliberately not carried: a bad start is a lineup mistake rather than a league record,
+ * and the row was dropped from every era at once so no table implies the others never had one.
+ *
+ * **The 2025 era was computed, not transcribed.** The doc carries a `TODO (2025 to current
+ * superflex scoring)` heading and nothing under it, so every figure in that block came from a
+ * one-time sweep of Sleeper's `/league/{id}/matchups/{week}` for weeks 1-17, cross-checked two
+ * ways: the regular-season totals match `rosters[].settings.fpts` to the cent, and the
+ * full-season leader is the team `LEAGUE_HISTORY` already names for 2025 Total Points. The
+ * script is not in the repo, since nothing here reads matchup data and one season's records do
+ * not justify a capture pipeline. Recomputing 2026 means writing it again.
+ *
+ * **The two counting records the doc lists under "All Years" are deliberately not here.** Most
+ * Championships and Most Toilet Bowl Championships are already derived from `LEAGUE_HISTORY` by
+ * `trophyCounts()` and rendered by the Trophy Case on this same page. A hand-typed second copy
+ * would disagree with it the first time somebody wins a title. The two all-years *records*
+ * (best and worst regular-season finish) are not derived anywhere, so they stay, in
+ * `ALL_YEARS_RECORDS` below.
+ */
+export const STAT_ERAS: StatEra[] = [
+  {
+    label: "2006-2011",
+    records: [
+      {
+        label: "Highest total points, season",
+        // The one era that measured the regular season alone. Spelled out on the row because
+        // the three later eras count the playoffs and nothing else on the page would say so.
+        scope: "Regular season only",
+        value: "1130",
+        holders: [{ team: "Canton HOFers", season: "2011" }],
+      },
+      {
+        label: "Highest total points, single week",
+        value: "140",
+        holders: [{ team: "Winnemucca Muckers", season: "2011", week: "15" }],
+      },
+      {
+        label: "Highest single week, one player",
+        value: "45",
+        scope: "Tie",
+        holders: [
+          { team: "Arroyo Grande Bottom Feeders", player: "Michael Vick", season: "2010", week: "10" },
+          { team: "Canton HOFers", player: "Aaron Rodgers", season: "2011", week: "4" },
+        ],
+      },
+      {
+        label: "Lowest total points, regular season",
+        value: "612",
+        holders: [{ team: "South Town Freedom Fighters", season: "2011" }],
+      },
+      {
+        label: "Lowest total points, single week",
+        value: "13",
+        holders: [{ team: "Dinkey Creek Dirt Clods", season: "2010", week: "5" }],
+      },
+      {
+        label: "Biggest Country Boy Whooping",
+        scope: "Margin of victory",
+        value: "97",
+        holders: [{ team: "Kingsburg Killaz", against: "Biola Slugglords", score: "123-26", season: "2009", week: "4" }],
+      },
+      {
+        label: "Biggest Defensive No Show",
+        scope: "Largest combined score",
+        value: "220",
+        holders: [{ team: "Dinkey Creek Dirt Clods", against: "Booty Bay Bandits", score: "134-86", season: "2006", week: "12" }],
+      },
+      {
+        label: "Highest total points on the bench",
+        value: "74",
+        holders: [{ team: "Biola Slugglords", season: "2009", week: "1" }],
+      },
+    ],
+  },
+  {
+    label: "2012-2019",
+    records: [
+      {
+        label: "Highest total points, season",
+        scope: "16 weeks, playoffs included",
+        value: "1803",
+        holders: [{ team: "Kingsburg Killaz", season: "2018" }],
+      },
+      {
+        label: "Highest total points, single week",
+        value: "161",
+        holders: [{ team: "Dinkey Creek Dirt Clods", season: "2018", week: "11" }],
+      },
+      {
+        label: "Highest single week, one player",
+        value: "53",
+        holders: [{ team: "South Town Freedom Fighters", player: "Peyton Manning", season: "2013", week: "1" }],
+      },
+      {
+        label: "Lowest total points, regular season",
+        value: "991",
+        holders: [{ team: "Clovis Jets", season: "2017" }],
+      },
+      {
+        label: "Lowest total points, single week",
+        value: "32",
+        holders: [{ team: "Winnemucca Muckers", season: "2012", week: "2" }],
+      },
+      {
+        label: "Biggest Country Boy Whooping",
+        scope: "Margin of victory",
+        value: "94",
+        holders: [{ team: "Easton Evil Empire", against: "Chico Pico de Gallo", score: "149-55", season: "2017", week: "9" }],
+      },
+      {
+        label: "Biggest Defensive No Show",
+        scope: "Largest combined score",
+        value: "285",
+        holders: [{ team: "Winnemucca Muckers", against: "Kingsburg Killaz", score: "156-129", season: "2019", week: "5" }],
+      },
+    ],
+  },
+  {
+    label: "2020-2024",
+    scoring: "PPR scoring added",
+    records: [
+      {
+        label: "Highest total points, season",
+        scope: "17 weeks, playoffs included",
+        value: "2622",
+        holders: [{ team: "Easton Evil Empire", season: "2020" }],
+      },
+      {
+        label: "Highest total points, single week",
+        value: "210.12",
+        holders: [{ team: "Kingsburg Killaz", season: "2024", week: "16" }],
+      },
+      {
+        label: "Highest single week, one player",
+        value: "57",
+        holders: [{ team: "Dinkey Creek Dirt Clods", player: "Tyreek Hill", season: "2020", week: "12" }],
+      },
+      {
+        label: "Lowest total points, regular season",
+        value: "1331",
+        holders: [{ team: "Visalia Viagra Vipers", season: "2020" }],
+      },
+      {
+        label: "Lowest total points, single week",
+        value: "66",
+        holders: [{ team: "Visalia Viagra Vipers", season: "2020", week: "8" }],
+      },
+      {
+        label: "Biggest Country Boy Whooping",
+        scope: "Margin of victory",
+        value: "94",
+        holders: [{ team: "Lemoore Liberators", against: "Sanger Squatty Pottys", score: "175-81", season: "2020", week: "5" }],
+      },
+      {
+        label: "Biggest Defensive No Show",
+        scope: "Largest combined score",
+        value: "323",
+        holders: [{ team: "Sanger Squatty Pottys", against: "Easton Evil Empire", score: "164-159", season: "2020", week: "14" }],
+      },
+    ],
+  },
+  {
+    label: "2025-current",
+    scoring: "Superflex added",
+    records: [
+      {
+        label: "Highest total points, season",
+        scope: "17 weeks, playoffs included",
+        value: "2602.30",
+        holders: [{ team: "Sanger Squatty Pottys", season: "2025" }],
+      },
+      {
+        label: "Highest total points, single week",
+        value: "212.24",
+        holders: [{ team: "Sanger Squatty Pottys", season: "2025", week: "16" }],
+      },
+      {
+        label: "Highest single week, one player",
+        value: "55.40",
+        holders: [{ team: "Kingsburg Killaz", player: "Jahmyr Gibbs", season: "2025", week: "12" }],
+      },
+      {
+        label: "Lowest total points, regular season",
+        value: "1692.44",
+        holders: [{ team: "Clovis Jets", season: "2025" }],
+      },
+      {
+        label: "Lowest total points, single week",
+        value: "71.94",
+        holders: [{ team: "Clovis Jets", season: "2025", week: "11" }],
+      },
+      {
+        label: "Biggest Country Boy Whooping",
+        scope: "Margin of victory",
+        value: "107.34",
+        holders: [
+          { team: "Sanger Squatty Pottys", against: "Vancouver Moose Drool", score: "212.24-104.90", season: "2025", week: "16" },
+        ],
+      },
+      {
+        label: "Biggest Defensive No Show",
+        scope: "Largest combined score",
+        value: "356.46",
+        holders: [
+          { team: "Kingsburg Killaz", against: "Visalia Viagra Vipers", score: "188.82-167.64", season: "2025", week: "12" },
+        ],
+      },
+      {
+        label: "Highest total points on the bench",
+        value: "110.72",
+        holders: [{ team: "Kingsburg Killaz", season: "2025", week: "3" }],
+      },
+    ],
+  },
+];
+
+/**
+ * The two records the doc files under "All Years" that survive era boundaries.
+ *
+ * A win-loss finish is the one figure PPR and Superflex did not touch, so unlike everything in
+ * `STAT_ERAS` these two genuinely compare across twenty seasons. That is the entire reason they
+ * sit outside the era tables rather than being repeated in each.
+ *
+ * The doc's other two all-years lines, Most Championships and Most Toilet Bowl Championships,
+ * are not here: the Trophy Case on this same page already derives both from `LEAGUE_HISTORY`.
+ */
+export const ALL_YEARS_RECORDS: StatRecord[] = [
+  {
+    label: "Best regular-season record",
+    value: "12-2",
+    holders: [{ team: "Lemoore Liberators", season: "2024" }],
+  },
+  {
+    label: "Worst regular-season record",
+    value: "0-13",
+    holders: [{ team: "South Town Freedom Fighters", season: "2018" }],
   },
 ];
 
