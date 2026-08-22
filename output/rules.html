@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fantasy For Life — Official Rules</title>
+  <meta name="description" content="The league's official rules, plus every past season's rulebook.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/ffl-favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/ffl-favicon-16.png">
+  <link rel="apple-touch-icon" href="assets/ffl-favicon-180.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Fantasy For Life">
+  <meta property="og:title" content="Official Rules">
+  <meta property="og:description" content="The league's official rules, plus every past season's rulebook.">
+  <meta property="og:url" content="https://fantasyforlife.pages.dev/rules.html">
+  <meta property="og:image" content="https://fantasyforlife.pages.dev/assets/ffl-avatar-512.png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta property="og:image:alt" content="Fantasy For Life shield">
+  <meta name="twitter:card" content="summary">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    @theme {
+      --font-sans: "Schibsted Grotesk", system-ui, -apple-system, sans-serif;
+      --color-ink: #16211a;        /* body text */
+      --color-cream: #faf9f5;      /* page background */
+      --color-forest: #183f24;     /* header bar, active pills */
+      --color-parchment: #f2ecdc;  /* text on forest */
+      --color-sage: #b9c4ae;       /* muted text on forest */
+      --color-moss: #1d4a2c;       /* links */
+      --color-stone: #8a9284;      /* muted labels */
+      --color-fern: #6f7a6e;       /* secondary body text */
+      --color-line: #d8d6cc;       /* card and table borders */
+      --color-rule: #e9e7dd;       /* hairline row dividers */
+      --color-brass: #c9a53c;      /* the season's top honor */
+      --color-shell: #eeece2;      /* neutral fill: honor icon discs, table header strips */
+      --color-clay: #f0ead8;       /* warm fill: toilet-bowl honor card, throwback history row */
+      --color-clay-line: #ddd3b8;  /* toilet-bowl honor card: border */
+      --color-clay-ink: #8a7a4a;   /* toilet-bowl honor card: label and glyph */
+    }
+  </style>
+  <style>
+    .tbl-scroll {
+      --tbl-bg: #fff;
+      background:
+        linear-gradient(to right, var(--tbl-bg) 40%, transparent) left center,
+        linear-gradient(to left, var(--tbl-bg) 40%, transparent) right center,
+        radial-gradient(farthest-side at 0 50%, #16211a24, #16211a00) left center,
+        radial-gradient(farthest-side at 100% 50%, #16211a24, #16211a00) right center;
+      background-repeat: no-repeat;
+      background-size: 34px 100%, 34px 100%, 13px 100%, 13px 100%;
+      background-attachment: local, local, scroll, scroll;
+    }
+  </style>
+</head>
+<body class="bg-cream text-ink font-sans antialiased">
+  <header class="bg-forest text-parchment">
+    <div class="max-w-[1080px] mx-auto px-5 sm:px-8 py-4 flex items-center justify-between gap-6 flex-wrap">
+      <a href="index.html" class="flex items-center gap-3.5 no-underline text-parchment">
+        <img src="assets/ffl-avatar-128.png" alt="" width="42" height="42" class="w-[42px] h-[42px] rounded-lg">
+        <span>
+          <span class="block font-bold text-[17px] tracking-tight leading-tight">Fantasy For Life</span>
+          <span class="block text-xs text-sage">est. 2006</span>
+        </span>
+      </a>
+      <nav class="flex items-center gap-x-6 gap-y-3 text-sm flex-wrap justify-end">
+        <a href="tiers.html" class="no-underline text-parchment transition-opacity hover:opacity-70">Keeper Tiers</a>
+        <a href="prizes.html" class="no-underline text-parchment transition-opacity hover:opacity-70">Prize Tracker</a>
+        <a href="history.html" class="no-underline text-parchment transition-opacity hover:opacity-70">League History</a>
+        <a href="rules.html" class="no-underline text-parchment transition-opacity hover:opacity-70">Official Rules</a>
+        <span class="text-sage/50 cursor-default" title="Coming soon">Photo Gallery</span>
+        <a href="https://sleeper.com/leagues" target="_blank" rel="noopener noreferrer" class="no-underline text-forest bg-parchment rounded-full px-4 py-1.5 font-medium transition-opacity hover:opacity-80">Sleeper &#8599;</a>
+      </nav>
+    </div>
+  </header>
+  <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
+    <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-8">Official Rules</h1>
+    <section class="mb-10">
+      <div class="bg-white border border-line rounded-xl px-5 py-5 max-w-[720px]">
+        <p class="text-[15px] leading-relaxed mt-0 mb-0">
+          <span class="font-bold">The 2026 rules are being finalized.</span><span class="text-stone"> Until they land here, the 2025 rules below are the league&rsquo;s most recent published set.</span>
+        </p>
+      </div>
+    </section>
+    <section id="past-rules" class="mb-10 scroll-mt-6">
+      <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Past Years&rsquo; Rules</h2>
+      <div class="bg-white border border-line rounded-xl px-5 py-5 max-w-[720px] flex flex-col gap-5">
+        <div>
+          <div class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-2.5">2008&ndash;2025 &middot; Google Docs</div>
+          <div class="flex flex-wrap gap-2">
+            <a href="https://docs.google.com/document/d/1JqLo-wxlIXpqoS6YjYpdxe_aiZNPA0v5lC_8zFGjvcg/pub" target="_blank" rel="noopener noreferrer" class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg bg-shell border border-line text-ink no-underline transition-colors hover:border-moss hover:text-moss">2025 &#x2197;</a>
+            <a href="https://docs.google.com/document/d/1xLcz7rkS1wAr7-mmS_EAw32SliiBEBpkgsyr1op1KDk/pub" target="_blank" rel="noopener noreferrer" class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg bg-shell border border-line text-ink no-underline transition-colors hover:border-moss hover:text-moss">2024 &#x2197;</a>
+            <a href="https://docs.google.com/document/d/1XwdOIbANP6sQfGE8QepeXo8Voxjc0JZHO4Z9lk70q-w/pub" target="_blank" rel="noopener noreferrer" class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg bg-shell border border-line text-ink no-underline transition-colors hover:border-moss hover:text-moss">2023 &#x2197;</a>
+            <a href="https://docs.google.com/document/d/1CTPKgyzXbj0X3cK-Xa_SO5csAnBv4Ak-VG-EJuYSWyI/pub" target="_blank" rel="noopener noreferrer" class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg bg-shell border border-line text-ink no-underline transition-colors hover:border-moss hover:text-moss">2022 &#x2197;</a>
+            <a href="https://docs.google.com/document/d/1xIHZcPmEjpSUxl9CndJAjFDFmLcdH1q-XRpXMjvn5UU/pub" target="_blank" rel="noopener noreferrer" class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg bg-shell border border-line text-ink no-underline transition-colors hover:border-moss hover:text-moss">2021 &#x2197;</a>
+            <a href="https://docs.google.com/document/d/1NVJjYhGRiN6gH6lxJlgkoYuv0GLFzBIuB4ufEIqVJug/pub" target="_blank" rel="noopener noreferrer" class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg bg-shell border border-line text-ink no-underline transition-colors hover:border-moss hover:text-moss">2020 &#x2197;</a>
+            <a href="https://docs.google.com/document/d/1nfIiQmk1NuXP1JSfcUnqrWXSWeYWsYvNyt3VxS7hy48/pub" target="_blank" rel="noopener noreferrer" class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg bg-shell border border-line text-ink no-underline transition-colors hover:border-moss hover:text-moss">2019 &#x2197;</a>
+            <a href="https://docs.google.com/document/d/17OfMmCetCnh9zphKb7uC5vs2c7GwMVyaUqEkE2C2r6A/pub" target="_blank" rel="noopener noreferrer" class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg bg-shell border border-line text-ink no-underline transition-colors hover:border-moss hover:text-moss">2018 &#x2197;</a>
+            <a href="https://docs.google.com/document/d/1flFBOFbSQdtKpYRmlhe0m6-UYhGk0dcvGuVNaeZxLbg/pub" target="_blank" rel="noopener noreferrer" class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg bg-shell border border-line text-ink no-underline transition-colors hover:border-moss hover:text-moss">2017 &#x2197;</a>
+            <a href="https://docs.google.com/document/d/10CY2dGrHjANIlGUZRpvSFO12lY4mVHdDt6O3UrZcGM8/pub" target="_blank" rel="noopener noreferrer" class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg bg-shell border border-line text-ink no-underline transition-colors hover:border-moss hover:text-moss">2016 &#x2197;</a>
+            <a href="https://docs.google.com/document/d/18jDwQhEiKaDXLOmjYNLaC2O0v0AaeTYdii0jf6_Eq0A/pub" target="_blank" rel="noopener noreferrer" class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg bg-shell border border-line text-ink no-underline transition-colors hover:border-moss hover:text-moss">2015 &#x2197;</a>
+            <a href="https://docs.google.com/document/d/1IErWpeX_vk8TRdHxM5ctpoNKxfnm6tK4FhXK30facKg/pub" target="_blank" rel="noopener noreferrer" class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg bg-shell border border-line text-ink no-underline transition-colors hover:border-moss hover:text-moss">2014 &#x2197;</a>
+            <a href="https://docs.google.com/document/d/1yoEtb49JYj_tO6p2pZtMzlB1QgpFYP6SSuenyT9tnnM/pub" target="_blank" rel="noopener noreferrer" class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg bg-shell border border-line text-ink no-underline transition-colors hover:border-moss hover:text-moss">2013 &#x2197;</a>
+            <a href="https://docs.google.com/document/d/1pXyTXoHox0YcPIbUoSA_08zcNoIeSohvGyU4bMR_IWg/pub" target="_blank" rel="noopener noreferrer" class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg bg-shell border border-line text-ink no-underline transition-colors hover:border-moss hover:text-moss">2012 &#x2197;</a>
+            <a href="https://docs.google.com/document/d/e/2PACX-1vSrXpAOWd60P-nNUDSrc52jwNhvHtqcHfYdwYhd-_K6pgaZ8cRycmD_W5qwezZ38lJe9c3dNEV-hvPN/pub" target="_blank" rel="noopener noreferrer" class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg bg-shell border border-line text-ink no-underline transition-colors hover:border-moss hover:text-moss">2011 &#x2197;</a>
+            <a href="https://docs.google.com/document/d/1aBSVyJAzhNCCXvP6H2tsAgw4SXicdRXCTlBW8TpUAns/pub" target="_blank" rel="noopener noreferrer" class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg bg-shell border border-line text-ink no-underline transition-colors hover:border-moss hover:text-moss">2009 &#x2197;</a>
+            <a href="https://docs.google.com/document/d/1VflHWUnApcswtZ5SJ7OwLz4L7xxVw6HpG_FxmR_Aikk/pub" target="_blank" rel="noopener noreferrer" class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg bg-shell border border-line text-ink no-underline transition-colors hover:border-moss hover:text-moss">2008 &#x2197;</a>
+          </div>
+        </div>
+      </div>
+      <p class="text-sm text-stone mt-3 max-w-[720px]">No rules document survives for 2006, 2007 or 2010.</p>
+    </section>
+
+    <div class="pt-2">
+      <a href="#top" class="text-moss no-underline transition-opacity hover:opacity-70 text-sm">&#8593; Back to top</a>
+    </div>
+  </main>
+</body>
+</html>
