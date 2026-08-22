@@ -468,13 +468,14 @@ export interface StatEra {
  * stale for 2021-2024. (2007 reads 17, a misconfiguration in a season that ran 20 games across 17
  * weeks with no playoff structure at all.)
  *
- * **Week 14 of 2021-2024 is a regular-season week that MFL scheduled no matchups in.** Its
- * `export?TYPE=schedule` shows a full five-game slate through week 13 and then zero games in week
- * 14, so the data reads as a league-wide bye. It is not one: the league counts that week
- * (commissioner, Aug 2026), and lineups scored, so those points belong in a regular-season total
- * even though no win or loss came out of them. Hence a 2021-2024 regular-season record runs 13
- * games across a 14-week regular season, which is why widening the window moved the point totals
- * and left `ALL_YEARS_RECORDS` untouched.
+ * **Week 14 of 2021-2024 is a game against the league median, not a bye.** Its
+ * `export?TYPE=schedule` shows a full five-game slate through week 13 and then zero matchups in
+ * week 14, which reads as a league-wide bye and is not one. `leagueStandings` gives every
+ * franchise 14 decisions in each of those four seasons, and across all forty franchise-seasons the
+ * team above that week's league median took the win and the team below took the loss, without a
+ * single exception. So the week has no opponent and still produces a W or an L, the regular season
+ * runs 14 games from 2021, and any source that counts opponents undercounts a 2021-2024 record by
+ * one game. That is what put a wrong figure in `ALL_YEARS_RECORDS` for three weeks in Aug 2026.
  *
  * **Excluding the playoff weeks from every "lowest" row is doing real work**, because MFL scores
  * a lineup whether or not it has an opponent. Clovis put up 38.50 in week 17 of 2024, a week when
@@ -492,7 +493,9 @@ export interface StatEra {
  * week-16 game that already held the era's single-week high), the 2020-2024 lowest week, the week
  * number on 2012-2019's lowest week (week 5, not week 2), and the best record in
  * `ALL_YEARS_RECORDS`. Everything else MFL can reach was confirmed exactly, including every
- * 2006-2011 and 2012-2019 figure.
+ * 2006-2011 and 2012-2019 figure. **That best-record correction was itself wrong** and was
+ * corrected again later the same month, once the week-14 median game above was understood; the
+ * sourcing now lives on `ALL_YEARS_RECORDS` rather than on a records report.
  *
  * **Three traps in reading those reports**, each producing a plausible wrong answer rather than an
  * error. MFL's records database is the whole **Keeper Alliance Network**, 2004 through 2024, so
@@ -747,6 +750,20 @@ export const STAT_ERAS: StatEra[] = [
  * `STAT_ERAS` these two genuinely compare across twenty seasons. That is the entire reason they
  * sit outside the era tables rather than being repeated in each.
  *
+ * **Both are computed from every season's standings rather than transcribed**, by a one-time sweep
+ * of `export?TYPE=leagueStandings` for each MFL season 2006-2024 plus `rosters[].settings` on
+ * Sleeper for 2025, filtered to this league's ten franchises. For 2006-2014 that filter is the
+ * `F.F.L.` conference of the Keeper Alliance Network, which ran 30 franchises through 2011 and 20
+ * after; every FFL game in those years was inside that conference, so no franchise's record is
+ * mixed with a stranger's. Best is 12-2 (.857), ahead of the 11-2 (.846) that 2014 South Town and
+ * 2018 Easton share. Worst is 0-13, which nothing can beat.
+ *
+ * **The 11-2 four-way tie this row carried until Aug 2026 was an artifact of the week-14 median
+ * game.** 2021 Easton and 2024 Lemoore went 12-2, not 11-2: their fourteenth decision comes from a
+ * week with no scheduled matchup, so a source that counts opponents drops it and files them beside
+ * two genuine 13-game 11-2 seasons as though the four were equal. `ALL_YEARS_SCHEDULE_NOTE` is
+ * what the page says about it; `STAT_ERAS` carries the mechanism.
+ *
  * The doc's other two all-years lines, Most Championships and Most Toilet Bowl Championships,
  * are not here: the Trophy Case on this same page already derives both from `LEAGUE_HISTORY`.
  */
@@ -754,10 +771,8 @@ export const ALL_YEARS_RECORDS: StatRecord[] = [
   {
     label: "Best regular-season record",
     scope: "Tie",
-    value: "11-2",
+    value: "12-2",
     holders: [
-      { team: "South Town Freedom Fighters", season: "2014" },
-      { team: "Easton Evil Empire", season: "2018" },
       { team: "Easton Evil Empire", season: "2021" },
       { team: "Lemoore Liberators", season: "2024" },
     ],
@@ -768,6 +783,36 @@ export const ALL_YEARS_RECORDS: StatRecord[] = [
     holders: [{ team: "South Town Freedom Fighters", season: "2018" }],
   },
 ];
+
+/**
+ * The one change that stops the two all-years records from being measured over the same schedule.
+ *
+ * A win-loss finish survives PPR and Superflex, which is why these two sit outside the era tables
+ * at all. It does not survive a schedule change: 2006-2020 ran 13 regular-season games and 2021
+ * onward runs 14, so the 12-2 above is measured over a longer season than the 0-13 below it.
+ *
+ * **The note states the change and stops; the mechanism behind it is deliberately not on the
+ * page.** Week 14 of 2021-2024 has no opponent: the playoffs moving back a week freed it, and the
+ * league filled it with a game against the league median, so `export?TYPE=schedule` reports zero
+ * matchups there while `leagueStandings` gives every franchise 14 decisions. That is a fact about
+ * MyFantasyLeague's export rather than about the league's own history, and a reader of this page
+ * wants the denominator, not the plumbing. It is written down twice where it is actually needed,
+ * on `ALL_YEARS_RECORDS` and in the `STAT_ERAS` doc above, since it is what makes an
+ * opponent-counting source undercount a 2021-2024 record by a game. **The one cost of leaving it
+ * out**: somebody who opens MFL's schedule to check the fourteenth game will not find it there,
+ * and the page gives them nothing to explain that. Standings are where it shows.
+ *
+ * Written out rather than derived, since nothing here holds a per-season schedule. The figures are
+ * one-time checks: MFL's `export?TYPE=playoffBracket` opens brackets 1 through 3 in week 14 for
+ * 2020 and week 15 for 2021, and Sleeper reports `playoff_week_start` 15 for 2025.
+ *
+ * Rendered under the All Years table only. The era tables score points rather than games, and the
+ * window each of their rows uses is already stated on the row by `StatRecord.scope`. The window
+ * itself did not move with this discovery: weeks 1-14 was already the regular season for those
+ * seasons, so every points figure in `STAT_ERAS` stands.
+ */
+export const ALL_YEARS_SCHEDULE_NOTE =
+  "The regular season grew from 13 games to 14 in 2021, when the playoffs moved from weeks 14–16 to weeks 15–17.";
 
 /**
  * One line of a season's prize payout table.

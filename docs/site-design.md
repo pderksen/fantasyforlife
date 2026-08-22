@@ -367,8 +367,20 @@ short All Years block first, then one `SUB_H3` and one table per era, newest fir
   it badly. Nothing sorts across an era boundary anywhere in the section.
 - **All Years leads, and holds exactly two rows.** A win-loss finish is the one figure the scoring
   changes never touched, so those two records genuinely compare across twenty seasons. Putting
-  them first stops the four tables below from reading as one interrupted list, and the note under
-  them is the only place the page explains why it is split at all.
+  them first stops the four tables below from reading as one interrupted list.
+- **The one thing a win-loss finish does not survive is a schedule change, and the note under the
+  All Years table is where the page says so.** Copy is `ALL_YEARS_SCHEDULE_NOTE` in
+  `league-info.ts`. 2006-2020 ran 13 regular-season games and 2021 onward runs 14, after the
+  playoffs moved from weeks 14-16 to weeks 15-17, so the 12-2 and the 0-13 in that two-row table
+  are measured over different seasons. **It states the change and stops.** Why the fourteenth game
+  has no opponent (week 14 is a game against the league median, so MyFantasyLeague's schedule
+  export shows nothing there) is a fact about that export rather than about the league's own
+  history, and this page is the league's history. It is written down in `league-info.ts`, on
+  `ALL_YEARS_RECORDS` and in the `STAT_ERAS` doc comment, where the next person to read a W-L
+  figure off a records report will meet it. The cost of leaving it off the page is real and was
+  weighed: a reader who opens MFL's schedule to find the fourteenth game will not find one, and
+  the page offers no explanation. The note stays under this block and off the era tables, which
+  score points rather than games and state their window per row through `StatRecord.scope`.
 - **An era-as-columns matrix was tried on paper and dropped.** Each cell needs a value, a team, a
   season and a week; four of those across is wider than the League History table, which already
   runs to about 40px of slack at 1024px. Era-major costs four headings and fits.

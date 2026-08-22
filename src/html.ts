@@ -21,6 +21,7 @@ import {
   type SeasonResult,
   STAT_ERAS,
   ALL_YEARS_RECORDS,
+  ALL_YEARS_SCHEDULE_NOTE,
   type StatRecord,
   type RecordHolder,
   TEAM_CITIES,
@@ -228,6 +229,15 @@ const CARD = `${CARD_BASE} rounded-xl`;
  * directly beneath it while staying plainly subordinate to the h1.
  */
 const SUB_H3 = "text-[17px] font-bold tracking-tight text-ink mt-0 mb-3";
+/**
+ * A note under a table, qualifying what the rows above it mean.
+ *
+ * Five callers now, across the League History page and the Prize Tracker, so it is a constant for
+ * the same reason `SECTION_H2` is: a hand-copied class string is a second definition that has to be
+ * kept in step. Every one of them is a `<p>` sitting outside the card it qualifies, at the reading
+ * size the tables are deliberately below.
+ */
+const TABLE_NOTE = "text-sm text-stone mt-3";
 /**
  * A destination that hasn't been built yet, in body copy. Same call as `NAV_PLANNED` in the
  * site nav: an inert span rather than a link to nowhere, so it never invites a dead click.
@@ -1788,7 +1798,7 @@ function leagueHistoryTableHtml(): string {
   // than written out, so filling in an older season shortens the sentence on its own.
   const earliest = [...LEAGUE_HISTORY].sort((a, b) => a.season.localeCompare(b.season))[0].season;
   const missing = Number(earliest) > Number(LEAGUE_FIRST_SEASON)
-    ? `\n      <p class="text-sm text-stone mt-3">${esc(LEAGUE_FIRST_SEASON)}&ndash;${esc(String(Number(earliest) - 1))} are still being compiled.</p>`
+    ? `\n      <p class="${TABLE_NOTE}">${esc(LEAGUE_FIRST_SEASON)}&ndash;${esc(String(Number(earliest) - 1))} are still being compiled.</p>`
     : "";
 
   // The star's legend, naming the tinted rows and nothing more: the rule itself is the badge's
@@ -1797,7 +1807,7 @@ function leagueHistoryTableHtml(): string {
   // its own and it takes itself off if this table ever stops reaching a throwback year.
   // Whole-table note first, per-row note second, as the Trophy Case orders its own.
   const throwbackNote = rows.some((r) => isThrowbackSeason(r.season))
-    ? `\n      <p class="text-sm text-stone mt-3">&#9733; Throwback year</p>`
+    ? `\n      <p class="${TABLE_NOTE}">&#9733; Throwback year</p>`
     : "";
 
   const headers = ["Season", ...HISTORY_COLUMNS.map((c) => c.header)]
@@ -2000,7 +2010,7 @@ function recordsHtml(): string {
     .filter(Boolean);
 
   const notes = [...thin, ...renames.map(([from, to], i) => `(${i + 1}) ${to} formerly known as ${from}.`)]
-    .map((n) => `      <p class="text-sm text-stone mt-3">${esc(n)}</p>`)
+    .map((n) => `      <p class="${TABLE_NOTE}">${esc(n)}</p>`)
     .join("\n");
 
   const retiredBlock = retired.length
@@ -2137,9 +2147,12 @@ ${statTableHtml(era.records)}`;
     })
     .join("\n");
 
+  // The schedule note belongs to this block alone: it qualifies a win-loss figure, and the era
+  // tables below score points, where `StatRecord.scope` already states the window per row.
   const allYears = ALL_YEARS_RECORDS.length
     ? `      <h3 class="${SUB_H3}">All Years</h3>
-${statTableHtml(ALL_YEARS_RECORDS, "Result")}`
+${statTableHtml(ALL_YEARS_RECORDS, "Result")}
+      <p class="${TABLE_NOTE}">${esc(ALL_YEARS_SCHEDULE_NOTE)}</p>`
     : "";
 
   return `
@@ -2611,7 +2624,7 @@ ${rows}
           </table>
         </div>
       </div>
-      <p class="text-sm text-stone mt-3">Settled prizes only. A split is divided evenly between its winners.</p>
+      <p class="${TABLE_NOTE}">Settled prizes only. A split is divided evenly between its winners.</p>
     </section>
 `;
 }
