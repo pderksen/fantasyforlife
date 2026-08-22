@@ -60,8 +60,8 @@ differ per page:
   narrow column above a much wider table. The gutters match the roster wrapper's so the
   wordmark lines up with the h1.
 
-**Planned pages render as `span`, not a dimmed `a`.** Two nav items (Official Rules, Photo
-Gallery) have no page yet. A link that goes nowhere invites the click and then reads as broken. `NavItem.href` in `league-info.ts` is the only switch — fill one in and
+**Planned pages render as `span`, not a dimmed `a`.** One nav item (Photo Gallery) has no page
+yet. A link that goes nowhere invites the click and then reads as broken. `NavItem.href` in `league-info.ts` is the only switch — fill one in and
 the item becomes a live link.
 
 **A relative `href` names a file at the output root.** `navItemHtml()` prefixes it with
@@ -910,14 +910,35 @@ visible. The title is both the heading and its contents entry, from the same str
 cannot drift the way a tab label and its section heading once did on the History page.
 
 **The block vocabulary is deliberately small**: a paragraph, a sub-heading, a list, a table. Every
-rules document this league has published since 2008 is expressible in those four, and a richer
-model (inline emphasis, links inside a sentence, nested lists) is what a rules set reaches for
-when it is being authored as a web page rather than transcribed as one. Add a variant when a rule
-needs one. A table reuses the League History cells outright, the same borrowing the Trophy Case
-does, so the site has one table look rather than a rules-page dialect of it; that inherits
-`HIST_TD`'s `whitespace-nowrap`, which suits the scoring tables it is for and is what makes a
-phone scroll the table rather than shred a two-word cell. A table with a column of prose in it
-would want the prize ledger's treatment instead, a width floor and one wrapping column.
+rules document this league has published since 2008 is expressible in those four. Add a variant
+when a rule needs one. A table reuses the League History cells outright, the same borrowing the
+Trophy Case does, so the site has one table look rather than a rules-page dialect of it; that
+inherits `HIST_TD`'s `whitespace-nowrap`, which suits the scoring tables it is for and is what
+makes a phone scroll the table rather than shred a two-word cell. A table with a column of prose
+in it would want the prize ledger's treatment instead, a width floor and one wrapping column.
+
+**Prose is plain text plus exactly two inline forms**, both resolved by `rulesText()` in
+`html.ts`: `[label](href)` becomes a link, and `{token}` becomes a figure read from the object
+that owns it. The links exist because the 2026 set stopped transcribing Sleeper's mechanics and
+started pointing at Sleeper's own support articles, and a pointer only reads as one when it sits
+in the sentence that names the mechanic; a block-level link under the rule would read as the
+section's navigation. Escape-then-linkify order is what keeps the syntax from being an injection
+surface. Absolute `https://` hrefs open a new tab like every outbound link on the site; relative
+ones (another page, a `#anchor`) stay put. The tokens are the roster-size-in-one-place rule:
+`LEAGUE_FACTS` in `league-info.ts` states each structural number once (`{rosterLimit}`,
+`{keeperCount}`, `{teamCount}`, `{qbLimit}`, `{faabBudget}`, `{tradeDeadlineWeek}`, and
+`{draftRounds}` derived as roster minus keepers), `{entryFee}` still reads from `PRIZE_SEASONS`,
+and both the home card and this page fill through the same `fillRuleTokens()`, so no figure can
+drift between the two pages or between two sentences on this one.
+
+**"New in {season}" is derived, not authored.** The page's first section renders
+`RULE_CHANGES[RULES_SEASON].changed` (the same objects the home page's card renders through the
+same `ruleNoteLi()`), so the two pages cannot tell different stories about what moved. Only the
+changed half appears: the sections below it are the rules as they now stand, so restating
+"staying the same" would say the whole page twice. Its id is `whats-new`, not a season-numbered
+one, because ids are permanent and the section outlives the yearly turnover. The body below it
+carries no change marks at all, a deliberate break from the Google Docs' updates-in-red: the
+summary carries the diff, the rules carry the law.
 
 ### The pending state
 
