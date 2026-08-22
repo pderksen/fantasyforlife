@@ -298,12 +298,19 @@ export interface SeasonResult {
  * the two together.** A row may leave any name blank; only the pre-Sleeper seasons should need to.
  */
 export const LEAGUE_HISTORY: SeasonResult[] = [
-  // 2006–2023 come from the "FFL Champions" section of the hand-kept `FFL History & Records`
-  // Google Doc, which is the only place those seasons are written down — they ran on
-  // MyFantasyLeague, whose archive carries rosters rather than results. The doc is private, so
-  // it is not in `ARCHIVE_LINKS`; find it in Drive by name. That
-  // section records the three bracket finishes and nothing else, so every pre-2023 row leaves
-  // Total Points blank. Retired teams (Chico, Canton, Collet, Biola) are kept as the doc writes
+  // 2006–2023's bracket finishes come from the "FFL Champions" section of the hand-kept
+  // `FFL History & Records` Google Doc. The doc is private, so it is not in `ARCHIVE_LINKS`; find
+  // it in Drive by name. That section records the three bracket finishes and nothing else.
+  //
+  // **Total Points for 2012–2022 comes from MyFantasyLeague, not the doc**, read off the Season
+  // Records report (`options?L=30136&O=204`, most total points scored, weeks 1–17) in Aug 2026.
+  // MFL computes it from the game logs, and the two seasons the repo already had by hand match it
+  // to the cent (2023 Dinkey Creek 2,211.66 and 2024 Lemoore 2,336.34, both from the prize
+  // workbook), which is what makes the basis interchangeable: points accumulated over the whole
+  // season, playoff weeks included. A deeper playoff run therefore means more games to accumulate
+  // in, exactly as the prize was awarded. **2006–2011 stays blank on purpose**: MFL's records
+  // database is the whole Keeper Alliance Network rather than this league alone (see the note on
+  // `STAT_ERAS`), and those are the years where telling the two apart stops being reliable. Retired teams (Chico, Canton, Collet, Biola) are kept as the doc writes
   // them; they join on nothing and appear only here. Winnemucca is not one of them — it is the
   // Riverstone Stoners' old name, folded by `TEAM_ALIASES` where the counting happens.
   { season: "2006", champion: "Winnemucca Muckers", runnerUp: "Chico Pico de Gallo", toiletBowl: "Biola Slugglords" },
@@ -312,17 +319,17 @@ export const LEAGUE_HISTORY: SeasonResult[] = [
   { season: "2009", champion: "Kingsburg Killaz", runnerUp: "Canton HOFers", toiletBowl: "Chico Pico de Gallo" },
   { season: "2010", champion: "Clovis Jets", runnerUp: "Winnemucca Muckers", toiletBowl: "Chico Pico de Gallo" },
   { season: "2011", champion: "Chico Pico de Gallo", runnerUp: "Kingsburg Killaz", toiletBowl: "South Town Freedom Fighters" },
-  { season: "2012", champion: "Kingsburg Killaz", runnerUp: "Visalia Viagra Vipers", toiletBowl: "Chico Pico de Gallo" },
-  { season: "2013", champion: "Visalia Viagra Vipers", runnerUp: "Chico Pico de Gallo", toiletBowl: "Winnemucca Muckers" },
-  { season: "2014", champion: "South Town Freedom Fighters", runnerUp: "Canton HOFers", toiletBowl: "Visalia Viagra Vipers" },
-  { season: "2015", champion: "Kingsburg Killaz", runnerUp: "Easton Evil Empire", toiletBowl: "Chico Pico de Gallo" },
-  { season: "2016", champion: "Vancouver Moose Drool", runnerUp: "Kingsburg Killaz", toiletBowl: "Collet Winners" },
-  { season: "2017", champion: "Chico Pico de Gallo", runnerUp: "South Town Freedom Fighters", toiletBowl: "Clovis Jets" },
-  { season: "2018", champion: "Dinkey Creek Dirt Clods", runnerUp: "Winnemucca Muckers", toiletBowl: "South Town Freedom Fighters" },
-  { season: "2019", champion: "Easton Evil Empire", runnerUp: "Clovis Jets", toiletBowl: "Dinkey Creek Dirt Clods" },
-  { season: "2020", champion: "Clovis Jets", runnerUp: "Sanger Squatty Pottys", toiletBowl: "South Town Freedom Fighters" },
-  { season: "2021", champion: "Easton Evil Empire", runnerUp: "Kingsburg Killaz", toiletBowl: "South Town Freedom Fighters" },
-  { season: "2022", champion: "Sanger Squatty Pottys", runnerUp: "Easton Evil Empire", toiletBowl: "Visalia Viagra Vipers" },
+  { season: "2012", champion: "Kingsburg Killaz", runnerUp: "Visalia Viagra Vipers", toiletBowl: "Chico Pico de Gallo", totalPoints: "Kingsburg Killaz" },
+  { season: "2013", champion: "Visalia Viagra Vipers", runnerUp: "Chico Pico de Gallo", toiletBowl: "Winnemucca Muckers", totalPoints: "South Town Freedom Fighters" },
+  { season: "2014", champion: "South Town Freedom Fighters", runnerUp: "Canton HOFers", toiletBowl: "Visalia Viagra Vipers", totalPoints: "South Town Freedom Fighters" },
+  { season: "2015", champion: "Kingsburg Killaz", runnerUp: "Easton Evil Empire", toiletBowl: "Chico Pico de Gallo", totalPoints: "Kingsburg Killaz" },
+  { season: "2016", champion: "Vancouver Moose Drool", runnerUp: "Kingsburg Killaz", toiletBowl: "Collet Winners", totalPoints: "Vancouver Moose Drool" },
+  { season: "2017", champion: "Chico Pico de Gallo", runnerUp: "South Town Freedom Fighters", toiletBowl: "Clovis Jets", totalPoints: "Easton Evil Empire" },
+  { season: "2018", champion: "Dinkey Creek Dirt Clods", runnerUp: "Winnemucca Muckers", toiletBowl: "South Town Freedom Fighters", totalPoints: "Kingsburg Killaz" },
+  { season: "2019", champion: "Easton Evil Empire", runnerUp: "Clovis Jets", toiletBowl: "Dinkey Creek Dirt Clods", totalPoints: "Easton Evil Empire" },
+  { season: "2020", champion: "Clovis Jets", runnerUp: "Sanger Squatty Pottys", toiletBowl: "South Town Freedom Fighters", totalPoints: "Easton Evil Empire" },
+  { season: "2021", champion: "Easton Evil Empire", runnerUp: "Kingsburg Killaz", toiletBowl: "South Town Freedom Fighters", totalPoints: "Kingsburg Killaz" },
+  { season: "2022", champion: "Sanger Squatty Pottys", runnerUp: "Easton Evil Empire", toiletBowl: "Visalia Viagra Vipers", totalPoints: "Vancouver Moose Drool" },
   {
     season: "2023",
     champion: "Kingsburg Killaz",
@@ -446,9 +453,60 @@ export interface StatEra {
  * records are what somebody noticed at the time, not exhaustive maxima. The method is not in
  * doubt, since the same sweep reproduces the doc's 74 for Biola in that exact week.
  *
- * **Bench rows are regular season only** and say so, unlike the single-week scoring highs beside
- * them, which sit in weeks 15 and 16. That is a deliberate split, so the `scope` line is what
- * keeps the two from being read as the same window.
+ * **Highs count the playoffs, lows do not, and the `scope` line is the only thing that says so.**
+ * Every "lowest" row (single week, regular-season total, bench figure) is measured over the
+ * regular season alone; every "highest" row counts all seventeen weeks, which is why two of them
+ * sit in weeks 15 and 16. The rule exists because a low score in a dead week is not a league
+ * record: Clovis put up 38.50 in week 17 of 2024 at the end of a 2-13 season, and under a
+ * whole-season window that would stand as the era's lowest week for good.
+ *
+ * **Regular season means every week before the playoffs start, and the start week is per
+ * season.** Playoffs opened in week 14 from 2006 through 2020 and in week 15 from 2021 on, so the
+ * window is weeks 1-13 for the first fifteen seasons and weeks 1-14 from 2021 onward, Sleeper
+ * included (`playoff_week_start` is 15 there too). Take it from `export?TYPE=playoffBrackets` per
+ * season rather than from `lastRegularSeasonWeek`, which reports 13 for every MFL season and is
+ * stale for 2021-2024. (2007 reads 17, a misconfiguration in a season that ran 20 games across 17
+ * weeks with no playoff structure at all.)
+ *
+ * **Week 14 of 2021-2024 is a regular-season week that MFL scheduled no matchups in.** Its
+ * `export?TYPE=schedule` shows a full five-game slate through week 13 and then zero games in week
+ * 14, so the data reads as a league-wide bye. It is not one: the league counts that week
+ * (commissioner, Aug 2026), and lineups scored, so those points belong in a regular-season total
+ * even though no win or loss came out of them. Hence a 2021-2024 regular-season record runs 13
+ * games across a 14-week regular season, which is why widening the window moved the point totals
+ * and left `ALL_YEARS_RECORDS` untouched.
+ *
+ * **Excluding the playoff weeks from every "lowest" row is doing real work**, because MFL scores
+ * a lineup whether or not it has an opponent. Clovis put up 38.50 in week 17 of 2024, a week when
+ * only four of the ten teams had a game and Clovis was not one of them; on a whole-season window
+ * that non-game would stand as the era's lowest week for good.
+ *
+ * **Audited against MyFantasyLeague in Aug 2026, and five rows were wrong.** MFL keeps computed
+ * record reports covering every season the league played there, all reachable from the 2024
+ * league: Franchise Records (`options?L=30136&O=156`) for single-week scores, Player Records
+ * (`O=157`), Matchup Records (`O=158`), and Season Records (`O=204`) for season totals and W-L.
+ * Where MFL can compute a figure it wins over the doc, which records what somebody noticed at the
+ * time. What it corrected: the 2020-2024 season high (the doc's "2622, Easton, 2020" transposes
+ * Easton's real 2262, and the era leader is Kingsburg with 2372 in 2021), the 2020-2024 Defensive
+ * No Show (323 from 2020 had been beaten three times over by 2024, most recently by the same
+ * week-16 game that already held the era's single-week high), the 2020-2024 lowest week, the week
+ * number on 2012-2019's lowest week (week 5, not week 2), and the best record in
+ * `ALL_YEARS_RECORDS`. Everything else MFL can reach was confirmed exactly, including every
+ * 2006-2011 and 2012-2019 figure.
+ *
+ * **Three traps in reading those reports**, each producing a plausible wrong answer rather than an
+ * error. MFL's records database is the whole **Keeper Alliance Network**, 2004 through 2024, so
+ * franchises this league never played (Big Sky Tunder & Lightning, Chuck Norris, Mendota
+ * Renegades, Traver Hoodrats) sit in the same sorted lists, and every figure has to be filtered to
+ * FFL names first. It also holds 2004 and 2005 seasons under FFL franchise names, which are not
+ * this league's and are excluded, since `LEAGUE_FIRST_SEASON` is 2006. And the "Lowest" reports
+ * are padded with 0.00 rows in the early years, which are weeks with no game rather than scores.
+ *
+ * **MFL's own League Champions (`O=194`) and League Awards (`O=202`) reports were wrong for 2023
+ * and 2024** until the commissioner corrected them in Aug 2026. They are hand-entered rather than
+ * derived, so they are not a source. The playoff brackets are
+ * (`export?TYPE=playoffBracket&L=30136&BRACKET_ID=3`), and they agree with `LEAGUE_HISTORY` on
+ * every season.
  *
  * **The 2025 era was computed, not transcribed.** The doc carries a `TODO (2025 to current
  * superflex scoring)` heading and nothing under it, so every figure in that block came from a
@@ -498,6 +556,7 @@ export const STAT_ERAS: StatEra[] = [
       },
       {
         label: "Lowest total points, single week",
+        scope: "Regular season only",
         value: "13",
         holders: [{ team: "Dinkey Creek Dirt Clods", season: "2010", week: "5" }],
       },
@@ -547,8 +606,9 @@ export const STAT_ERAS: StatEra[] = [
       },
       {
         label: "Lowest total points, single week",
+        scope: "Regular season only",
         value: "32",
-        holders: [{ team: "Winnemucca Muckers", season: "2012", week: "2" }],
+        holders: [{ team: "Winnemucca Muckers", season: "2012", week: "5" }],
       },
       {
         label: "Biggest Country Boy Whooping",
@@ -577,8 +637,8 @@ export const STAT_ERAS: StatEra[] = [
       {
         label: "Highest total points, season",
         scope: "17 weeks, playoffs included",
-        value: "2622",
-        holders: [{ team: "Easton Evil Empire", season: "2020" }],
+        value: "2372",
+        holders: [{ team: "Kingsburg Killaz", season: "2021" }],
       },
       {
         label: "Highest total points, single week",
@@ -592,13 +652,14 @@ export const STAT_ERAS: StatEra[] = [
       },
       {
         label: "Lowest total points, regular season",
-        value: "1331",
-        holders: [{ team: "Visalia Viagra Vipers", season: "2020" }],
+        value: "1318.86",
+        holders: [{ team: "Clovis Jets", season: "2024" }],
       },
       {
         label: "Lowest total points, single week",
-        value: "66",
-        holders: [{ team: "Visalia Viagra Vipers", season: "2020", week: "8" }],
+        scope: "Regular season only",
+        value: "47.98",
+        holders: [{ team: "Vancouver Moose Drool", season: "2024", week: "3" }],
       },
       {
         label: "Biggest Country Boy Whooping",
@@ -609,8 +670,10 @@ export const STAT_ERAS: StatEra[] = [
       {
         label: "Biggest Defensive No Show",
         scope: "Largest combined score",
-        value: "323",
-        holders: [{ team: "Sanger Squatty Pottys", against: "Easton Evil Empire", score: "164-159", season: "2020", week: "14" }],
+        value: "354.48",
+        holders: [
+          { team: "Kingsburg Killaz", against: "Lemoore Liberators", score: "210.12-144.36", season: "2024", week: "16" },
+        ],
       },
       {
         label: "Highest total points on the bench",
@@ -647,6 +710,7 @@ export const STAT_ERAS: StatEra[] = [
       },
       {
         label: "Lowest total points, single week",
+        scope: "Regular season only",
         value: "71.94",
         holders: [{ team: "Clovis Jets", season: "2025", week: "11" }],
       },
@@ -689,8 +753,14 @@ export const STAT_ERAS: StatEra[] = [
 export const ALL_YEARS_RECORDS: StatRecord[] = [
   {
     label: "Best regular-season record",
-    value: "12-2",
-    holders: [{ team: "Lemoore Liberators", season: "2024" }],
+    scope: "Tie",
+    value: "11-2",
+    holders: [
+      { team: "South Town Freedom Fighters", season: "2014" },
+      { team: "Easton Evil Empire", season: "2018" },
+      { team: "Easton Evil Empire", season: "2021" },
+      { team: "Lemoore Liberators", season: "2024" },
+    ],
   },
   {
     label: "Worst regular-season record",
