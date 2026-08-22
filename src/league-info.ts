@@ -72,7 +72,11 @@ export const SITE_NAV: NavItem[] = [
   // keeps the extension so it also resolves over file:// during local preview.
   { label: "League History", href: "history.html" },
   // No Survivor item: it is not a page and never will be. `SURVIVOR` below says where it lives.
-  { label: "Official Rules" },
+  // Written to output/rules.html, served at /rules. Live from the day the page carried only the
+  // archive of past seasons' rulebooks, before the current season's rules were written into it:
+  // seventeen years of rules documents that exist nowhere else on the site are worth the nav
+  // item on their own, and the page says plainly which season it is still waiting on.
+  { label: "Official Rules", href: "rules.html" },
   { label: "Photo Gallery" },
   { label: "Sleeper", href: "https://sleeper.com/leagues", pill: true, external: true },
 ];

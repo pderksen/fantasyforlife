@@ -40,6 +40,14 @@ import {
   type NavItem,
   type PrizeSeason,
 } from "./league-info.js";
+import {
+  RULES_SEASON,
+  RULES_SECTIONS,
+  rulesArchive,
+  type RulesArchiveEntry,
+  type RulesBlock,
+  type RulesSection,
+} from "./rules.js";
 
 // ── Utility helpers ──
 
@@ -221,6 +229,12 @@ const CARD = `${CARD_BASE} rounded-xl`;
 /**
  * A sub-heading inside a section, for the sections that hold more than one thing.
  *
+ * `SUB_H3_BASE` carries no margins so a caller can set its own, which the rules page needs: a
+ * named part of a rules section wants space above it and the first one in a card does not, and
+ * appending `mt-6` to a `SUB_H3` that already says `mt-0` is two `margin-top` utilities on one
+ * element, resolved by stylesheet order rather than by intent. Same split, same reason, as
+ * `HIST_TH_BASE`. The `first:mt-0` a caller adds on top is a variant, so it sorts after both.
+ *
  * Most sections on these pages are a `SECTION_H2` eyebrow over a single card, so a second
  * heading level rarely comes up. Two need it: the League History page's Records, which holds
  * two tables and will hold more, and the home page's rule changes card, whose two lists only
@@ -228,7 +242,8 @@ const CARD = `${CARD_BASE} rounded-xl`;
  * either set into one another. Sentence case at 17px bold reads as the name of the block
  * directly beneath it while staying plainly subordinate to the h1.
  */
-const SUB_H3 = "text-[17px] font-bold tracking-tight text-ink mt-0 mb-3";
+const SUB_H3_BASE = "text-[17px] font-bold tracking-tight text-ink";
+const SUB_H3 = `${SUB_H3_BASE} mt-0 mb-3`;
 /**
  * A note under a table, qualifying what the rows above it mean.
  *
@@ -2717,6 +2732,254 @@ ${siteHeader(chrome)}
     <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-8">Prize Tracker</h1>
 ${prizesNavHtml(seasons, allTime !== "")}
 ${blocks}${prizeArchiveHtml()}
+${backToTopHtml()}
+  </main>
+</body>
+</html>`;
+}
+
+// ── Official Rules ──
+
+/**
+ * One block of a rules section.
+ *
+ * A table reuses the League History cells outright, the same borrowing the Trophy Case does, so
+ * the site has one table look rather than a rules-page dialect of it. That carries `HIST_TD`'s
+ * `whitespace-nowrap`, which suits the scoring tables this is actually for (a stat and a figure)
+ * and is what makes a narrow screen scroll the table rather than shred a two-word cell. A table
+ * with a column of prose in it would want the prize ledger's treatment instead, a width floor and
+ * one wrapping column, and does not exist yet.
+ */
+function rulesBlockHtml(block: RulesBlock): string {
+  switch (block.kind) {
+    case "heading":
+      return `        <h3 class="${SUB_H3_BASE} mt-6 mb-3 first:mt-0">${esc(block.text)}</h3>`;
+
+    case "text":
+      return `        <p class="text-[15px] leading-relaxed mt-0 mb-3 last:mb-0">${esc(block.text)}</p>`;
+
+    case "list": {
+      const tag = block.ordered ? "ol" : "ul";
+      const marker = block.ordered ? "list-decimal" : "list-disc";
+      const items = block.items
+        .map((item) => `          <li class="pl-1">${esc(item)}</li>`)
+        .join("\n");
+      return `        <${tag} class="${marker} pl-5 text-[15px] leading-relaxed flex flex-col gap-1.5 mt-0 mb-3 last:mb-0">
+${items}
+        </${tag}>`;
+    }
+
+    case "table": {
+      const head = block.columns
+        .map((col) => `              <th class="${HIST_TH}">${esc(col)}</th>`)
+        .join("\n");
+      const body = block.rows
+        .map((row) => {
+          const cells = row
+            .map((cell) => `              <td class="${HIST_TD}">${esc(cell)}</td>`)
+            .join("\n");
+          return `            <tr>\n${cells}\n            </tr>`;
+        })
+        .join("\n");
+      return `        <div class="${TBL_SCROLL} mb-3 last:mb-0">
+          <table class="w-max min-w-full border-separate border-spacing-0 text-left">
+            <thead class="bg-shell">
+            <tr>
+${head}
+            </tr>
+            </thead>
+            <tbody>
+${body}
+            </tbody>
+          </table>
+        </div>`;
+    }
+  }
+}
+
+/** One section: its anchor, its heading, and its blocks in a single card. */
+function rulesSectionHtml(section: RulesSection): string {
+  const blocks = section.blocks.map(rulesBlockHtml).join("\n");
+
+  return `    <section id="${esc(section.id)}" class="mb-10 scroll-mt-6">
+      <h2 class="${SECTION_H2}">${esc(section.title)}</h2>
+      <div class="${CARD} px-5 py-5">
+${blocks}
+      </div>
+    </section>
+`;
+}
+
+/**
+ * The page's contents, one jump link per section.
+ *
+ * A list and not the League History page's underlined tab bar, which is the one place the two
+ * pages deliberately differ. That bar works at four tabs; a rules set runs to fifteen or more,
+ * and fifteen underlined tabs wrap into three rows of what still reads as a nav and competes with
+ * the green bar above it. A plain list in a card is honest about being a contents list.
+ *
+ * Row-major across the grid rather than CSS columns, so the order reads left to right and does
+ * not depend on the browser balancing column heights.
+ */
+function rulesContentsHtml(sections: RulesSection[]): string {
+  if (sections.length === 0) return "";
+
+  const links = sections
+    .map(
+      (s) =>
+        `        <a href="#${esc(s.id)}" class="${LINK} text-[15px]">${esc(s.title)}</a>`,
+    )
+    .join("\n");
+
+  return `    <section class="mb-10">
+      <h2 class="${SECTION_H2}">On this page</h2>
+      <div class="${CARD} px-5 py-5">
+        <div class="grid gap-x-6 gap-y-2 sm:grid-cols-2 md:grid-cols-3">
+${links}
+        </div>
+      </div>
+    </section>
+`;
+}
+
+/**
+ * What the page says while the season's rules are still being written.
+ *
+ * Derived from `RULES_SECTIONS` being empty, so it takes itself off the moment the rules land.
+ * It names the newest archived season rather than saying "coming soon" and stopping: a reader who
+ * came for the rules can be sent to the most recent published set in the same sentence, and that
+ * set is one click below on this same page.
+ */
+function rulesPendingHtml(archive: RulesArchiveEntry[]): string {
+  const newest = archive[0];
+  const pointer = newest
+    ? ` Until they land here, the ${esc(newest.season)} rules below are the league&rsquo;s most recent published set.`
+    : "";
+
+  return `    <section class="mb-10">
+      <div class="${CARD} px-5 py-5 max-w-[720px]">
+        <p class="text-[15px] leading-relaxed mt-0 mb-0">
+          <span class="font-bold">The ${esc(RULES_SEASON)} rules are being finalized.</span><span class="text-stone">${pointer}</span>
+        </p>
+      </div>
+    </section>
+`;
+}
+
+/**
+ * Every past season's rules, as year tiles.
+ *
+ * Typed like the Old League Sites tiles on the History page, which is the same object: a row of
+ * years, each opening a document that is not this page. Tiles rather than a table for the reason
+ * that section gives, one link per row being four words in a five-column frame.
+ *
+ * The two kinds of entry are labelled rather than mixed, because they behave differently under a
+ * click: a Google Doc leaves the site and opens in a new tab, a frozen season stays here. The
+ * on-site group renders only once a season has been frozen, so today the card is one group and
+ * says nothing about a form of link it does not yet hold.
+ *
+ * **The missing years are derived**, not typed: any season between the league's first and the one
+ * this page describes that has no link is named in the note under the card. So finding a 2010
+ * document later is one entry in `RULES_DOC_LINKS`, and the note drops the year on its own.
+ */
+function rulesArchiveHtml(archive: RulesArchiveEntry[]): string {
+  if (archive.length === 0) return "";
+
+  const docs = archive.filter((e) => e.external);
+  const pages = archive.filter((e) => !e.external);
+
+  const span = (entries: RulesArchiveEntry[]) =>
+    `${esc(entries[entries.length - 1].season)}&ndash;${esc(entries[0].season)}`;
+
+  const tiles = (entries: RulesArchiveEntry[]) =>
+    entries
+      .map((e) =>
+        e.external
+          ? `            <a href="${esc(e.href)}" target="_blank" rel="noopener noreferrer" class="${PILL_ON_CARD}">${esc(e.season)} &#x2197;</a>`
+          : `            <a href="${esc(e.href)}" class="${PILL_ON_CARD}">${esc(e.season)}</a>`,
+      )
+      .join("\n");
+
+  // Every group after the first takes a rule above it, so a card holding only one renders no
+  // stray divider. Same shape the Past Leagues card uses for its Sleeper and MFL halves.
+  const group = (entries: RulesArchiveEntry[], label: string, index: number) =>
+    `        <div${index === 0 ? "" : ' class="border-t border-rule pt-5"'}>
+          <div class="${LABEL_TYPE} mb-2.5">${span(entries)} &middot; ${label}</div>
+          <div class="flex flex-wrap gap-2">
+${tiles(entries)}
+          </div>
+        </div>`;
+
+  const groups = ([[pages, "On this site"], [docs, "Google Docs"]] as const)
+    .filter(([entries]) => entries.length > 0)
+    .map(([entries, label], i) => group(entries, label, i))
+    .join("\n");
+
+  // Every season the league has played that this page neither describes nor links. Read off the
+  // range rather than a typed list, so a document that turns up later removes its own year here.
+  const linked = new Set(archive.map((e) => e.season));
+  const missing: string[] = [];
+  for (let year = Number(LEAGUE_FIRST_SEASON); year < Number(RULES_SEASON); year++) {
+    if (!linked.has(String(year))) missing.push(String(year));
+  }
+  const note =
+    missing.length === 0
+      ? ""
+      : `
+      <p class="${TABLE_NOTE} max-w-[720px]">No rules document survives for ${esc(formatSeasonList(missing))}.</p>`;
+
+  return `    <section id="past-rules" class="mb-10 scroll-mt-6">
+      <h2 class="${SECTION_H2}">Past Years&rsquo; Rules</h2>
+      <div class="${CARD} px-5 py-5 max-w-[720px] flex flex-col gap-5">
+${groups}
+      </div>${note}
+    </section>
+`;
+}
+
+/** "2006, 2007 or 2010" — a plain English list, so the note reads as a sentence. */
+function formatSeasonList(seasons: string[]): string {
+  if (seasons.length === 1) return seasons[0];
+  if (seasons.length === 2) return `${seasons[0]} or ${seasons[1]}`;
+  return `${seasons.slice(0, -1).join(", ")} or ${seasons[seasons.length - 1]}`;
+}
+
+/**
+ * The Official Rules page, at `output/rules.html` (served as `/rules`).
+ *
+ * A root-level page like the index, History and the Prize Tracker, so it takes the same
+ * `base: ""` chrome and the same 1080px measure. One page with anchors rather than a file per
+ * section, the same call the League History page made: a full rules set is shorter than one
+ * roster table, it is replaced wholesale each August rather than accumulating, and a single file
+ * means a reader can search the whole thing at once.
+ *
+ * Sections, in order: the contents, the rules themselves, then every past season's rules. The
+ * archive sits last because it is the least of what somebody opening this page came for, and it
+ * is the one part of the page that grows.
+ */
+export function generateRulesHtml(navLinks: NavLink[], hasMark = false): string {
+  const chrome: SiteChrome = { base: "", hasMark };
+  const archive = rulesArchive();
+
+  const body = RULES_SECTIONS.length
+    ? `${rulesContentsHtml(RULES_SECTIONS)}${RULES_SECTIONS.map(rulesSectionHtml).join("")}`
+    : rulesPendingHtml(archive);
+
+  return `<!DOCTYPE html>
+<html lang="en">
+${htmlHead({
+    title: `${SITE.wordmark} \u2014 Official Rules`,
+    ogTitle: "Official Rules",
+    description: "The league's official rules, plus every past season's rulebook.",
+    siteName: SITE.wordmark,
+    path: "rules.html",
+    extraStyles: TABLE_SCROLL_STYLES,
+  })}
+<body class="bg-cream text-ink font-sans antialiased">
+${siteHeader(chrome)}
+  <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
+    <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-8">Official Rules</h1>
+${body}${rulesArchiveHtml(archive)}
 ${backToTopHtml()}
   </main>
 </body>

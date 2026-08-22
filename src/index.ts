@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
-import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, getExportOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, getHistoryOutputPath, getPrizesOutputPath, getTiersOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft, resolveTrades, saveTrades, preDraftWindowClosed, hasSiteMark, syncStaticAssets, SnapshotGuardError } from "./snapshot.js";
-import { generateHtml, generateIndexHtml, generateTiersHtml, generateHistoryHtml, generatePrizesHtml, writeHtml, formatPacificDate } from "./html.js";
+import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, getExportOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, getHistoryOutputPath, getPrizesOutputPath, getTiersOutputPath, getRulesOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft, resolveTrades, saveTrades, preDraftWindowClosed, hasSiteMark, syncStaticAssets, SnapshotGuardError } from "./snapshot.js";
+import { generateHtml, generateIndexHtml, generateTiersHtml, generateHistoryHtml, generatePrizesHtml, generateRulesHtml, writeHtml, formatPacificDate } from "./html.js";
 import { generateWorkbook, writeWorkbook } from "./xlsx.js";
 import { getLeagueDrafts, getDraftPicks, getDraftTradedPicksRaw, fetchAllPlayers, getLeagueTradedPicks, getPickTrades, getTrades, getLeague } from "./sleeper-api.js";
 import { getTierConfig, getLatestDraftOrder } from "./tiers.js";
@@ -125,6 +125,19 @@ async function regeneratePrizes(): Promise<void> {
   const outputPath = getPrizesOutputPath();
   await writeHtml(generatePrizesHtml(buildIndexNavLinks(), hasSiteMark()), outputPath);
   console.log(`Prizes written: ${outputPath}`);
+}
+
+/**
+ * Rewrite the Official Rules page. Reads no snapshot data either — the rules and the archive of
+ * past seasons are both hand-kept in `rules.ts` — so it is written on every run.
+ *
+ * Writes `output/rules.html` only. The frozen `rules-<season>.html` copies it links are committed
+ * static files, so nothing here can overwrite a season that has already closed.
+ */
+async function regenerateRules(): Promise<void> {
+  const outputPath = getRulesOutputPath();
+  await writeHtml(generateRulesHtml(buildIndexNavLinks(), hasSiteMark()), outputPath);
+  console.log(`Rules written: ${outputPath}`);
 }
 
 interface RosterPageInputs {
@@ -403,6 +416,7 @@ async function main(): Promise<void> {
   await regenerateTiers();
   await regenerateHistory();
   await regeneratePrizes();
+  await regenerateRules();
 
   if (openHomePage) {
     const indexPath = getIndexOutputPath();
