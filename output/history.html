@@ -55,6 +55,7 @@
       background-size: 34px 100%, 34px 100%, 13px 100%, 13px 100%;
       background-attachment: local, local, scroll, scroll;
     }
+    a.tab-on { color: var(--color-moss); border-color: var(--color-moss); }
   </style>
 </head>
 <body class="bg-cream text-ink font-sans antialiased">
@@ -79,14 +80,14 @@
   </header>
   <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
     <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-8">League History</h1>
-    <nav class="flex flex-wrap items-end gap-x-6 sm:gap-x-7 gap-y-0 mb-11 border-b border-line">
-      <a href="#season-results" class="inline-flex items-baseline gap-2 whitespace-nowrap pb-2.5 -mb-px border-b-2 text-sm font-medium border-moss text-moss no-underline transition-opacity hover:opacity-70">Season Results</a>
-      <a href="#trophy-case" class="inline-flex items-baseline gap-2 whitespace-nowrap pb-2.5 -mb-px border-b-2 text-sm font-medium border-moss text-moss no-underline transition-opacity hover:opacity-70">Trophy Case</a>
-      <a href="#scoring-records" class="inline-flex items-baseline gap-2 whitespace-nowrap pb-2.5 -mb-px border-b-2 text-sm font-medium border-moss text-moss no-underline transition-opacity hover:opacity-70">Scoring Records</a>
-      <a href="#old-league-sites" class="inline-flex items-baseline gap-2 whitespace-nowrap pb-2.5 -mb-px border-b-2 text-sm font-medium border-moss text-moss no-underline transition-opacity hover:opacity-70">Old League Sites</a>
+    <nav id="history-tabs" class="flex flex-wrap items-end gap-x-6 sm:gap-x-7 gap-y-1 mb-11 border-b border-line md:sticky md:top-0 md:z-30 md:bg-cream md:pt-4">
+      <a href="#season-results" class="inline-flex items-baseline gap-2 whitespace-nowrap pb-2.5 -mb-px border-b-2 text-sm font-medium border-transparent text-ink no-underline transition-colors hover:text-moss hover:border-moss/40 tab-on">Season Results</a>
+      <a href="#trophy-case" class="inline-flex items-baseline gap-2 whitespace-nowrap pb-2.5 -mb-px border-b-2 text-sm font-medium border-transparent text-ink no-underline transition-colors hover:text-moss hover:border-moss/40">Trophy Case</a>
+      <a href="#scoring-records" class="inline-flex items-baseline gap-2 whitespace-nowrap pb-2.5 -mb-px border-b-2 text-sm font-medium border-transparent text-ink no-underline transition-colors hover:text-moss hover:border-moss/40">Scoring Records</a>
+      <a href="#old-league-sites" class="inline-flex items-baseline gap-2 whitespace-nowrap pb-2.5 -mb-px border-b-2 text-sm font-medium border-transparent text-ink no-underline transition-colors hover:text-moss hover:border-moss/40">Old League Sites</a>
     </nav>
 
-    <section id="s2025" class="mb-10 scroll-mt-6">
+    <section id="s2025" class="mb-10 scroll-mt-6 md:scroll-mt-16">
       <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0 flex items-center gap-2.5">2025 Season Honors<span class="inline-block rounded-md bg-forest text-parchment text-[11px] font-medium tracking-[0.08em] uppercase px-2 py-[3px]" title="No keepers: the whole league drafted fresh">Throwback Year</span></h2>
       <div class="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(230px,1fr))]">
         <div class="bg-forest text-parchment rounded-xl px-[22px] pt-[22px] pb-5">
@@ -115,7 +116,7 @@
       </div>
     </section>
 
-    <section id="season-results" class="mb-14 scroll-mt-6">
+    <section id="season-results" class="mb-14 scroll-mt-6 md:scroll-mt-16">
       <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Season Results</h2>
       <div class="bg-white border border-line rounded-xl overflow-hidden">
         <div class="tbl-scroll overflow-x-auto">
@@ -149,7 +150,7 @@
       <p class="text-sm text-stone mt-3">&#9733; Throwback year</p>
     </section>
 
-    <section id="trophy-case" class="mb-14 scroll-mt-6">
+    <section id="trophy-case" class="mb-14 scroll-mt-6 md:scroll-mt-16">
       <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Trophy Case</h2>
       <h3 class="text-[17px] font-bold tracking-tight text-ink mt-0 mb-3">Current Owners</h3>
       <div class="bg-white border border-line rounded-xl overflow-hidden">
@@ -189,9 +190,16 @@
       </div>
     </section>
 
-    <section id="scoring-records" class="mb-14 scroll-mt-6">
+    <section id="scoring-records" class="mb-14 scroll-mt-6 md:scroll-mt-16">
       <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Scoring Records</h2>
-      <h3 class="text-[17px] font-bold tracking-tight text-ink mt-0 mb-3">All Years</h3>
+      <nav class="flex flex-wrap items-center gap-2 mb-6">
+        <a href="#all-years" class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg text-ink bg-white border border-line transition-colors hover:border-moss hover:text-moss no-underline">All Years</a>
+        <a href="#era-2025-current" class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg text-ink bg-white border border-line transition-colors hover:border-moss hover:text-moss no-underline">2025-current</a>
+        <a href="#era-2020-2024" class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg text-ink bg-white border border-line transition-colors hover:border-moss hover:text-moss no-underline">2020-2024</a>
+        <a href="#era-2012-2019" class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg text-ink bg-white border border-line transition-colors hover:border-moss hover:text-moss no-underline">2012-2019</a>
+        <a href="#era-2006-2011" class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg text-ink bg-white border border-line transition-colors hover:border-moss hover:text-moss no-underline">2006-2011</a>
+      </nav>
+      <h3 id="all-years" class="text-[17px] font-bold tracking-tight text-ink mt-0 mb-3 scroll-mt-6 md:scroll-mt-16">All Years</h3>
       <div class="bg-white border border-line rounded-xl overflow-hidden">
         <div class="tbl-scroll overflow-x-auto">
           <table class="w-max min-w-full text-left border-separate border-spacing-0">
@@ -219,7 +227,7 @@
         </div>
       </div>
       <p class="text-sm text-stone mt-3">The regular season grew from 13 games to 14 in 2021, when the playoffs moved from weeks 14–16 to weeks 15–17.</p>
-      <h3 class="text-[17px] font-bold tracking-tight text-ink mt-0 mb-3 mt-9">2025-current <span class="text-[12px] text-stone font-normal">Superflex added</span></h3>
+      <h3 id="era-2025-current" class="text-[17px] font-bold tracking-tight text-ink mt-0 mb-3 mt-9 scroll-mt-6 md:scroll-mt-16">2025-current <span class="text-[12px] text-stone font-normal">Superflex added</span></h3>
       <div class="bg-white border border-line rounded-xl overflow-hidden">
         <div class="tbl-scroll overflow-x-auto">
           <table class="w-max min-w-full text-left border-separate border-spacing-0">
@@ -282,7 +290,7 @@
           </table>
         </div>
       </div>
-      <h3 class="text-[17px] font-bold tracking-tight text-ink mt-0 mb-3 mt-9">2020-2024 <span class="text-[12px] text-stone font-normal">PPR scoring added</span></h3>
+      <h3 id="era-2020-2024" class="text-[17px] font-bold tracking-tight text-ink mt-0 mb-3 mt-9 scroll-mt-6 md:scroll-mt-16">2020-2024 <span class="text-[12px] text-stone font-normal">PPR scoring added</span></h3>
       <div class="bg-white border border-line rounded-xl overflow-hidden">
         <div class="tbl-scroll overflow-x-auto">
           <table class="w-max min-w-full text-left border-separate border-spacing-0">
@@ -345,7 +353,7 @@
           </table>
         </div>
       </div>
-      <h3 class="text-[17px] font-bold tracking-tight text-ink mt-0 mb-3 mt-9">2012-2019</h3>
+      <h3 id="era-2012-2019" class="text-[17px] font-bold tracking-tight text-ink mt-0 mb-3 mt-9 scroll-mt-6 md:scroll-mt-16">2012-2019</h3>
       <div class="bg-white border border-line rounded-xl overflow-hidden">
         <div class="tbl-scroll overflow-x-auto">
           <table class="w-max min-w-full text-left border-separate border-spacing-0">
@@ -408,7 +416,7 @@
           </table>
         </div>
       </div>
-      <h3 class="text-[17px] font-bold tracking-tight text-ink mt-0 mb-3 mt-9">2006-2011</h3>
+      <h3 id="era-2006-2011" class="text-[17px] font-bold tracking-tight text-ink mt-0 mb-3 mt-9 scroll-mt-6 md:scroll-mt-16">2006-2011</h3>
       <div class="bg-white border border-line rounded-xl overflow-hidden">
         <div class="tbl-scroll overflow-x-auto">
           <table class="w-max min-w-full text-left border-separate border-spacing-0">
@@ -472,7 +480,7 @@
         </div>
       </div>
     </section>
-    <section id="old-league-sites" class="mb-14 scroll-mt-6">
+    <section id="old-league-sites" class="mb-14 scroll-mt-6 md:scroll-mt-16">
       <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Old League Sites</h2>
       <div class="bg-white border border-line rounded-xl px-5 py-5 max-w-[720px] flex flex-col gap-5">
         <div>
@@ -512,5 +520,31 @@
       <a href="#top" class="text-moss no-underline transition-opacity hover:opacity-70 text-sm">&#8593; Back to top</a>
     </div>
   </main>
+  <script>
+    (function () {
+      var nav = document.getElementById("history-tabs");
+      if (!nav) return;
+      var links = [].slice.call(nav.querySelectorAll('a[href^="#"]'));
+      var sections = links.map(function (a) { return document.getElementById(a.getAttribute("href").slice(1)); });
+      if (!sections.length) return;
+      var ticking = false;
+      function paint() {
+        ticking = false;
+        var pick = 0;
+        for (var i = 0; i < sections.length; i++) {
+          if (sections[i] && sections[i].getBoundingClientRect().top <= 96) pick = i;
+        }
+        for (var j = 0; j < links.length; j++) links[j].classList.toggle("tab-on", j === pick);
+      }
+      function onScroll() {
+        if (ticking) return;
+        ticking = true;
+        window.requestAnimationFrame(paint);
+      }
+      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("resize", onScroll, { passive: true });
+      paint();
+    })();
+  </script>
 </body>
 </html>

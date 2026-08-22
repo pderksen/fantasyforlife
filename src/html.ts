@@ -137,6 +137,18 @@ const TABLE_SCROLL_STYLES = `    .tbl-scroll {
 `;
 
 /**
+ * Scroll-margin for anything the League History sub-nav can jump to.
+ *
+ * That bar is sticky from `md` up and stands about 47px tall, so an anchor jump with the plain
+ * `scroll-mt-6` lands its heading underneath it. The `md` step is sized to the bar plus air;
+ * below `md` the bar is not sticky and the original 24px is still right.
+ *
+ * Only the History page needs it. `honorsSection()` applies it gated on `opts.id`, which the
+ * home page does not pass, so the one shared renderer stays correct on both pages.
+ */
+const ANCHOR_OFFSET = "scroll-mt-6 md:scroll-mt-16";
+
+/**
  * The wrapper every scrolling table on the site takes: the fade plus the scroll container it
  * paints on. One constant so a new table cannot get the affordance half-applied.
  */
@@ -962,7 +974,7 @@ function honorsSection(
     .join("\n");
 
   const anchor = opts.id ? ` id="${esc(opts.id)}"` : "";
-  const scrollMargin = opts.id ? " scroll-mt-6" : "";
+  const scrollMargin = opts.id ? ` ${ANCHOR_OFFSET}` : "";
 
   // The badge rides on the heading rather than in the card grid: it is a fact about the year,
   // not a result, and a fifth card would sit it among the four that are. Passed in rather than
@@ -1505,22 +1517,101 @@ ${backToTopHtml("pt-6")}
  * The sub-nav's tab-bar geometry.
  *
  * The hairline belongs to the `nav`, and every item overlaps it by a pixel (`-mb-px` against
- * its own `border-b-2`) so the live tab's moss underline lands *on* the rule rather than a
+ * its own `border-b-2`) so the active tab's moss underline lands *on* the rule rather than a
  * pixel above it. Both borders are therefore load-bearing: drop `border-b` from the row and
  * the underline floats, drop `-mb-px` from the items and it doubles the rule's thickness.
  *
  * Items are `whitespace-nowrap`, so the failure mode on a narrow phone is one label dropping
- * to a second line, never a broken label. When that happens the live tab's underline sits on
- * the upper line while the row's rule stays under the lower one — visible, and the reason
- * `gap-y-0` keeps the two lines tight enough to still read as one bar.
+ * to a second line, never a broken label. `gap-y-1` keeps the two lines tight enough to still
+ * read as one bar while giving a wrapped row a little air. It was `gap-y-0` while every tab
+ * carried an underline, when any vertical gap read as a broken rule; only one tab is underlined
+ * now, so the gap costs nothing.
+ *
+ * **The row is sticky from `md` up.** The page runs about five screens and this bar is its only
+ * route between sections, so it is worth the ~47px. That does not reopen the site-header
+ * decision in `docs/site-design.md`: that one turned on three facts and none of them holds here.
+ * The header is 74-138px against this row's 47; on a roster page a pinned header would sit a
+ * second frozen bar over the grid's own sticky `TH`, and this page has no vertical pin at all,
+ * its frozen Season column being horizontal; and the header's payoff was one keystroke to a
+ * four-item `SITE_NAV`, where this is four in-page jumps on a page you cannot see the ends of.
+ * `position: sticky` is pure CSS too, so unlike the floating button it costs nothing over
+ * `file://`.
+ *
+ * Below `md` it scrolls away as it always did. That is exactly the width where the row wraps to
+ * two lines, and a phone can least afford ~80px of pinned furniture.
+ *
+ * Two things it needs, neither of which errors if missed: an opaque `md:bg-cream`, or the table
+ * rows scroll under it, and `ANCHOR_OFFSET` on everything it jumps to, or every heading it
+ * lands on arrives beneath the bar.
  */
-const TAB_ROW = "flex flex-wrap items-end gap-x-6 sm:gap-x-7 gap-y-0 mb-11 border-b border-line";
+const TAB_ROW =
+  "flex flex-wrap items-end gap-x-6 sm:gap-x-7 gap-y-1 mb-11 border-b border-line md:sticky md:top-0 md:z-30 md:bg-cream md:pt-4";
 const TAB_BOX = "inline-flex items-baseline gap-2 whitespace-nowrap pb-2.5 -mb-px border-b-2 text-sm font-medium";
-const TAB_LINK = `${TAB_BOX} border-moss text-moss no-underline transition-opacity hover:opacity-70`;
+/**
+ * A live tab at rest. The moss underline moved off this onto `.tab-on`, so it marks the section
+ * you are in rather than the sections that work: with the bar pinned in view, four identical
+ * underlines say nothing, and where you are is the one thing worth saying.
+ */
+const TAB_LINK = `${TAB_BOX} border-transparent text-ink no-underline transition-colors hover:text-moss hover:border-moss/40`;
 /** An unbuilt section: same geometry, no underline, and inert rather than a link to nowhere. */
 const TAB_PLANNED = `${TAB_BOX} border-transparent text-stone cursor-default`;
 /** The tag marking a tab that isn't built yet. Small tracked caps, so it reads as a status and not part of the label. */
 const TAB_SOON = `<span class="text-[10px] font-semibold tracking-[0.12em] uppercase text-stone/70">Soon</span>`;
+
+/**
+ * The tab you are on.
+ *
+ * One class rather than a utility swap, because the script toggles a single thing per tab.
+ * `a.tab-on` is deliberately element-qualified: at 0,1,1 it beats the `border-transparent` and
+ * `text-ink` sitting on the same element whatever order the Tailwind CDN injects its utilities
+ * in, which a bare `.tab-on` could not promise. Same hazard as the `PILL_EXPORT` trap, fixed
+ * with specificity instead of by hoping for source order.
+ */
+const TAB_STYLES = `    a.tab-on { color: var(--color-moss); border-color: var(--color-moss); }
+`;
+
+/**
+ * Which section the sticky sub-nav points at, updated as the page scrolls.
+ *
+ * An enhancement over a bar that already works: every tab is a plain in-page link, and with the
+ * script blocked the server-rendered first tab stays marked, which is exactly true when the page
+ * opens. So the no-JS state is not a broken bar, it is a bar that stops keeping up.
+ *
+ * It picks the **last** section whose top has crossed a line just under the bar, rather than
+ * asking an `IntersectionObserver` what is visible. Both read the same at the top of the page,
+ * but only this one is right at the bottom: the closing section is short enough that it never
+ * reaches the top of the window, so a visibility test leaves the previous tab marked while you
+ * stand in Old League Sites. Scrolling past a heading is the question being asked anyway.
+ *
+ * `requestAnimationFrame` collapses a scroll burst into one paint, and the listeners are
+ * `passive` so they never hold up the scroll itself.
+ */
+const HISTORY_TABS_SCRIPT = `  <script>
+    (function () {
+      var nav = document.getElementById("history-tabs");
+      if (!nav) return;
+      var links = [].slice.call(nav.querySelectorAll('a[href^="#"]'));
+      var sections = links.map(function (a) { return document.getElementById(a.getAttribute("href").slice(1)); });
+      if (!sections.length) return;
+      var ticking = false;
+      function paint() {
+        ticking = false;
+        var pick = 0;
+        for (var i = 0; i < sections.length; i++) {
+          if (sections[i] && sections[i].getBoundingClientRect().top <= 96) pick = i;
+        }
+        for (var j = 0; j < links.length; j++) links[j].classList.toggle("tab-on", j === pick);
+      }
+      function onScroll() {
+        if (ticking) return;
+        ticking = true;
+        window.requestAnimationFrame(paint);
+      }
+      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("resize", onScroll, { passive: true });
+      paint();
+    })();
+  </script>`;
 
 /**
  * The League History page's own sub-nav: one jump link per section of the page below it.
@@ -1541,8 +1632,10 @@ const TAB_SOON = `<span class="text-[10px] font-semibold tracking-[0.12em] upper
  * they gave equal weight to three items back when only one of them went anywhere. The rule also
  * gives the h1 above it something to sit on, which a bare row of links did not.
  *
- * Every tab is underlined because underline means "this one works", not "you are here" — nothing
- * observes the sections, so every one of them lights up now that all four exist.
+ * The underline means "you are here", which it did not until Aug 2026. Every live tab used to
+ * carry one, because nothing observed scroll position; the bar going sticky is what made that
+ * worth changing, since a pinned row of four identical underlines states nothing you cannot see.
+ * `HISTORY_TABS_SCRIPT` moves the mark and `TAB_STYLES` draws it.
  *
  * A tab's label, the heading it lands on and the section's id all say the same thing, and that
  * is the rule to hold when one of them moves. All three were rewritten in Aug 2026: "Records"
@@ -1558,17 +1651,28 @@ const HISTORY_SECTIONS: { label: string; href?: string }[] = [
   { label: "Season Results", href: "#season-results" },
   { label: "Trophy Case", href: "#trophy-case" },
   { label: "Scoring Records", href: "#scoring-records" },
+  { label: "Earlier Seasons", href: "#earlier-seasons" },
   { label: "Old League Sites", href: "#old-league-sites" },
 ];
 
-function historyNavHtml(): string {
-  const items = HISTORY_SECTIONS.map(({ label, href }) =>
-    href
-      ? `      <a href="${esc(href)}" class="${TAB_LINK}">${esc(label)}</a>`
-      : `      <span class="${TAB_PLANNED}" title="Coming soon">${esc(label)} ${TAB_SOON}</span>`,
-  ).join("\n");
+function historyNavHtml(hasEarlier: boolean): string {
+  // Earlier Seasons is the one tab whose section only exists once a second year is written up,
+  // so it drops out rather than pointing at nothing. Same self-retiring rule as `scoredColumns()`
+  // and the derived notes: it comes back on its own the run after 2024's honors land.
+  const sections = HISTORY_SECTIONS.filter((s) => hasEarlier || s.href !== "#earlier-seasons");
 
-  return `    <nav class="${TAB_ROW}">
+  // The first live tab renders marked. That is true at load, and it is the whole no-JS story.
+  let first = true;
+  const items = sections
+    .map(({ label, href }) => {
+      if (!href) return `      <span class="${TAB_PLANNED}" title="Coming soon">${esc(label)} ${TAB_SOON}</span>`;
+      const on = first ? " tab-on" : "";
+      first = false;
+      return `      <a href="${esc(href)}" class="${TAB_LINK}${on}">${esc(label)}</a>`;
+    })
+    .join("\n");
+
+  return `    <nav id="history-tabs" class="${TAB_ROW}">
 ${items}
     </nav>`;
 }
@@ -2029,7 +2133,7 @@ ${trophyTableHtml(retired, "Owner", scoredColumns(retired), marks)}`
     : "";
 
   return `
-    <section id="trophy-case" class="mb-14 scroll-mt-6">
+    <section id="trophy-case" class="mb-14 ${ANCHOR_OFFSET}">
       <h2 class="${SECTION_H2}">Trophy Case</h2>
       <h3 class="${SUB_H3}">Current Owners</h3>
 ${trophyTableHtml(active, "Owner", activeColumns, marks)}
@@ -2040,6 +2144,13 @@ ${notes}${retiredBlock}
 
 /** The muted second line under a team or a record label. */
 const STAT_SUB = "text-[12px] text-stone font-normal";
+
+/**
+ * An era's anchor, from its own label, so a new era in `STAT_ERAS` is linkable with no edit
+ * here. `era-` prefixes it because the labels are bare year ranges and an id of `2006-2011`
+ * reads like nothing in particular next to `all-years` beside it.
+ */
+const eraSlug = (label: string) => `era-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 
 /**
  * One record's holder lines, and the matching season lines beside them.
@@ -2145,28 +2256,47 @@ function statRecordsHtml(): string {
   // block is a record of its own and would vanish with them under a bare `STAT_ERAS` check.
   if (STAT_ERAS.length === 0 && ALL_YEARS_RECORDS.length === 0) return "";
 
-  const eraBlocks = [...STAT_ERAS]
-    .reverse()
+  const eras = [...STAT_ERAS].reverse();
+  const eraBlocks = eras
     .map((era) => {
       const heading = era.scoring
         ? `${esc(era.label)} <span class="${STAT_SUB}">${esc(era.scoring)}</span>`
         : esc(era.label);
-      return `      <h3 class="${SUB_H3} mt-9">${heading}</h3>
+      return `      <h3 id="${eraSlug(era.label)}" class="${SUB_H3} mt-9 ${ANCHOR_OFFSET}">${heading}</h3>
 ${statTableHtml(era.records)}`;
     })
     .join("\n");
 
+  // The section is close to half the page and its era tables are near-identical at a glance, so
+  // it carries its own jump row. Local to the block it indexes, which is what separates it from
+  // the per-season pills dropped off the top sub-nav in Aug 2026: those grew by one every August
+  // and duplicated a list the page already showed, where the eras are a fixed set that changes
+  // when the scoring rules do, about once a decade. Pills rather than tabs because the sub-nav
+  // above owns that treatment, and `PILL_LINK` because this row sits on the cream page and not
+  // inside a card.
+  const jumps = [
+    ...(ALL_YEARS_RECORDS.length ? [{ href: "#all-years", label: "All Years" }] : []),
+    ...eras.map((era) => ({ href: `#${eraSlug(era.label)}`, label: era.label })),
+  ];
+  const jumpRow =
+    jumps.length > 1
+      ? `      <nav class="flex flex-wrap items-center gap-2 mb-6">
+${jumps.map((j) => `        <a href="${esc(j.href)}" class="${PILL_LINK}">${esc(j.label)}</a>`).join("\n")}
+      </nav>`
+      : "";
+
   // The schedule note belongs to this block alone: it qualifies a win-loss figure, and the era
   // tables below score points, where `StatRecord.scope` already states the window per row.
   const allYears = ALL_YEARS_RECORDS.length
-    ? `      <h3 class="${SUB_H3}">All Years</h3>
+    ? `      <h3 id="all-years" class="${SUB_H3} ${ANCHOR_OFFSET}">All Years</h3>
 ${statTableHtml(ALL_YEARS_RECORDS, "Result")}
       <p class="${TABLE_NOTE}">${esc(ALL_YEARS_SCHEDULE_NOTE)}</p>`
     : "";
 
   return `
-    <section id="scoring-records" class="mb-14 scroll-mt-6">
+    <section id="scoring-records" class="mb-14 ${ANCHOR_OFFSET}">
       <h2 class="${SECTION_H2}">Scoring Records</h2>
+${jumpRow}
 ${allYears}
 ${eraBlocks}
     </section>
@@ -2216,7 +2346,7 @@ ${mflLinks}
         </div>`
     : "";
 
-  return `    <section id="old-league-sites" class="mb-14 scroll-mt-6">
+  return `    <section id="old-league-sites" class="mb-14 ${ANCHOR_OFFSET}">
       <h2 class="${SECTION_H2}">Old League Sites</h2>
       <div class="${CARD} px-5 py-5 max-w-[720px] flex flex-col gap-5">
         <div>
@@ -2261,9 +2391,20 @@ export function generateHistoryHtml(navLinks: NavLink[], hasMark = false): strin
     honorsSection(s, SEASON_HONORS[s], { id: `s${s}`, badge: throwbackBadgeHtml(s), footer: prizePointerHtml(s) });
   const table = leagueHistoryTableHtml();
 
+  // The earlier seasons get a section of their own so the sub-nav has something to land on.
+  // One heading over the run, rather than a tab per year, on the same reasoning that took the
+  // per-season pills off the top bar.
+  const earlierSeasons = earlier.length
+    ? `
+    <section id="earlier-seasons" class="mb-14 ${ANCHOR_OFFSET}">
+      <h2 class="${SECTION_H2}">Earlier Seasons</h2>
+${earlier.map(honorBlocks).join("")}    </section>
+`
+    : "";
+
   const seasonResults = table
     ? `
-    <section id="season-results" class="mb-14 scroll-mt-6">
+    <section id="season-results" class="mb-14 ${ANCHOR_OFFSET}">
       <h2 class="${SECTION_H2}">Season Results</h2>
 ${table}
     </section>
@@ -2278,15 +2419,16 @@ ${htmlHead({
     description: "Champions, runners-up, and season honors for every recorded season.",
     siteName: SITE.wordmark,
     path: "history.html",
-    extraStyles: TABLE_SCROLL_STYLES,
+    extraStyles: TABLE_SCROLL_STYLES + TAB_STYLES,
   })}
 <body class="bg-cream text-ink font-sans antialiased">
 ${siteHeader(chrome)}
   <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
     <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-8">League History</h1>
-${historyNavHtml()}
-${newest ? honorBlocks(newest) : ""}${seasonResults}${recordsHtml()}${statRecordsHtml()}${earlier.map(honorBlocks).join("")}${pastLeaguesHtml()}${backToTopHtml()}
+${historyNavHtml(earlier.length > 0)}
+${newest ? honorBlocks(newest) : ""}${seasonResults}${recordsHtml()}${statRecordsHtml()}${earlierSeasons}${pastLeaguesHtml()}${backToTopHtml()}
   </main>
+${HISTORY_TABS_SCRIPT}
 </body>
 </html>`;
 }

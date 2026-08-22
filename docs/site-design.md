@@ -83,8 +83,10 @@ points at a specific season and stage.
 plain `<a href="#top">`; `#top` is the document top by definition, so no page carries an id to
 match it.
 
-**Nothing on this site is sticky except two in-table pins:** the roster `TH` row and the
-History table's frozen Season column. The site header was weighed as a third and passed over:
+**Three things on this site are sticky, and the site header is still not one of them:** the
+roster `TH` row, the History table's frozen Season column, and from Aug 2026 the History page's
+own sub-nav from `md` up (see *League History Page* below, which sets out why that row clears a
+bar the header could not). The site header was weighed and passed over:
 
 - **It costs the most where the room is worth the most.** The header is three heights, and its
   wrap points are not Tailwind breakpoints: 74px above ~930px, ~106px from ~930px down to ~690px
@@ -283,12 +285,48 @@ this page), then a plain middot-separated text row, which had nothing for the h1
   tab carries `border-b-2` and pulls itself down a pixel so the live tab's underline lands on the
   rule instead of a pixel above it. Remove the row's border and the underline floats; remove the
   offset and it thickens the rule.
-- **The underline means "this one works", not "you are here".** Nothing observes scroll position,
-  so a second built section is simply a second underlined tab. All three are live as of Aug 2026,
-  which is the state the mechanism was always heading for rather than a change to it.
+- **The row is sticky from `md` up, and that is not the site-header decision reopened.** The page
+  runs about five screens and this bar is its only route between sections. The header was passed
+  over on three facts and none of them holds here: it stands 74-138px against this row's ~47px; on
+  a roster page it would pin a second frozen bar over the grid's own sticky `TH`, where this page
+  has no vertical pin at all, its frozen Season column being horizontal; and its payoff was one
+  keystroke to a four-item `SITE_NAV`, where this is four in-page jumps. `position: sticky` is
+  pure CSS, so the floating button's objection (it needs JS, on a site previewed over `file://`)
+  does not carry over either. Below `md` it scrolls away as before, which is exactly the width
+  where the row wraps to two lines and a phone can least afford the furniture.
+- **Two things the sticky row needs, neither of which errors if missed.** An opaque `md:bg-cream`,
+  or table rows scroll under it. And `ANCHOR_OFFSET` (`scroll-mt-6 md:scroll-mt-16`) on every
+  target, or each heading it jumps to lands beneath the bar. That offset is on the four sections,
+  on `honorsSection()` gated by `opts.id` (which the home page does not pass, so the shared
+  renderer stays correct there), and on the Scoring Records era headings.
+- **The underline means "you are here", which it did not until the row went sticky.** Every live
+  tab carried one while nothing observed scroll position. `HISTORY_TABS_SCRIPT` now moves a single
+  `tab-on` class as the page scrolls, and `TAB_STYLES` draws it, so `htmlHead({ extraStyles })`
+  has to carry `TAB_STYLES` or the active tab silently renders like every other. `a.tab-on` is
+  element-qualified on purpose: at 0,1,1 it beats the `border-transparent` and `text-ink` on the
+  same element whatever order the Tailwind CDN injects utilities in, which a bare `.tab-on` could
+  not promise. The script **picks the last section whose top has crossed a line 96px down**, not
+  whatever an `IntersectionObserver` reports visible: both read the same at the top of the page,
+  but the closing section is too short to ever reach the top of the window, so a visibility test
+  would leave the previous tab marked while you stand in Old League Sites.
+- **It is an enhancement over a bar that already works.** Every tab is a plain in-page link, and
+  the first live tab is rendered marked, which is true at load. With the script blocked the bar
+  does not break, it stops keeping up.
 - **Tabs are `whitespace-nowrap`,** so a narrow phone drops a whole label to a second line rather
-  than breaking one. `gap-y-0` keeps the two lines tight enough to still read as one bar, with the
-  live tab's underline on the upper line and the row's rule under the lower.
+  than breaking one. `gap-y-1` keeps the two lines tight enough to still read as one bar while
+  giving a wrapped row a little air; it was `gap-y-0` while every tab was underlined, when any
+  vertical gap read as a broken rule.
+- **Earlier Seasons is the one tab that takes itself off.** Its section only exists once a second
+  year is written up in `SEASON_HONORS`, so `historyNavHtml()` drops the entry rather than pointing
+  at nothing, and both come back on their own the run after 2024's honors land. Same self-retiring
+  rule as `scoredColumns()` and the derived notes under the Trophy Case.
+- **Scoring Records carries its own jump row**, a `PILL_LINK` row of All Years plus one pill per
+  era, anchored on `eraSlug()` so a new era in `STAT_ERAS` is linkable with no edit. The section
+  is close to half the page and its era tables are near-identical at a glance. It is local to the
+  block it indexes, which is what separates it from the per-season pills dropped off the top bar
+  in Aug 2026: those grew by one every August and duplicated a list the page already showed, where
+  the eras are a fixed set that changes when the scoring rules do. Pills rather than tabs because
+  the sub-nav owns that treatment, and `PILL_LINK` because the row sits on cream, not in a card.
 
 ### Trophy Case
 
