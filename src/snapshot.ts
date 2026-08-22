@@ -686,6 +686,17 @@ export function getTiersOutputPath(): string {
   return join(DATA_DIR, "..", "output", "tiers.html");
 }
 
+/**
+ * The Official Rules page. Flat file at the output root, same rule as the pages above.
+ *
+ * Only the current season's rules are generated. A past season's rules are a frozen copy of this
+ * file under `rules-<season>.html`, made by hand when the season closes and committed as a static
+ * page, so nothing here writes one and no generator will ever overwrite one.
+ */
+export function getRulesOutputPath(): string {
+  return join(DATA_DIR, "..", "output", "rules.html");
+}
+
 // ── Static assets ──
 
 /**
