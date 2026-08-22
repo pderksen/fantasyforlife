@@ -431,13 +431,24 @@ export interface StatEra {
  * `FFL History & Records` Google Doc, which is the only place the first three eras are written
  * down. Find it in Drive by name; it is private, so it is not in `ARCHIVE_LINKS`.
  *
- * **Coverage is ragged on purpose.** Only 2006-2011 and 2025 have a bench figure. That row is
- * absent from the other two eras rather than blank, so a reader sees a shorter table instead of
- * a row of em dashes implying the record is zero. Adding one is a single entry here.
+ * **A record the doc never captured is an absent row, not a blank one.** All four eras happen to
+ * carry the same eight rows today, but that is the data rather than a rule: a record with no
+ * entry simply makes its table shorter, because a row of em dashes would read as a measured zero.
  *
  * The doc also records a lowest single-week single-player score for three of the four eras.
  * It is deliberately not carried: a bad start is a lineup mistake rather than a league record,
  * and the row was dropped from every era at once so no table implies the others never had one.
+ *
+ * **The bench rows are computed, and the 2006-2011 one contradicts the doc on purpose.** The doc
+ * records "Biola 74 - 2009 Week 1"; a complete sweep of all nineteen MyFantasyLeague seasons puts
+ * the era record at 93 (Winnemucca, 2008 week 12), and 74 is beaten four times over. The doc's
+ * figure was logged in week 1 of 2009 and never revisited, which is worth knowing generally: its
+ * records are what somebody noticed at the time, not exhaustive maxima. The method is not in
+ * doubt, since the same sweep reproduces the doc's 74 for Biola in that exact week.
+ *
+ * **Bench rows are regular season only** and say so, unlike the single-week scoring highs beside
+ * them, which sit in weeks 15 and 16. That is a deliberate split, so the `scope` line is what
+ * keeps the two from being read as the same window.
  *
  * **The 2025 era was computed, not transcribed.** The doc carries a `TODO (2025 to current
  * superflex scoring)` heading and nothing under it, so every figure in that block came from a
@@ -504,8 +515,9 @@ export const STAT_ERAS: StatEra[] = [
       },
       {
         label: "Highest total points on the bench",
-        value: "74",
-        holders: [{ team: "Biola Slugglords", season: "2009", week: "1" }],
+        scope: "Regular season only",
+        value: "93",
+        holders: [{ team: "Winnemucca Muckers", season: "2008", week: "12" }],
       },
     ],
   },
@@ -550,6 +562,12 @@ export const STAT_ERAS: StatEra[] = [
         value: "285",
         holders: [{ team: "Winnemucca Muckers", against: "Kingsburg Killaz", score: "156-129", season: "2019", week: "5" }],
       },
+      {
+        label: "Highest total points on the bench",
+        scope: "Regular season only",
+        value: "118",
+        holders: [{ team: "Dinkey Creek Dirt Clods", season: "2019", week: "1" }],
+      },
     ],
   },
   {
@@ -593,6 +611,12 @@ export const STAT_ERAS: StatEra[] = [
         scope: "Largest combined score",
         value: "323",
         holders: [{ team: "Sanger Squatty Pottys", against: "Easton Evil Empire", score: "164-159", season: "2020", week: "14" }],
+      },
+      {
+        label: "Highest total points on the bench",
+        scope: "Regular season only",
+        value: "130",
+        holders: [{ team: "Easton Evil Empire", season: "2022", week: "4" }],
       },
     ],
   },
@@ -644,6 +668,7 @@ export const STAT_ERAS: StatEra[] = [
       },
       {
         label: "Highest total points on the bench",
+        scope: "Regular season only",
         value: "110.72",
         holders: [{ team: "Kingsburg Killaz", season: "2025", week: "3" }],
       },

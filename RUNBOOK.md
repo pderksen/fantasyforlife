@@ -15,6 +15,7 @@ so **nothing is live until you commit and push**. Running a command locally is o
 | Right after the draft | `npm run dev -- --snapshot-draft <season>` | Once | You |
 | During the NFL season | `npm run dev -- --traded-picks`, `npm run dev -- --trades`, then `npm run dev -- --generate <season>` | Weekly, Thursdays | **Automated** |
 | After NFL Week 18 (~early Jan) | `npm run dev -- --snapshot end-of-season` | Once | You |
+| After the season settles | Type up the season in `league-info.ts` (see [5](#5-write-up-the-season)) | Once | You |
 | After anything you ran by hand | `git add -A && git commit && git push` | Every time | You |
 
 Season = the NFL season year, e.g. `2026` for Sep 2026 – Feb 2027.
@@ -151,7 +152,39 @@ and before the next season's league rolls over.
 
 ---
 
-## 5. Deploy (every time)
+## 5. Write up the season
+
+Nothing in the CLI writes any of this. It is all hand-maintained in
+[`src/league-info.ts`](src/league-info.ts), and a season nobody types up leaves the site a year
+stale without erroring anywhere, so it belongs on the checklist rather than in someone's memory.
+
+| What | Add |
+|---|---|
+| `LEAGUE_HISTORY` | The season's champion, runner-up, toilet bowl, and Total Points team |
+| `SEASON_HONORS` | That year's honor cards (rendered on both the home page and League History) |
+| `STAT_ERAS` | Any scoring record the season broke, in the **current era's** block |
+| `PRIZE_SEASONS` | Final payouts, and flip the season's state to `final` |
+
+Two of these are easy to get wrong:
+
+**A champion is named twice**, once in `LEAGUE_HISTORY` and once in `SEASON_HONORS`, and nothing
+reconciles them. Change both together.
+
+**`STAT_ERAS` needs the season checked against every row its era already carries**, not just the
+records that obviously moved. Sleeper's `/league/{id}/matchups/{week}` carries everything needed
+for weeks 1-17: `points` per roster per week, `matchup_id` to pair them, `starters` and
+`players_points` for the single-player and bench figures. Pre-2025 seasons are on MyFantasyLeague
+instead, whose export API answers the same questions (`TYPE=weeklyResults`), with two traps worth
+knowing: it rate-limits hard enough to silently drop weeks, so verify coverage before trusting a
+maximum, and 2006-2014 the league is the two-conference Keeper Alliance Network, so results must
+be filtered to the F.F.L. conference. Ignore D.F.L. entirely.
+
+Add a new era to `STAT_ERAS` only when a **scoring rule** changes, not every year. The eras exist
+because the numbers stop being comparable, which is what PPR did in 2020 and Superflex in 2025.
+
+---
+
+## 6. Deploy (every time)
 
 ```
 git add -A
@@ -306,4 +339,5 @@ all three are worth eyeballing before they ship.
 | Draft day (late Aug) | Run `--snapshot pre-draft` by hand right before the draft starts, then `--snapshot-draft <season>` after it ends. Commit and push both. In 2026, also settle the post-draft keeper flag (step 2). |
 | Sep–Dec | Automated weekly on Thursdays. Nothing to do. |
 | Early Jan | `--snapshot end-of-season` by hand. Commit and push. |
+| Early Jan, once results settle | Type the season into `LEAGUE_HISTORY`, `SEASON_HONORS`, `STAT_ERAS` and `PRIZE_SEASONS`. Nothing writes these for you. |
 | Feb–Jul | Nothing to run. Expect GitHub to disable the schedule. |

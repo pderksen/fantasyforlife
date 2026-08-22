@@ -377,12 +377,22 @@ short All Years block first, then one `SUB_H3` and one table per era, newest fir
   only" where it applies. A note under the section would be read once and forgotten by the third
   table, and the difference is exactly the kind that makes two numbers look comparable when they
   are not.
-- **Ragged coverage is honest coverage.** Only 2006-2011 and 2025 have a bench figure, so that
-  row is absent from the other two tables and they are simply shorter; a row of em dashes would
-  read as a measured zero. The doc's lowest single-week single-player score is carried for no era
-  even though it exists for three, since a bad start is a lineup mistake rather than a league
-  record. Dropping it from every era at once is what stops one table implying the rest never
-  had one.
+- **Ragged coverage is honest coverage.** All four eras happen to carry the same eight rows now,
+  but a record with no entry simply makes its table shorter rather than showing a row of em
+  dashes, which would read as a measured zero. The doc's lowest single-week single-player score is
+  carried for no era even though it exists for three, since a bad start is a lineup mistake rather
+  than a league record. Dropping it from every era at once is what stops one table implying the
+  rest never had one.
+- **The bench rows are computed, and one of them contradicts the source doc.** A complete sweep of
+  all nineteen MyFantasyLeague seasons puts 2006-2011 at 93 rather than the doc's 74, which is
+  beaten four times over within the era. The same sweep reproduces the doc's 74 exactly for the
+  team and week it names, so the difference is not a method disagreement: the doc logged a week-1
+  figure and never revisited it. Its records are what somebody noticed at the time. Anything
+  computed here is a true maximum, and the two kinds sit in one table with nothing marking which
+  is which, which is worth remembering before trusting an uncomputed row.
+- **Bench rows are regular season only, and say so on the row.** The single-week scoring highs
+  directly above them sit in weeks 15 and 16, so without the scope line the two would read as the
+  same window.
 - **No frozen column here**, alone among the page's tables. The record label is the row identity
   and runs about 270px, so pinning it on a phone leaves nothing for the columns it would be
   conserving. The `.tbl-scroll` fade does the signalling, as it does on the prize ledger.
