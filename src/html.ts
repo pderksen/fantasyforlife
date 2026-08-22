@@ -1045,9 +1045,10 @@ function honorsHtml(): string {
  *
  * `LINK` plus weight, and `nowrap` so the label and its arrow never split across lines. Moss
  * alone at 15px, sitting after a sentence that opens on a bold lead-in, does not read as
- * clickable — the same problem `ARCHIVE_NOTE` solves with an underline on the tiers hub. An
- * underline is not available here: that one is the site's only underlined link, and a second
- * would stop the first from meaning anything.
+ * clickable — the same problem `ARCHIVE_NOTE` and `RULES_PROSE_LINK` solve with the soft
+ * underline. Weight rather than underline here because a card list holds only a few of these
+ * and each closes a line that opened bold, where the arrowed pointer reads as part of the
+ * rule's typography; the underline belongs to links sitting in running prose.
  */
 const RULE_LINK = `${LINK} font-semibold whitespace-nowrap`;
 
@@ -2920,6 +2921,22 @@ ${backToTopHtml()}
 // ── Official Rules ──
 
 /**
+ * An inline link inside rules prose: moss with the soft underline, `ARCHIVE_NOTE`'s treatment
+ * at body size.
+ *
+ * Underlined where almost nothing on the site is, because this is the context the underline
+ * convention actually serves: a page of running prose whose links sit mid-sentence, where moss
+ * alone at 15px reads as emphasis rather than as somewhere to go. The card lists solve the same
+ * problem with `RULE_LINK`'s weight instead, which works at three links and turns spotty at the
+ * twenty a rules set carries — bold that often would compete with the bold rule lead-ins around
+ * it. `decoration-moss/40` keeps the rule reading as an affordance rather than emphasis, the
+ * same call `ARCHIVE_NOTE` documents. Standalone rather than built from `LINK`, which carries
+ * `no-underline`: appending `underline` to it would be two text-decoration utilities on one
+ * element, the `PILL_EXPORT` trap.
+ */
+const RULES_PROSE_LINK = "text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70";
+
+/**
  * Rules prose on its way to the page: tokens filled, text escaped, then `[label](href)` links
  * made real.
  *
@@ -2939,8 +2956,8 @@ function rulesText(text: string): string {
     /\[([^\]]+)\]\(([^()\s]+)\)/g,
     (_m, label: string, href: string) =>
       /^https?:\/\//.test(href)
-        ? `<a href="${href}" target="_blank" rel="noopener noreferrer" class="${LINK}">${label}</a>`
-        : `<a href="${href}" class="${LINK}">${label}</a>`,
+        ? `<a href="${href}" target="_blank" rel="noopener noreferrer" class="${RULES_PROSE_LINK}">${label}</a>`
+        : `<a href="${href}" class="${RULES_PROSE_LINK}">${label}</a>`,
   );
 }
 

@@ -666,9 +666,10 @@ string, so the gap is obvious on the page rather than reading as a sentence miss
 somewhere is still a rule, and a block-level link under it would read as the list's navigation
 rather than as part of what the rule says. It takes `RULE_LINK`, which is `LINK` plus weight and
 `whitespace-nowrap`: moss at 15px, arriving after a sentence that opened on a bold lead-in, does
-not read as clickable on its own. The tiers hub solves the same problem with an underline, and
-that fix is spoken for here, since `ARCHIVE_NOTE` is deliberately the site's only underlined link
-and a second one would stop the first from marking anything.
+not read as clickable on its own. The soft underline (`ARCHIVE_NOTE`, and the rules page's
+`RULES_PROSE_LINK`) belongs to links sitting in running prose; in a card list of a few arrowed
+pointers, each closing a line that opened bold, the weight does the job without the underline
+reading as emphasis.
 
 `rulesHref` puts the rules-document link on the card the same way `NavItem.href` lights up a nav
 item. Absent, it renders nothing rather than the inert "coming soon" span the header already
@@ -853,13 +854,15 @@ destination in this card, and it would point sideways at this site's own page us
 every other link in the card uses to leave it. The right-hand span becomes a `flex-col items-end`
 to stack the two, the same call the home page's Past Seasons row makes for its two hosts.
 
-It is the one underlined link on the site, and it earned that by failing twice. Stone at 13px is
-the colour of the muted labels around it, so it read as a caption under the pill rather than a
-destination; moss at 13px is the site's link colour but sits directly under a bordered pill,
-which takes the whole row's "this is clickable" signal for itself. The underline is what settles
-it, kept at `decoration-moss/40` so the rule reads as an affordance and not as emphasis. Nothing
-else on the site needs it: every other link is either a pill, a nav item, or moss text at 15px
-or larger with room around it.
+It was the one underlined link on the site until the rules page landed, and it earned the
+underline by failing twice. Stone at 13px is the colour of the muted labels around it, so it
+read as a caption under the pill rather than a destination; moss at 13px is the site's link
+colour but sits directly under a bordered pill, which takes the whole row's "this is clickable"
+signal for itself. The underline is what settles it, kept at `decoration-moss/40` so the rule
+reads as an affordance and not as emphasis. The rules page's prose links (`RULES_PROSE_LINK`)
+now share the treatment for the same reason at body size: a link mid-sentence has no pill, no
+arrow and no room around it to say what it is. Everywhere else stays underline-free, since every
+other link is a pill, a nav item, or moss text at 15px or larger with room around it.
 
 **The Throwback Year badge is back, it is computed now, and the League History page reuses it.**
 `isThrowbackSeason()` in `league-info.ts` reads the five-year cadence from `THROWBACK_FIRST`
@@ -924,7 +927,10 @@ started pointing at Sleeper's own support articles, and a pointer only reads as 
 in the sentence that names the mechanic; a block-level link under the rule would read as the
 section's navigation. Escape-then-linkify order is what keeps the syntax from being an injection
 surface. Absolute `https://` hrefs open a new tab like every outbound link on the site; relative
-ones (another page, a `#anchor`) stay put. The tokens are the roster-size-in-one-place rule:
+ones (another page, a `#anchor`) stay put. The links render in `RULES_PROSE_LINK`, moss with
+`ARCHIVE_NOTE`'s soft underline: mid-sentence at 15px, moss alone reads as emphasis, and bold
+(the card lists' fix) turns spotty at the twenty links a rules set carries, competing with the
+bold rule lead-ins around it. The tokens are the roster-size-in-one-place rule:
 `LEAGUE_FACTS` in `league-info.ts` states each structural number once (`{rosterLimit}`,
 `{keeperCount}`, `{teamCount}`, `{qbLimit}`, `{faabBudget}`, `{tradeDeadlineWeek}`, and
 `{draftRounds}` derived as roster minus keepers), `{entryFee}` still reads from `PRIZE_SEASONS`,

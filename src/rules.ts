@@ -256,21 +256,26 @@ export const RULES_SECTIONS: RulesSection[] = [
         text: "This is a {keeperCount}-player keeper league. Keeping only {keeperCount} is what keeps the draft meaningful and gives a losing season a real reset. Rosters split into three tiers by draft round, and you keep one player from each tier.",
       },
       {
+        kind: "text",
+        text: "The tier boundaries depend on which kind of draft the players came out of. A throwback year (and the league's first year) drafts the full {rosterLimit}-man roster, so the tiers spread across all {rosterLimit} rounds. In a keeper year the {keeperCount} keepers fill the top slots and the draft runs {draftRounds} rounds, so the boundaries sit higher up.",
+      },
+      {
         kind: "table",
-        columns: ["Tier", "Draft rounds"],
+        columns: ["Tier", "Throwback-year draft", "Keeper-year draft"],
         rows: [
-          ["1", "Rounds 1–5"],
-          ["2", "Rounds 6–10"],
-          ["3", "Rounds 11+, and every undrafted pickup"],
+          ["1", "Rounds 1–5", "Rounds 1–3"],
+          ["2", "Rounds 6–10", "Rounds 4–8"],
+          ["3", "Rounds 11+, and undrafted pickups", "Rounds 9+, and undrafted pickups"],
         ],
       },
       {
         kind: "list",
         items: [
+          "A player's tier reads off the draft he was actually taken in. Picking 2026 keepers means the 2025 throwback rounds; picking 2027 keepers next winter will mean the 2026 keeper-year rounds.",
           "You can always substitute downward: in place of a higher-tier keeper, keep an extra player from a lower tier (two Tier 3s and a Tier 1, say). Never the reverse.",
           "A kept player climbs one tier for the next season, no matter how many keepers shared his tier.",
           "Free agent pickups count as Tier 3. A traded player keeps the tier he was originally drafted in, and a dropped and re-added player keeps his drafted round.",
-          "Example: keep a round-2 pick (Tier 1), a round-8 pick (Tier 2) and a waiver pickup (Tier 3). Next season they count as Tier 1, Tier 1 and Tier 2, and with {keeperCount} spots spoken for the draft runs {draftRounds} rounds.",
+          "Example: off the 2025 throwback roster, keep a round-2 pick (Tier 1), a round-8 pick (Tier 2) and a waiver pickup (Tier 3). In 2026 the first two count as Tier 1 and the pickup as Tier 2, and the draft runs {draftRounds} rounds against the keeper-year boundaries.",
           "Declare keepers in the Sleeper app before the draft; selections can be revised up to 24 hours before it. Until then everyone holds their full {rosterLimit}-man roster to study and trade with.",
           "Keeper rosters lock when the final week of the season completes, so playoff-week pickups and drops change your keeper options.",
           "Where everyone's roster actually tiers out, season by season, is on [Keeper Tiers](tiers.html).",
