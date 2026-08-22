@@ -294,12 +294,13 @@ them. Two tables today, `SUB_H3` headings over each: **Trophy Case** for the ten
   through the same column list the table above renders, so the Trophy Case tallies exactly the
   four finishes that table shows. Re-adding Best Record to `HISTORY_COLUMNS` would grow both in
   one edit, which is the whole reason the count is not driven by a second hand-written list.
-- **Each table shows the columns its own rows scored in**, from `scoredColumns()`. That is what
-  drops Total Points from Retired Owners: it has only been recorded since 2023 and every retired
-  team left before then, so the column is structurally empty there, and four dashes down a column
-  spend width claiming a record was kept when it wasn't. Derived rather than a hard-coded "the
-  retired table shows three columns", so the column returns on its own the day a retired team
-  turns out to have won one. It applies to both tables, so an all-empty column would leave the
+- **Each table shows the columns its own rows scored in**, from `scoredColumns()`, and Retired
+  Owners has now exercised that both ways. Total Points reached back only to 2012 while every
+  retired team had already left, so the column was structurally empty there, and four dashes down
+  a column spend width claiming a record was kept when it wasn't. Computing the 2006-2011 figures
+  in Aug 2026 gave Canton three of them and Booty Bay one, and the column came back with no edit
+  here, which is the argument for deriving it rather than hard-coding "the retired table shows
+  three columns". It applies to both tables, so an all-empty column would leave the
   Trophy Case too, and the notes below read off the columns that table actually rendered.
 - **The split into two tables is the point, not a tidiness pass.** One ranked table would sit
   Chico Pico de Gallo third on three championships with no way to play for a fourth, which reads
@@ -329,9 +330,9 @@ them. Two tables today, `SUB_H3` headings over each: **Trophy Case** for the ten
   was recorded, and shows only while that column is thinner than the table. A numbered note is
   about one line, so it takes a superscript on the team it belongs to and is written
   `(1) <team> formerly known as <old name>.` Both are derived, and both take themselves off when
-  the thing they explain stops being true: filling in the older Total Points figures retires the
-  first, and rewriting the last row that still says an old name retires the second along with its
-  superscript. Same self-retiring trick the "still being compiled" note under the table uses.
+  the thing they explain stops being true: filling in the 2006-2011 Total Points figures retired
+  the first in Aug 2026, and rewriting the last row that still says an old name retires the second
+  along with its superscript. Same self-retiring trick the "still being compiled" note under the table uses.
 - **Retired Owners carries no note of its own.** Its heading already says what it is, and a line
   explaining that those seasons still count in the table above was there briefly and dropped: the
   full history is two screens up and says so itself.
@@ -457,6 +458,16 @@ picks tables are dense data and keep their own denser styling.
   measure is a sideways scroll inside the card, never a two-line row. Total Points names a team
   and nothing else: the point total stays on the honor card above, where a number has room to
   be a number.
+- **Total Points changes basis at 2012, and the page deliberately does not say so.** 2006-2011
+  is the regular season alone, which is how that era recorded a season and how `STAT_ERAS`
+  already labels its own figures; 2012 on counts the playoff weeks, which is how the prize was
+  awarded. It is not a trivial split: three of those six seasons name a different team once the
+  playoff weeks are counted. A note under the table saying so shipped in Aug 2026 and was pulled
+  the same day, and the reason it can go is the column's own rule above. It names a team and
+  never a figure, so nothing on the table invites the comparison the note was answering, and a
+  paragraph about scoring windows under a list of names costs more attention than the ambiguity
+  does. The split is recorded where somebody editing the data will meet it, in `LEAGUE_HISTORY`'s
+  own comment.
 - **One layout at every width.** The same table renders on a phone as on a desktop, scrolled
   sideways inside its `overflow-x-auto` wrapper. A stacked phone variant (one labeled block per
   season below `sm`) shipped in Aug 2026 and was reverted days later: two renderings of the same

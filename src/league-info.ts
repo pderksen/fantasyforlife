@@ -209,9 +209,11 @@ export const TEAM_CITIES: Record<string, string> = {
   "Collet Winners": "Collet",
   // Not retired: the Riverstone Stoners under their old name. See `TEAM_ALIASES`.
   "Winnemucca Muckers": "Winnemucca",
-  // Retired, and named only by the history doc's "FFL Stats & Records" section: these two hold
-  // one scoring record each and never placed in a bracket, so `LEAGUE_HISTORY` does not carry
-  // them and the Trophy Case never counts them.
+  // Retired, and both named by the history doc's "FFL Stats & Records" section, where they hold
+  // one scoring record each. Neither ever placed in a bracket. Booty Bay reached `LEAGUE_HISTORY`
+  // anyway once 2006-2011 Total Points was computed (they led 2009), so the Trophy Case counts
+  // them on a Retired Owners line; Arroyo Grande led no season and is still a name this map
+  // shortens and nothing else counts.
   //
   // **Both are retired teams in their own right, not old names** (confirmed Aug 2026), so
   // neither takes a `TEAM_ALIASES` entry. The tiers workbook makes this look otherwise and the
@@ -302,23 +304,54 @@ export const LEAGUE_HISTORY: SeasonResult[] = [
   // `FFL History & Records` Google Doc. The doc is private, so it is not in `ARCHIVE_LINKS`; find
   // it in Drive by name. That section records the three bracket finishes and nothing else.
   //
-  // **Total Points for 2012–2022 comes from MyFantasyLeague, not the doc**, read off the Season
-  // Records report (`options?L=30136&O=204`, most total points scored, weeks 1–17) in Aug 2026.
+  // **Total Points for 2012-2022 comes from MyFantasyLeague, not the doc**, read off the Season
+  // Records report (`options?L=30136&O=204`, most total points scored, weeks 1-17) in Aug 2026.
   // MFL computes it from the game logs, and the two seasons the repo already had by hand match it
   // to the cent (2023 Dinkey Creek 2,211.66 and 2024 Lemoore 2,336.34, both from the prize
   // workbook), which is what makes the basis interchangeable: points accumulated over the whole
   // season, playoff weeks included. A deeper playoff run therefore means more games to accumulate
-  // in, exactly as the prize was awarded. **2006–2011 stays blank on purpose**: MFL's records
-  // database is the whole Keeper Alliance Network rather than this league alone (see the note on
-  // `STAT_ERAS`), and those are the years where telling the two apart stops being reliable. Retired teams (Chico, Canton, Collet, Biola) are kept as the doc writes
-  // them; they join on nothing and appear only here. Winnemucca is not one of them — it is the
-  // Riverstone Stoners' old name, folded by `TEAM_ALIASES` where the counting happens.
-  { season: "2006", champion: "Winnemucca Muckers", runnerUp: "Chico Pico de Gallo", toiletBowl: "Biola Slugglords" },
-  { season: "2007", champion: "Chico Pico de Gallo", runnerUp: "Dinkey Creek Dirt Clods", toiletBowl: "Visalia Viagra Vipers" },
-  { season: "2008", champion: "Winnemucca Muckers", runnerUp: "Chico Pico de Gallo", toiletBowl: "Dinkey Creek Dirt Clods" },
-  { season: "2009", champion: "Kingsburg Killaz", runnerUp: "Canton HOFers", toiletBowl: "Chico Pico de Gallo" },
-  { season: "2010", champion: "Clovis Jets", runnerUp: "Winnemucca Muckers", toiletBowl: "Chico Pico de Gallo" },
-  { season: "2011", champion: "Chico Pico de Gallo", runnerUp: "Kingsburg Killaz", toiletBowl: "South Town Freedom Fighters" },
+  // in, exactly as the prize was awarded.
+  //
+  // **2006-2011 is the regular season alone, computed rather than transcribed** (Aug 2026). The
+  // history doc records no Total Points at all for those years, and that era measured a season
+  // over weeks 1-13: MFL's `playoffBrackets` reports `startWeek` 14 for all six. That is the same
+  // window `STAT_ERAS` labels `Regular season only`, so the column now reads each era the way the
+  // era itself recorded one. **The page says none of this**, deliberately: the column names a
+  // team and never a figure, so there is nothing on the table for a reader to compare across the
+  // boundary, and a note under it would explain a discrepancy nobody can see. A basis note
+  // shipped and was pulled the same day. The record of the split is here.
+  //
+  // The figures come from a sweep of `export?TYPE=weeklyResults` weeks 1-13 against each season's
+  // own id in `MFL_SEASONS`, filtered to the ten franchises of the `F.F.L.` conference, since the
+  // league ran inside the Keeper Alliance Network until 2015 and MFL's database still mixes the
+  // two (the trap `STAT_ERAS` documents). The sweep reproduces both of that era's transcribed
+  // records exactly, which is what makes it trustworthy: 1130 for Canton in 2011, the era high,
+  // and 612 for South Town in 2011, the era low. Season by season, runner-up in brackets:
+  //
+  //   2006  1065  Dinkey Creek Dirt Clods   (Winnemucca Muckers 1050)
+  //   2007   978  Canton HOFers             (Booty Bay Bandits 974)
+  //   2008   995  Visalia Viagra Vipers     (Winnemucca Muckers 959)
+  //   2009  1014  Booty Bay Bandits         (Canton HOFers 955)
+  //   2010   970  Canton HOFers             (Winnemucca Muckers 892)
+  //   2011  1130  Canton HOFers             (Arroyo Grande Bottom Feeders 1032)
+  //
+  // **Three of the six name a different team over the full season**, so the basis is doing real
+  // work rather than splitting hairs: counting the playoff weeks hands 2006 and 2008 to
+  // Winnemucca and 2007 to Booty Bay. No figure here carries decimals because MFL recorded whole
+  // points until 2023, the same reason `StatRecord.value` is a string.
+  //
+  // Retired teams (Chico, Canton, Collet, Biola, Booty Bay) are kept as their source writes them;
+  // they join on nothing and appear only here. Winnemucca is not one of them: it is the
+  // Riverstone Stoners' old name, folded by `TEAM_ALIASES` where the counting happens. **2009 puts Booty Bay Bandits
+  // in this table for the first time**, which is what gives them a Retired Owners line in the
+  // Trophy Case and what returns the Total Points column to that table; they had been a
+  // `TEAM_CITIES` entry and nothing else.
+  { season: "2006", champion: "Winnemucca Muckers", runnerUp: "Chico Pico de Gallo", toiletBowl: "Biola Slugglords", totalPoints: "Dinkey Creek Dirt Clods" },
+  { season: "2007", champion: "Chico Pico de Gallo", runnerUp: "Dinkey Creek Dirt Clods", toiletBowl: "Visalia Viagra Vipers", totalPoints: "Canton HOFers" },
+  { season: "2008", champion: "Winnemucca Muckers", runnerUp: "Chico Pico de Gallo", toiletBowl: "Dinkey Creek Dirt Clods", totalPoints: "Visalia Viagra Vipers" },
+  { season: "2009", champion: "Kingsburg Killaz", runnerUp: "Canton HOFers", toiletBowl: "Chico Pico de Gallo", totalPoints: "Booty Bay Bandits" },
+  { season: "2010", champion: "Clovis Jets", runnerUp: "Winnemucca Muckers", toiletBowl: "Chico Pico de Gallo", totalPoints: "Canton HOFers" },
+  { season: "2011", champion: "Chico Pico de Gallo", runnerUp: "Kingsburg Killaz", toiletBowl: "South Town Freedom Fighters", totalPoints: "Canton HOFers" },
   { season: "2012", champion: "Kingsburg Killaz", runnerUp: "Visalia Viagra Vipers", toiletBowl: "Chico Pico de Gallo", totalPoints: "Kingsburg Killaz" },
   { season: "2013", champion: "Visalia Viagra Vipers", runnerUp: "Chico Pico de Gallo", toiletBowl: "Winnemucca Muckers", totalPoints: "South Town Freedom Fighters" },
   { season: "2014", champion: "South Town Freedom Fighters", runnerUp: "Canton HOFers", toiletBowl: "Visalia Viagra Vipers", totalPoints: "South Town Freedom Fighters" },

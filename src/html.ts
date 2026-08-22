@@ -1888,11 +1888,12 @@ function trophyCounts(): { rows: TrophyRow[]; rawNames: Set<string> } {
  * The `HISTORY_COLUMNS` indexes a Trophy Case table actually renders: every column some row in it
  * has a count in.
  *
- * The Retired Owners table is the reason this exists. Total Points has only been recorded since
- * 2023 and every retired team left before then, so that column is structurally empty there, and a
- * column of nothing but dashes is width spent claiming a record was kept when it wasn't. Derived
- * rather than a hard-coded "retired tables show three columns", so the column comes back on its
- * own the day a retired team turns out to have won one.
+ * The Retired Owners table is the reason this exists, and that table has already exercised both
+ * directions. Total Points reached back only to 2012 while every retired team had left, so the
+ * column was structurally empty there and a column of nothing but dashes is width spent claiming
+ * a record was kept when it wasn't. Computing 2006-2011 in Aug 2026 gave Canton three and Booty
+ * Bay one, and the column came back on its own, which is the whole argument for deriving this
+ * rather than hard-coding "retired tables show three columns".
  */
 function scoredColumns(rows: TrophyRow[]): number[] {
   return HISTORY_COLUMNS.map((_, i) => i).filter((i) => rows.some((r) => r.counts[i] > 0));
