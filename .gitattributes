@@ -1,3 +1,16 @@
+# The toolchain writes LF: the generator, tsc, and the GitHub Actions runners that commit
+# data/ and output/ on a schedule. Every blob in this repo is already LF. Without this rule,
+# core.autocrlf=true on Windows checks files out as CRLF, and any file the generator then
+# rewrites is stuck reporting "modified" with an empty git diff — permanently, since
+# `git update-index --refresh` cannot clear it. Pinning eol=lf makes checkout agree with
+# what the tools write, so `git status` means what it says again.
+* text=auto eol=lf
+
+# Photos and brand marks. Auto-detection would catch these, but declaring them costs nothing
+# and keeps the intent readable beside the xlsx rule below.
+*.png binary
+*.jpg binary
+
 # Generated workbooks are zip archives. Git's binary auto-detection would almost certainly
 # catch them, but "almost" is the wrong bet for a committed artifact — a CRLF conversion
 # inside a deflate stream produces a file Excel refuses to open.
