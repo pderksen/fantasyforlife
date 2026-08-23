@@ -80,10 +80,375 @@
   <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
     <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-8">Official Rules</h1>
     <section class="mb-10">
-      <div class="bg-white border border-line rounded-xl px-5 py-5 max-w-[720px]">
-        <p class="text-[15px] leading-relaxed mt-0 mb-0">
-          <span class="font-bold">The 2026 rules are being finalized.</span><span class="text-stone"> Until they land here, the 2025 rules below are the league&rsquo;s most recent published set.</span>
-        </p>
+      <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">On this page</h2>
+      <div class="bg-white border border-line rounded-xl px-5 py-5">
+        <div class="grid gap-x-6 gap-y-2 sm:grid-cols-2 md:grid-cols-3">
+        <a href="#whats-new" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">New in 2026</a>
+        <a href="#league-basics" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">League Basics</a>
+        <a href="#scoring" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Scoring</a>
+        <a href="#lineups" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Lineups</a>
+        <a href="#injured-reserve" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Injured Reserve</a>
+        <a href="#waivers-faab" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Waivers &amp; FAAB</a>
+        <a href="#trades" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Trades</a>
+        <a href="#keepers" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Keepers</a>
+        <a href="#draft" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Draft Day</a>
+        <a href="#schedule-playoffs" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Schedule &amp; Playoffs</a>
+        <a href="#prizes" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Entry Fee &amp; Prizes</a>
+        <a href="#fair-play" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Fair Play &amp; Sportsmanship</a>
+        <a href="#survivor" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Survivor Contest</a>
+        <a href="#past-rules" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Past Years’ Rules</a>
+        </div>
+      </div>
+    </section>
+    <section id="whats-new" class="mb-10 scroll-mt-6">
+      <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">New in 2026</h2>
+      <div class="bg-white border border-line rounded-xl px-5 py-5">
+        <ul class="m-0 p-0 list-none flex flex-col gap-3">
+          <li class="text-[15px] leading-snug"><span class="font-semibold">No more divisions.</span> The top two records take the top two seeds and the first-round byes.</li>
+          <li class="text-[15px] leading-snug"><span class="font-semibold">The schedule is random.</span> Without divisions, which opponents you play once and which you play twice is drawn at random.</li>
+          <li class="text-[15px] leading-snug"><span class="font-semibold">Week 14 is a random rematch.</span> A second meeting with an opponent, also drawn at random. Sleeper gives no way to set it.</li>
+          <li class="text-[15px] leading-snug"><span class="font-semibold">No trading picks into a throwback year.</span> Draft picks that land on a throwback season can't change hands. The next throwback year is 2030, five years after the last.</li>
+          <li class="text-[15px] leading-snug"><span class="font-semibold">Prizes are simplified and updated.</span> Fewer lines and bigger payouts. The two division prizes retired along with the divisions, and that money went into the points ladder. <a href="prizes.html" class="text-moss no-underline transition-opacity hover:opacity-70 font-semibold whitespace-nowrap">See Prize Tracker &#8594;</a></li>
+        </ul>
+      </div>
+    </section>
+    <section id="league-basics" class="mb-10 scroll-mt-6">
+      <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">League Basics</h2>
+      <div class="bg-white border border-line rounded-xl px-5 py-5">
+        <p class="text-[15px] leading-relaxed mt-0 mb-3 last:mb-0">The FFL (Fantasy For Life) is a 10-owner keeper league established in 2006, hosted on <a href="https://sleeper.com/leagues" target="_blank" rel="noopener noreferrer" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">Sleeper</a> since 2025. Every season back to the beginning is on the <a href="history.html" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">League History</a> page.</p>
+        <ul class="list-disc pl-5 text-[15px] leading-relaxed flex flex-col gap-1.5 mt-0 mb-3 last:mb-0">
+          <li class="pl-1">Weekly starting lineup: 1 QB, 2 RB, 2 WR, 1 TE, 1 Flex (RB/WR/TE), 1 Superflex (QB/RB/WR/TE), 1 K, 1 Def/ST.</li>
+          <li class="pl-1">Roster limit: 17 players, with at most 4 QBs. Sleeper enforces both. <a href="https://support.sleeper.com/en/articles/5379935-how-do-i-set-positional-limits" target="_blank" rel="noopener noreferrer" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">How do I set positional limits?</a></li>
+          <li class="pl-1">Your roster must always hold enough players at each position to field a full lineup.</li>
+          <li class="pl-1">3 players are kept into the next season, except into a throwback year (every fifth season: 2025, 2030, ...), when nobody keeps anyone and all 10 teams draft fresh.</li>
+        </ul>
+      </div>
+    </section>
+    <section id="scoring" class="mb-10 scroll-mt-6">
+      <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Scoring</h2>
+      <div class="bg-white border border-line rounded-xl px-5 py-5">
+        <p class="text-[15px] leading-relaxed mt-0 mb-3 last:mb-0">Scoring is unchanged from 2025 and is scored to two decimal places. The full settings live in the Sleeper app under League Settings, and every player's weekly line can be opened play by play. <a href="https://support.sleeper.com/en/articles/4126744-how-can-i-see-my-player-s-points-breakdown" target="_blank" rel="noopener noreferrer" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">How can I see my player's points breakdown?</a></p>
+        <h3 class="text-[17px] font-bold tracking-tight text-ink mt-6 mb-3 first:mt-0">Passing</h3>
+        <div class="tbl-scroll overflow-x-auto mb-3 last:mb-0">
+          <table class="w-max min-w-full border-separate border-spacing-0 text-left">
+            <thead class="bg-shell">
+            <tr>
+              <th class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-[9px] text-[11px] font-medium tracking-[0.12em] uppercase text-stone whitespace-nowrap text-left">Play</th>
+              <th class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-[9px] text-[11px] font-medium tracking-[0.12em] uppercase text-stone whitespace-nowrap text-left">Points</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">Passing TD</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">5</td>
+            </tr>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">Passing yards</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">1 per 25 (0.04 per yard)</td>
+            </tr>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">Interception thrown</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">-2</td>
+            </tr>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">2-point conversion</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">2</td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+        <h3 class="text-[17px] font-bold tracking-tight text-ink mt-6 mb-3 first:mt-0">Rushing / Receiving</h3>
+        <div class="tbl-scroll overflow-x-auto mb-3 last:mb-0">
+          <table class="w-max min-w-full border-separate border-spacing-0 text-left">
+            <thead class="bg-shell">
+            <tr>
+              <th class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-[9px] text-[11px] font-medium tracking-[0.12em] uppercase text-stone whitespace-nowrap text-left">Play</th>
+              <th class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-[9px] text-[11px] font-medium tracking-[0.12em] uppercase text-stone whitespace-nowrap text-left">Points</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">Rushing or receiving TD</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">6</td>
+            </tr>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">Rushing or receiving yards</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">1 per 10 (0.1 per yard)</td>
+            </tr>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">Reception</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">1 (full PPR)</td>
+            </tr>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">2-point conversion</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">2</td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+        <h3 class="text-[17px] font-bold tracking-tight text-ink mt-6 mb-3 first:mt-0">Kicking</h3>
+        <div class="tbl-scroll overflow-x-auto mb-3 last:mb-0">
+          <table class="w-max min-w-full border-separate border-spacing-0 text-left">
+            <thead class="bg-shell">
+            <tr>
+              <th class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-[9px] text-[11px] font-medium tracking-[0.12em] uppercase text-stone whitespace-nowrap text-left">Play</th>
+              <th class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-[9px] text-[11px] font-medium tracking-[0.12em] uppercase text-stone whitespace-nowrap text-left">Points</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">Extra point</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">1</td>
+            </tr>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">Field goal, up to 49 yards</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">3</td>
+            </tr>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">Field goal, 50+ yards</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">4</td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+        <h3 class="text-[17px] font-bold tracking-tight text-ink mt-6 mb-3 first:mt-0">Defense / Special Teams</h3>
+        <div class="tbl-scroll overflow-x-auto mb-3 last:mb-0">
+          <table class="w-max min-w-full border-separate border-spacing-0 text-left">
+            <thead class="bg-shell">
+            <tr>
+              <th class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-[9px] text-[11px] font-medium tracking-[0.12em] uppercase text-stone whitespace-nowrap text-left">Play</th>
+              <th class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-[9px] text-[11px] font-medium tracking-[0.12em] uppercase text-stone whitespace-nowrap text-left">Points</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">TD (any type)</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">6</td>
+            </tr>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">Safety</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">5</td>
+            </tr>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">Interception</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">2</td>
+            </tr>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">Fumble recovery</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">2</td>
+            </tr>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">Blocked punt or field goal</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">2</td>
+            </tr>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">Sack</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">1</td>
+            </tr>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">Shutout (0 points allowed)</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">10</td>
+            </tr>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">1–6 points allowed</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">5</td>
+            </tr>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">35+ points allowed</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">-5</td>
+            </tr>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">Defensive 2-point conversion return</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">2</td>
+            </tr>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">1-point safety</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">1</td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+        <h3 class="text-[17px] font-bold tracking-tight text-ink mt-6 mb-3 first:mt-0">Scoring notes</h3>
+        <ul class="list-disc pl-5 text-[15px] leading-relaxed flex flex-col gap-1.5 mt-0 mb-3 last:mb-0">
+          <li class="pl-1">Every TD is worth 6 points except a passing TD (5). Return and defensive TDs count for the individual player and for the Def/ST when its unit was on the field.</li>
+          <li class="pl-1">All offensive players can score in every category. A kicker who throws a TD pass on a fake field goal gets the passing points.</li>
+          <li class="pl-1">Return yardage is not scored, for individuals or defenses. Return TDs are.</li>
+          <li class="pl-1">Points allowed only count while the opposing offense or special teams are on the field, so a touchdown thrown against your defense's opponent does not raise your points allowed. <a href="https://support.sleeper.com/en/articles/4126495-how-are-points-allowed-calculated" target="_blank" rel="noopener noreferrer" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">How are Points Allowed calculated?</a></li>
+          <li class="pl-1">Sleeper applies official NFL stat corrections automatically in the days after the games. <a href="https://support.sleeper.com/en/articles/2441282-stat-corrections" target="_blank" rel="noopener noreferrer" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">Stat Corrections</a></li>
+          <li class="pl-1">Scoring disputes go to the commissioner by Wednesday 9pm PT of that week; scores are final after that week's corrections land.</li>
+        </ul>
+      </div>
+    </section>
+    <section id="lineups" class="mb-10 scroll-mt-6">
+      <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Lineups</h2>
+      <div class="bg-white border border-line rounded-xl px-5 py-5">
+        <ul class="list-disc pl-5 text-[15px] leading-relaxed flex flex-col gap-1.5 mt-0 mb-3 last:mb-0">
+          <li class="pl-1">Set your lineup in the Sleeper app. Lineups carry over from week to week, and a carried-over lineup will happily start players on bye or out injured, so check yours every week.</li>
+          <li class="pl-1">Players lock at kickoff of their own game, starters and bench alike. A locked player can't be moved in or out of your lineup.</li>
+          <li class="pl-1">Sleeper's AutoSubs can automatically replace a starter who is ruled inactive with a bench player you designate ahead of time, up to 3 substitutions per week. <a href="https://support.sleeper.com/en/articles/9731991-how-does-player-autosubs-work" target="_blank" rel="noopener noreferrer" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">How does Player AutoSubs work?</a></li>
+          <li class="pl-1">Submitting a deliberately partial lineup for tactical reasons is allowed.</li>
+          <li class="pl-1">Abandoning your lineup is a serious offense: an obviously dead lineup left to ride costs $25 of FAAB, and a pattern of it is grounds for not being invited back.</li>
+          <li class="pl-1">Flex and Superflex take whatever positions Sleeper designates a player. <a href="https://support.sleeper.com/en/articles/4298804-which-players-are-dual-eligible-on-sleeper" target="_blank" rel="noopener noreferrer" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">Which players are dual-eligible on Sleeper?</a></li>
+        </ul>
+      </div>
+    </section>
+    <section id="injured-reserve" class="mb-10 scroll-mt-6">
+      <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Injured Reserve</h2>
+      <div class="bg-white border border-line rounded-xl px-5 py-5">
+        <ul class="list-disc pl-5 text-[15px] leading-relaxed flex flex-col gap-1.5 mt-0 mb-3 last:mb-0">
+          <li class="pl-1">One IR slot per team, usable all season.</li>
+          <li class="pl-1">A player is IR-eligible when Sleeper lists them as IR, Out, or Doubtful. Suspensions and holdouts do not qualify. <a href="https://support.sleeper.com/en/articles/3570017-injury-statuses-and-ir-eligibility" target="_blank" rel="noopener noreferrer" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">Injury Statuses and IR Eligibility</a></li>
+          <li class="pl-1">When a stashed player's status improves, the slot turns illegal and you must activate or drop them before making other moves. <a href="https://support.sleeper.com/en/articles/1983643-how-does-injured-reserve-ir-work" target="_blank" rel="noopener noreferrer" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">How does Injured Reserve (IR) work?</a></li>
+        </ul>
+      </div>
+    </section>
+    <section id="waivers-faab" class="mb-10 scroll-mt-6">
+      <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Waivers &amp; FAAB</h2>
+      <div class="bg-white border border-line rounded-xl px-5 py-5">
+        <p class="text-[15px] leading-relaxed mt-0 mb-3 last:mb-0">Every pickup goes through Sleeper's waiver and free agent system, and you make your own: commissioners are not responsible for running pickups for anyone.</p>
+        <ul class="list-disc pl-5 text-[15px] leading-relaxed flex flex-col gap-1.5 mt-0 mb-3 last:mb-0">
+          <li class="pl-1">Each team gets a $100 FAAB budget for the season (virtual dollars, nothing to do with real money). Players on waivers go to the highest blind bid; $0 bids are allowed, whole dollars only. <a href="https://support.sleeper.com/en/articles/1876040-how-does-faab-bidding-work" target="_blank" rel="noopener noreferrer" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">How does FAAB bidding work?</a></li>
+          <li class="pl-1">Waiver claims process Wednesday evening. After they clear, unclaimed players are free agents on a first-come, first-served basis until their next game kicks off. Players on bye can be added until Monday 9pm.</li>
+          <li class="pl-1">Tied bids go to the higher waiver priority, which starts the season as reverse draft order and rolls back as claims are won.</li>
+          <li class="pl-1">A claim that would push you past 17 players must name a drop, or it fails. <a href="https://support.sleeper.com/en/articles/3978623-why-was-my-waiver-claim-invalid" target="_blank" rel="noopener noreferrer" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">Why was my waiver claim invalid?</a></li>
+          <li class="pl-1">A dropped player can be picked up right away by any other team, subject to the waiver state Sleeper puts them in. Two teams using drops and pickups to move players around a trade is a fair-play violation, and the commissioner can undo it.</li>
+          <li class="pl-1">Waivers and pickups run through the playoffs, and week 1 claims are open before any games start. Keepers are taken from rosters as they stand after the final week, so playoff-week moves change what you can keep. <a href="https://support.sleeper.com/en/articles/3978868-waivers-for-regular-season-playoffs" target="_blank" rel="noopener noreferrer" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">Waivers for Regular Season &amp; Playoffs</a></li>
+          <li class="pl-1">FAAB dollars can be traded, as long as nobody ends up holding more than $100.</li>
+        </ul>
+      </div>
+    </section>
+    <section id="trades" class="mb-10 scroll-mt-6">
+      <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Trades</h2>
+      <div class="bg-white border border-line rounded-xl px-5 py-5">
+        <ul class="list-disc pl-5 text-[15px] leading-relaxed flex flex-col gap-1.5 mt-0 mb-3 last:mb-0">
+          <li class="pl-1">The trade deadline is before week 11's games. Trading reopens after the Super Bowl and runs all offseason. <a href="https://support.sleeper.com/en/articles/2435411-when-is-my-trade-deadline" target="_blank" rel="noopener noreferrer" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">When is my trade deadline?</a></li>
+          <li class="pl-1">No limit on trades per season. Propose, counter and accept in the app. <a href="https://support.sleeper.com/en/articles/3188802-how-to-trade" target="_blank" rel="noopener noreferrer" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">How to Trade</a></li>
+          <li class="pl-1">Trades can include players, draft picks and FAAB dollars. Picks can come from any round of any future season, except that picks landing on a throwback year (2030 is the next) cannot be traded. <a href="https://support.sleeper.com/en/articles/3974639-can-i-trade-draft-picks" target="_blank" rel="noopener noreferrer" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">Can I trade draft picks?</a></li>
+          <li class="pl-1">An accepted trade sits in review for up to 2 days before it processes. Trades are reviewed by the commissioner, not by league vote.</li>
+          <li class="pl-1">A trade may not leave either roster over 17 players. If you need room, drop before the trade processes.</li>
+          <li class="pl-1">After keepers are declared, only kept players and draft picks can change hands until the draft.</li>
+          <li class="pl-1">Trade-backs are banned: no trading a player away with a plan to get the same player back in the weeks after.</li>
+          <li class="pl-1">Trades must be fair, balanced and mutually beneficial, and the commissioner can reject any that isn't. See <a href="#fair-play" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">Fair Play &amp; Sportsmanship</a>.</li>
+        </ul>
+      </div>
+    </section>
+    <section id="keepers" class="mb-10 scroll-mt-6">
+      <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Keepers</h2>
+      <div class="bg-white border border-line rounded-xl px-5 py-5">
+        <p class="text-[15px] leading-relaxed mt-0 mb-3 last:mb-0">This is a 3-player keeper league. Keeping only 3 is what keeps the draft meaningful and gives a losing season a real reset. Rosters split into three tiers by draft round, and you keep one player from each tier.</p>
+        <p class="text-[15px] leading-relaxed mt-0 mb-3 last:mb-0">The tier boundaries depend on which kind of draft the players came out of. A throwback year (and the league's first year) drafts the full 17-man roster, so the tiers spread across all 17 rounds. In a keeper year the 3 keepers fill the top slots and the draft runs 14 rounds, so the boundaries sit higher up.</p>
+        <div class="tbl-scroll overflow-x-auto mb-3 last:mb-0">
+          <table class="w-max min-w-full border-separate border-spacing-0 text-left">
+            <thead class="bg-shell">
+            <tr>
+              <th class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-[9px] text-[11px] font-medium tracking-[0.12em] uppercase text-stone whitespace-nowrap text-left">Tier</th>
+              <th class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-[9px] text-[11px] font-medium tracking-[0.12em] uppercase text-stone whitespace-nowrap text-left">Throwback-year draft</th>
+              <th class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-[9px] text-[11px] font-medium tracking-[0.12em] uppercase text-stone whitespace-nowrap text-left">Keeper-year draft</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">1</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">Rounds 1–5</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">Rounds 1–3</td>
+            </tr>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">2</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">Rounds 6–10</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">Rounds 4–8</td>
+            </tr>
+            <tr>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">3</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">Rounds 11+, and undrafted pickups</td>
+              <td class="px-2 md:px-4 first:pl-3 md:first:pl-5 last:pr-3 md:last:pr-5 py-2.5 border-t border-rule text-[13px] md:text-[15px] whitespace-nowrap">Rounds 9+, and undrafted pickups</td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+        <ul class="list-disc pl-5 text-[15px] leading-relaxed flex flex-col gap-1.5 mt-0 mb-3 last:mb-0">
+          <li class="pl-1">A player's tier reads off the draft he was actually taken in. Picking 2026 keepers means the 2025 throwback rounds; picking 2027 keepers next winter will mean the 2026 keeper-year rounds.</li>
+          <li class="pl-1">You can always substitute downward: in place of a higher-tier keeper, keep an extra player from a lower tier (two Tier 3s and a Tier 1, say). Never the reverse.</li>
+          <li class="pl-1">A kept player climbs one tier for the next season, no matter how many keepers shared his tier.</li>
+          <li class="pl-1">Free agent pickups count as Tier 3. A traded player keeps the tier he was originally drafted in, and a dropped and re-added player keeps his drafted round.</li>
+          <li class="pl-1">Example: off the 2025 throwback roster, keep a round-2 pick (Tier 1), a round-8 pick (Tier 2) and a waiver pickup (Tier 3). In 2026 the first two count as Tier 1 and the pickup as Tier 2, and the draft runs 14 rounds against the keeper-year boundaries.</li>
+          <li class="pl-1">Declare keepers in the Sleeper app before the draft; selections can be revised up to 24 hours before it. Until then everyone holds their full 17-man roster to study and trade with.</li>
+          <li class="pl-1">Keeper rosters lock when the final week of the season completes, so playoff-week pickups and drops change your keeper options.</li>
+          <li class="pl-1">Where everyone's roster actually tiers out, season by season, is on <a href="tiers.html" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">Keeper Tiers</a>.</li>
+        </ul>
+      </div>
+    </section>
+    <section id="draft" class="mb-10 scroll-mt-6">
+      <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Draft Day</h2>
+      <div class="bg-white border border-line rounded-xl px-5 py-5">
+        <ul class="list-disc pl-5 text-[15px] leading-relaxed flex flex-col gap-1.5 mt-0 mb-3 last:mb-0">
+          <li class="pl-1">Draft order comes out of the previous season's brackets: every eliminated team plays on for its slot, the champion picks last and the losers bracket winner picks first. The full slotting is under <a href="#schedule-playoffs" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">Schedule &amp; Playoffs</a>. In a throwback year the order is drawn by lottery instead.</li>
+          <li class="pl-1">After round 1, the draft snakes: standard serpentine order. <a href="https://support.sleeper.com/en/articles/1876072-what-draft-types-are-supported" target="_blank" rel="noopener noreferrer" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">What draft types are supported?</a></li>
+          <li class="pl-1">Be there. An owner who truly cannot attend (or part of it) must send a representative, and the representative cannot be another owner in this league. No double drafting and no phone drafting; a stand-in leaves when the owner arrives.</li>
+          <li class="pl-1">You can trade picks during the draft, but the clock does not stop while you work out the details. Trade while other teams are picking. <a href="https://support.sleeper.com/en/articles/4027030-can-i-trade-during-a-draft" target="_blank" rel="noopener noreferrer" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">Can I trade during a draft?</a></li>
+          <li class="pl-1">Every roster leaves the draft at exactly 17 players, so teams that traded picks away or collected extras make their final picks accordingly.</li>
+        </ul>
+      </div>
+    </section>
+    <section id="schedule-playoffs" class="mb-10 scroll-mt-6">
+      <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Schedule &amp; Playoffs</h2>
+      <div class="bg-white border border-line rounded-xl px-5 py-5">
+        <p class="text-[15px] leading-relaxed mt-0 mb-3 last:mb-0">The regular season runs 14 weeks. With divisions gone, the schedule is drawn at random: which opponents you meet twice is the luck of the draw, and week 14 is a second meeting with a randomly drawn opponent. Week 14 counts like any other game in the standings, but not toward head-to-head tiebreakers.</p>
+        <h3 class="text-[17px] font-bold tracking-tight text-ink mt-6 mb-3 first:mt-0">Playoffs</h3>
+        <ul class="list-disc pl-5 text-[15px] leading-relaxed flex flex-col gap-1.5 mt-0 mb-3 last:mb-0">
+          <li class="pl-1">Playoffs run weeks 15–17. The top 6 records make the championship bracket, and the top 2 take the first-round byes; the other 4 teams enter the losers bracket. <a href="https://support.sleeper.com/en/articles/2203518-how-do-playoff-teams-get-determined" target="_blank" rel="noopener noreferrer" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">How do playoff teams get determined?</a></li>
+          <li class="pl-1">Round 1 is #3 vs #6 and #4 vs #5. The bracket re-seeds after round 1, so the #1 seed faces the lowest surviving seed.</li>
+          <li class="pl-1">One loss eliminates. The champion's name goes on the trophy, which they hold until the next champion takes it.</li>
+          <li class="pl-1">A regular-season tie stands as a tie on your record. A playoff tie goes to the higher seed.</li>
+        </ul>
+        <h3 class="text-[17px] font-bold tracking-tight text-ink mt-6 mb-3 first:mt-0">Seeding tiebreakers</h3>
+        <ol class="list-decimal pl-5 text-[15px] leading-relaxed flex flex-col gap-1.5 mt-0 mb-3 last:mb-0">
+          <li class="pl-1">Head-to-head record</li>
+          <li class="pl-1">Points scored against each other (two-team ties only)</li>
+          <li class="pl-1">Total points scored in all games</li>
+          <li class="pl-1">Most weekly wins if the tied teams had played every team every week; if three or more are still tied, count second-place weeks, then third, and so on</li>
+          <li class="pl-1">Coin toss</li>
+        </ol>
+        <p class="text-[15px] leading-relaxed mt-0 mb-3 last:mb-0">In a multi-way tie the list runs until one team can be placed, then starts back at the top with the teams remaining, until everyone is seeded.</p>
+        <h3 class="text-[17px] font-bold tracking-tight text-ink mt-6 mb-3 first:mt-0">Losers bracket</h3>
+        <ul class="list-disc pl-5 text-[15px] leading-relaxed flex flex-col gap-1.5 mt-0 mb-3 last:mb-0">
+          <li class="pl-1">Round 1 is #7 vs #10 and #8 vs #9. In round 2 the winners play each other and the losers play each other.</li>
+          <li class="pl-1">The loser of the round 1 losers' matchup is the Toilet Bowl champion, with a trophy of their own to hold all year. <a href="https://support.sleeper.com/en/articles/2203534-consolation-bracket-vs-toilet-bowl" target="_blank" rel="noopener noreferrer" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">Consolation Bracket vs. Toilet Bowl</a></li>
+        </ul>
+        <h3 class="text-[17px] font-bold tracking-tight text-ink mt-6 mb-3 first:mt-0">Next season's draft order</h3>
+        <ul class="list-disc pl-5 text-[15px] leading-relaxed flex flex-col gap-1.5 mt-0 mb-3 last:mb-0">
+          <li class="pl-1">The champion picks last (#10) next year and the runner-up #9.</li>
+          <li class="pl-1">Semifinal losers play once more: the winner takes 3rd place and pick #5, the loser #6.</li>
+          <li class="pl-1">Round 1 playoff losers play once more: the winner takes #7, the loser #8.</li>
+          <li class="pl-1">The losers bracket winner picks first (#1) and its runner-up #2. The Toilet Bowl champion picks #4, and the team that beat them #3.</li>
+          <li class="pl-1">Want a later slot than you earned? Throw your losers bracket games without punishment, or trade picks with another owner.</li>
+        </ul>
+      </div>
+    </section>
+    <section id="prizes" class="mb-10 scroll-mt-6">
+      <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Entry Fee &amp; Prizes</h2>
+      <div class="bg-white border border-line rounded-xl px-5 py-5">
+        <p class="text-[15px] leading-relaxed mt-0 mb-3 last:mb-0">The entry fee is $160, due by draft day, and every dollar of it goes back out as prize money. Payouts, season status and the all-time ledger live on the <a href="prizes.html" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">Prize Tracker</a>.</p>
+      </div>
+    </section>
+    <section id="fair-play" class="mb-10 scroll-mt-6">
+      <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Fair Play &amp; Sportsmanship</h2>
+      <div class="bg-white border border-line rounded-xl px-5 py-5">
+        <ul class="list-disc pl-5 text-[15px] leading-relaxed flex flex-col gap-1.5 mt-0 mb-3 last:mb-0">
+          <li class="pl-1">Every transaction must be made with the intent of improving your own team or its standing.</li>
+          <li class="pl-1">Collusion is banned: no two owners agreeing to moves that benefit one team at the other's expense (roster dumping).</li>
+          <li class="pl-1">The commissioner can cancel any transaction that violates these rules.</li>
+          <li class="pl-1">For anything these rules don't cover, the commissioner has the final say.</li>
+        </ul>
+      </div>
+    </section>
+    <section id="survivor" class="mb-10 scroll-mt-6">
+      <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Survivor Contest</h2>
+      <div class="bg-white border border-line rounded-xl px-5 py-5">
+        <p class="text-[15px] leading-relaxed mt-0 mb-3 last:mb-0">An optional side contest, $10 per person due on draft day, winner take all (ties split). It runs in its own Sleeper league that only the mobile app shows.</p>
+        <ul class="list-disc pl-5 text-[15px] leading-relaxed flex flex-col gap-1.5 mt-0 mb-3 last:mb-0">
+          <li class="pl-1">Pick one NFL team to win each week. A loss or tie is a strike, and two strikes end your run.</li>
+          <li class="pl-1">A team can only be picked once. Taking a strike resets the list of teams available to you.</li>
+        </ul>
       </div>
     </section>
     <section id="past-rules" class="mb-10 scroll-mt-6">

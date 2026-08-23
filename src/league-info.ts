@@ -1010,6 +1010,37 @@ export function prizeSeasons(): string[] {
 
 // -- Rule changes --
 
+/**
+ * The league's structural numbers, stated once.
+ *
+ * Every figure here appears in rules prose more than once, and each is a `{token}` filled by
+ * `fillRuleTokens()` in `html.ts` rather than typed where it is used: change the roster limit
+ * to 18 and every sentence quoting it moves together, which is the entire point. A figure used
+ * in one place does not earn an entry — type it where it lives.
+ *
+ * Hand-kept and verified against the current Sleeper league rather than fetched, the same call
+ * every constant in this file makes: `--generate` must stay deterministic, and these change by
+ * league vote, not by API drift. The entry fee is deliberately absent — it stays in
+ * `PRIZE_SEASONS`, which the Prize Tracker renders, so the two pages cannot disagree.
+ */
+export const LEAGUE_FACTS = {
+  /** Owners in the league. */
+  teamCount: 10,
+  /** Roster limit, bench included (verified: 2026 `roster_positions` has 17 slots). */
+  rosterLimit: 17,
+  /** Players kept into the next season (`settings.max_keepers`). */
+  keeperCount: 3,
+  /** Most QBs one roster may hold (`settings.position_limit_qb`, added with Superflex). */
+  qbLimit: 4,
+  /** FAAB blind-bidding budget for the season, in virtual dollars (`settings.waiver_budget`). */
+  faabBudget: 100,
+  /**
+   * Trading stays open through this week's games and closes when its last one ends
+   * (`settings.trade_deadline`; Sleeper's deadline is the end of the named week, not its start).
+   */
+  tradeDeadlineWeek: 11,
+};
+
 /** One rule, as a bold lead-in and the sentence that qualifies it. */
 export interface RuleNote {
   /** The rule in a few words, rendered bold. Ends in a period; it is read as a sentence opener. */
@@ -1077,6 +1108,16 @@ export const RULE_CHANGES: Record<string, RuleChanges> = {
         detail: "A second meeting with an opponent, also drawn at random. Sleeper gives no way to set it.",
       },
       {
+        label: "Simpler playoff tiebreakers.",
+        detail: "Seeding ties break by total points scored, then total points against, the same order the standings show all season. The old head-to-head ladder retires with the divisions.",
+        link: { href: "rules.html#schedule-playoffs", label: "See the playoff rules" },
+      },
+      {
+        label: "AutoSubs are on.",
+        detail: "Name a bench player ahead of time and Sleeper starts him automatically if your starter is ruled inactive, up to 3 a week.",
+        link: { href: "rules.html#lineups", label: "See the lineup rules" },
+      },
+      {
         label: "No trading picks into a throwback year.",
         detail: "Draft picks that land on a throwback season can't change hands. The next throwback year is 2030, five years after the last.",
       },
@@ -1112,6 +1153,7 @@ export const RULE_CHANGES: Record<string, RuleChanges> = {
         detail: "Want a later slot than you were awarded? Throw your games in the losers bracket without punishment, or trade draft picks with another owner.",
       },
     ],
+    rulesHref: "rules.html",
   },
 };
 

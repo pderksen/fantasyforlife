@@ -28,6 +28,8 @@ import {
   TEAM_ALIASES,
   ACTIVE_TEAMS,
   PRIZE_SEASONS,
+  LEAGUE_FACTS,
+  RULE_CHANGES,
   draftResultsUrl,
   getDraftDate,
   getLatestHonors,
@@ -1043,27 +1045,62 @@ function honorsHtml(): string {
  *
  * `LINK` plus weight, and `nowrap` so the label and its arrow never split across lines. Moss
  * alone at 15px, sitting after a sentence that opens on a bold lead-in, does not read as
- * clickable — the same problem `ARCHIVE_NOTE` solves with an underline on the tiers hub. An
- * underline is not available here: that one is the site's only underlined link, and a second
- * would stop the first from meaning anything.
+ * clickable — the same problem `ARCHIVE_NOTE` and `RULES_PROSE_LINK` solve with the soft
+ * underline. Weight rather than underline here because a card list holds only a few of these
+ * and each closes a line that opened bold, where the arrowed pointer reads as part of the
+ * rule's typography; the underline belongs to links sitting in running prose.
  */
 const RULE_LINK = `${LINK} font-semibold whitespace-nowrap`;
 
 /**
- * Fills `{entryFee}` in a rule's label or detail from `PRIZE_SEASONS`.
+ * Fills `{token}`s in rules prose from the objects that own each figure.
  *
- * The one prize figure this card is allowed, and it is not written into `RULE_CHANGES`: the
- * entry fee is what an owner needs before a season starts, and reading it out of the object
- * the Prize Tracker renders is what keeps the two pages from ever quoting different numbers.
- * That is the same reason the derived figures row was dropped, not an exception to it.
+ * Two sources, deliberately separate. `{entryFee}` comes from `PRIZE_SEASONS`: the one prize
+ * figure rules prose is allowed, read out of the object the Prize Tracker renders so the two
+ * pages can never quote different numbers. Everything else comes from `LEAGUE_FACTS` in
+ * `league-info.ts`, which states each structural number once — `{rosterLimit}`, `{keeperCount}`,
+ * `{teamCount}`, `{qbLimit}`, `{faabBudget}`, `{tradeDeadlineWeek}` — plus `{draftRounds}`,
+ * derived as roster limit minus keepers so the two can never disagree with their difference.
+ * Both the home page's rule-changes card and the Official Rules page fill through this one
+ * function, which is what keeps a figure from drifting between them.
  *
- * A season with no prize pool recorded leaves the token standing rather than substituting an
+ * A season with no prize pool recorded leaves `{entryFee}` standing rather than substituting an
  * empty string, so a missing entry reads as an obvious placeholder instead of a sentence with
- * a word silently cut out of it.
+ * a word silently cut out of it. The fact tokens have no missing state to guard.
  */
 function fillRuleTokens(text: string, season: string): string {
   const fee = PRIZE_SEASONS[season]?.entryFee;
-  return fee === undefined ? text : text.replaceAll("{entryFee}", money(fee));
+  let out = fee === undefined ? text : text.replaceAll("{entryFee}", money(fee));
+
+  const facts: Record<string, string> = {
+    teamCount: String(LEAGUE_FACTS.teamCount),
+    rosterLimit: String(LEAGUE_FACTS.rosterLimit),
+    keeperCount: String(LEAGUE_FACTS.keeperCount),
+    qbLimit: String(LEAGUE_FACTS.qbLimit),
+    faabBudget: money(LEAGUE_FACTS.faabBudget),
+    tradeDeadlineWeek: String(LEAGUE_FACTS.tradeDeadlineWeek),
+    draftRounds: String(LEAGUE_FACTS.rosterLimit - LEAGUE_FACTS.keeperCount),
+  };
+  for (const [token, value] of Object.entries(facts)) {
+    out = out.replaceAll(`{${token}}`, value);
+  }
+  return out;
+}
+
+/**
+ * One rule as a list item: bold lead-in, detail, optional pointer at the end of the sentence.
+ *
+ * The pointer sits inside the sentence rather than on its own line: a rule that points
+ * somewhere is still a rule, and a block-level link under it would read as the list's own
+ * navigation. Shared by the home card's two lists and the rules page's New-in-season section,
+ * so a `RuleNote` renders the same wherever it appears. Returns the `<li>` unindented; the
+ * caller owns the whitespace.
+ */
+function ruleNoteLi(n: RuleNote, season: string): string {
+  const link = n.link
+    ? ` <a href="${esc(n.link.href)}" class="${RULE_LINK}">${esc(n.link.label)} &#8594;</a>`
+    : "";
+  return `<li class="text-[15px] leading-snug"><span class="font-semibold">${esc(fillRuleTokens(n.label, season))}</span> ${esc(fillRuleTokens(n.detail, season))}${link}</li>`;
 }
 
 /**
@@ -1074,14 +1111,7 @@ function fillRuleTokens(text: string, season: string): string {
  */
 function ruleListHtml(title: string, notes: RuleNote[], season: string): string {
   const items = notes
-    .map((n) => {
-      // Inside the sentence rather than on its own line: a rule that points somewhere is still
-      // a rule, and a block-level link under it would read as the list's own navigation.
-      const link = n.link
-        ? ` <a href="${esc(n.link.href)}" class="${RULE_LINK}">${esc(n.link.label)} &#8594;</a>`
-        : "";
-      return `                <li class="text-[15px] leading-snug"><span class="font-semibold">${esc(fillRuleTokens(n.label, season))}</span> ${esc(fillRuleTokens(n.detail, season))}${link}</li>`;
-    })
+    .map((n) => `                ${ruleNoteLi(n, season)}`)
     .join("\n");
 
   return `            <div>
@@ -2891,6 +2921,47 @@ ${backToTopHtml()}
 // ── Official Rules ──
 
 /**
+ * An inline link inside rules prose: moss with the soft underline, `ARCHIVE_NOTE`'s treatment
+ * at body size.
+ *
+ * Underlined where almost nothing on the site is, because this is the context the underline
+ * convention actually serves: a page of running prose whose links sit mid-sentence, where moss
+ * alone at 15px reads as emphasis rather than as somewhere to go. The card lists solve the same
+ * problem with `RULE_LINK`'s weight instead, which works at three links and turns spotty at the
+ * twenty a rules set carries — bold that often would compete with the bold rule lead-ins around
+ * it. `decoration-moss/40` keeps the rule reading as an affordance rather than emphasis, the
+ * same call `ARCHIVE_NOTE` documents. Standalone rather than built from `LINK`, which carries
+ * `no-underline`: appending `underline` to it would be two text-decoration utilities on one
+ * element, the `PILL_EXPORT` trap.
+ */
+const RULES_PROSE_LINK = "text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70";
+
+/**
+ * Rules prose on its way to the page: tokens filled, text escaped, then `[label](href)` links
+ * made real.
+ *
+ * The one place rules content is allowed inline markup, added when the 2026 set moved from
+ * transcribing a document to linking Sleeper's own help for every mechanic the league does not
+ * decide — a rules page that outsources the how-to needs its links mid-sentence, where the
+ * mechanic is named. Escape-then-linkify order is what makes the syntax safe: label and href
+ * are already entity-escaped when the pattern runs, so nothing an author types can open a tag
+ * of its own. An absolute `https://` href opens a new tab like every outbound link on the site;
+ * a relative one (another page here, or a `#anchor`) stays in the tab.
+ *
+ * Fills through `fillRuleTokens()` with `RULES_SEASON`, so `{entryFee}` reads the season this
+ * page describes rather than the newest one with a prize pool.
+ */
+function rulesText(text: string): string {
+  return esc(fillRuleTokens(text, RULES_SEASON)).replace(
+    /\[([^\]]+)\]\(([^()\s]+)\)/g,
+    (_m, label: string, href: string) =>
+      /^https?:\/\//.test(href)
+        ? `<a href="${href}" target="_blank" rel="noopener noreferrer" class="${RULES_PROSE_LINK}">${label}</a>`
+        : `<a href="${href}" class="${RULES_PROSE_LINK}">${label}</a>`,
+  );
+}
+
+/**
  * One block of a rules section.
  *
  * A table reuses the League History cells outright, the same borrowing the Trophy Case does, so
@@ -2906,13 +2977,13 @@ function rulesBlockHtml(block: RulesBlock): string {
       return `        <h3 class="${SUB_H3_BASE} mt-6 mb-3 first:mt-0">${esc(block.text)}</h3>`;
 
     case "text":
-      return `        <p class="text-[15px] leading-relaxed mt-0 mb-3 last:mb-0">${esc(block.text)}</p>`;
+      return `        <p class="text-[15px] leading-relaxed mt-0 mb-3 last:mb-0">${rulesText(block.text)}</p>`;
 
     case "list": {
       const tag = block.ordered ? "ol" : "ul";
       const marker = block.ordered ? "list-decimal" : "list-disc";
       const items = block.items
-        .map((item) => `          <li class="pl-1">${esc(item)}</li>`)
+        .map((item) => `          <li class="pl-1">${rulesText(item)}</li>`)
         .join("\n");
       return `        <${tag} class="${marker} pl-5 text-[15px] leading-relaxed flex flex-col gap-1.5 mt-0 mb-3 last:mb-0">
 ${items}
@@ -2926,7 +2997,7 @@ ${items}
       const body = block.rows
         .map((row) => {
           const cells = row
-            .map((cell) => `              <td class="${HIST_TD}">${esc(cell)}</td>`)
+            .map((cell) => `              <td class="${HIST_TD}">${rulesText(cell)}</td>`)
             .join("\n");
           return `            <tr>\n${cells}\n            </tr>`;
         })
@@ -2961,6 +3032,39 @@ ${blocks}
 }
 
 /**
+ * What changed this season, as the rules page's first section.
+ *
+ * Derived from `RULE_CHANGES[RULES_SEASON]` — the same object the home page's card renders —
+ * rather than written into `RULES_SECTIONS`, so the two pages cannot tell different stories
+ * about what moved. Only the `changed` half renders here: the sections below ARE the rules as
+ * they now stand, so restating "staying the same" would say everything on the page twice.
+ *
+ * The id is `whats-new` rather than a season-numbered one: ids are permanent, and this section
+ * survives the yearly turnover with a new season in its title. A season with no changes
+ * recorded renders nothing, and its contents entry goes with it.
+ */
+const RULES_CHANGES_ID = "whats-new";
+
+function rulesChangesSectionHtml(): string {
+  const rules = RULE_CHANGES[RULES_SEASON];
+  if (!rules || rules.changed.length === 0) return "";
+
+  const items = rules.changed
+    .map((n) => `          ${ruleNoteLi(n, RULES_SEASON)}`)
+    .join("\n");
+
+  return `    <section id="${RULES_CHANGES_ID}" class="mb-10 scroll-mt-6">
+      <h2 class="${SECTION_H2}">New in ${esc(RULES_SEASON)}</h2>
+      <div class="${CARD} px-5 py-5">
+        <ul class="m-0 p-0 list-none flex flex-col gap-3">
+${items}
+        </ul>
+      </div>
+    </section>
+`;
+}
+
+/**
  * The page's contents, one jump link per section.
  *
  * A list and not the League History page's underlined tab bar, which is the one place the two
@@ -2968,10 +3072,14 @@ ${blocks}
  * and fifteen underlined tabs wrap into three rows of what still reads as a nav and competes with
  * the green bar above it. A plain list in a card is honest about being a contents list.
  *
+ * Takes id/title pairs rather than `RulesSection`s, because two of the page's sections are not
+ * in `RULES_SECTIONS`: the derived New-in-season section above the rules and the archive below
+ * them. The caller assembles the full list, so "On this page" means the whole page.
+ *
  * Row-major across the grid rather than CSS columns, so the order reads left to right and does
  * not depend on the browser balancing column heights.
  */
-function rulesContentsHtml(sections: RulesSection[]): string {
+function rulesContentsHtml(sections: { id: string; title: string }[]): string {
   if (sections.length === 0) return "";
 
   const links = sections
@@ -3111,8 +3219,15 @@ export function generateRulesHtml(navLinks: NavLink[], hasMark = false): string 
   const chrome: SiteChrome = { base: "", hasMark };
   const archive = rulesArchive();
 
+  const changes = rulesChangesSectionHtml();
+  const contents = [
+    ...(changes ? [{ id: RULES_CHANGES_ID, title: `New in ${RULES_SEASON}` }] : []),
+    ...RULES_SECTIONS,
+    { id: "past-rules", title: "Past Years’ Rules" },
+  ];
+
   const body = RULES_SECTIONS.length
-    ? `${rulesContentsHtml(RULES_SECTIONS)}${RULES_SECTIONS.map(rulesSectionHtml).join("")}`
+    ? `${rulesContentsHtml(contents)}${changes}${RULES_SECTIONS.map(rulesSectionHtml).join("")}`
     : rulesPendingHtml(archive);
 
   return `<!DOCTYPE html>
