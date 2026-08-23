@@ -240,31 +240,68 @@ export const RULES_SECTIONS: RulesSection[] = [
       },
     ],
   },
+  // TODO (2026-08-23): one thing below is still unconfirmed, and it is the part the whole week
+  // turns on. Whether a custom waiver day really blocks direct adds for the entire window
+  // before it is with Sleeper support: Sleeper's daily waivers normally put only *dropped*
+  // players on the board, which would leave never-rostered free agents addable straight through
+  // Monday night and collapse the waiver window into nothing. The other two are settled by the
+  // commissioner and are safe to state as rules. Free agency runs continuously from Wednesday's
+  // run to the following Monday, with each player locking at their own kickoff, and a player
+  // dropped during free agency hits the board immediately rather than re-entering waivers.
+  //
+  // Separately, the 2026 league's settings do not express any of this yet
+  // (`daily_waivers_days` currently carries more than one active day at `daily_waivers_hour`
+  // 20, not the single Wednesday run these rules describe), so the league has to be
+  // reconfigured before the season opens or the page describes a week nobody plays.
   {
     id: "waivers-faab",
-    title: "Waivers & FAAB",
+    title: "Waivers & Free Agency",
     blocks: [
       {
         kind: "text",
-        text: "Every pickup goes through Sleeper's waiver and free agent system, and you make your own: commissioners are not responsible for running pickups for anyone.",
+        text: "There are two ways to add a player and only one of them is running at any moment. From Monday night to Wednesday night everybody unrostered is on waivers, and a blind FAAB bid is the only way in. The rest of the week is free agency: no bidding, nothing to spend, whoever gets there first. You make your own moves either way, and commissioners are not responsible for running pickups for anyone.",
       },
+      { kind: "heading", text: "The weekly cycle" },
+      {
+        kind: "list",
+        ordered: true,
+        items: [
+          "Monday, 8pm PT. Waivers open. Every player not on a roster locks and stays locked until Wednesday, so nobody can be added directly.",
+          "Monday 8pm to Wednesday 8pm PT. Get your bids in. Bidding is blind, nobody sees what anyone else has offered, and you can bid on as many players as you want.",
+          "Wednesday, 8pm PT. Every bid in the league processes at once. The highest bid on a player wins them, the money comes off that team's budget, and losing bids cost nothing.",
+          "Wednesday, just after 8pm PT. Free agency opens the moment that run finishes. Anyone still unrostered is free to add, first come first served, at no cost.",
+          "Wednesday 8pm to Monday 8pm PT. Free agency runs all the way to Monday night, when waivers open again and the cycle repeats.",
+        ],
+      },
+      { kind: "heading", text: "Bidding" },
       {
         kind: "list",
         items: [
-          "Each team gets a {faabBudget} FAAB budget for the season (virtual dollars, nothing to do with real money). Players on waivers go to the highest blind bid; $0 bids are allowed, whole dollars only. [How does FAAB bidding work?](https://support.sleeper.com/en/articles/1876040-how-does-faab-bidding-work)",
-          // TODO (2026-08-23): provisional wording, not yet confirmed correct. The 8pm PT
-          // Monday/Tuesday cadence is read off the league's custom daily waiver schedule and its
-          // `daily_waivers_hour`, which is solid. What is not settled is whether Monday actually
-          // blocks free agent adds: it is set to `Waivers` where Tuesday is `Waivers+FA`, and the
-          // schedule also carries an "after games waivers clear" day of Wednesday 12am that may
-          // change when a player who has played becomes biddable at all. Do not treat this line as
-          // verified until somebody has watched a live week run.
-          "Waiver claims process at 8pm PT on Monday and Tuesday. Once Tuesday's run clears there are no more waivers that week: everyone still unrostered is a free agent, first come first served, until their next game kicks off.",
-          "Tied bids go to the higher waiver priority, which starts the season as reverse draft order and rolls back as claims are won.",
-          "A claim that would push you past {rosterLimit} players must name a drop, or it fails. [Why was my waiver claim invalid?](https://support.sleeper.com/en/articles/3978623-why-was-my-waiver-claim-invalid)",
-          "A dropped player can be picked up right away by any other team, subject to the waiver state Sleeper puts them in. Two teams using drops and pickups to move players around a trade is a fair-play violation, and the commissioner can undo it.",
-          "Waivers and pickups run through the playoffs, and week 1 claims are open before any games start. Keepers are taken from rosters as they stand after the final week, so playoff-week moves change what you can keep.",
+          "Each team gets a {faabBudget} FAAB budget for the season (virtual dollars, nothing to do with real money). It has to cover the whole year, playoffs included, and it never refills. [How does FAAB bidding work?](https://support.sleeper.com/en/articles/1876040-how-does-faab-bidding-work)",
+          "Whole dollars only, and $0 bids are allowed. A $0 bid still beats not bidding at all.",
+          "Tied bids go to the higher waiver priority, which starts the season as reverse draft order. Winning a claim drops you to the back of it.",
+          "A claim that would push you past {rosterLimit} players has to name the player you are dropping, or it fails. [Why was my waiver claim invalid?](https://support.sleeper.com/en/articles/3978623-why-was-my-waiver-claim-invalid)",
+          "You can still drop a player during the waiver window. They go straight onto the board with everybody else, biddable in that same Wednesday run.",
           "FAAB dollars can be traded, as long as nobody ends up holding more than {faabBudget}.",
+        ],
+      },
+      { kind: "heading", text: "Free agency" },
+      {
+        kind: "list",
+        items: [
+          "No bidding and no cost, so a free agent is gone the second another owner wants them.",
+          "Drops take effect immediately: a player you release is on the board for anyone to claim right away, with no waiting period.",
+          "A player locks when their own game kicks off and stays locked for the rest of the week, so a Thursday night player is out of reach by Thursday evening. A player whose team is on bye never kicks off, so they stay available all week.",
+          "The {rosterLimit} roster limit still applies, so drop first or make the add name a drop.",
+          "Two teams using drops and pickups to walk a player from one roster to the other is a fair-play violation, and the commissioner can undo it. See [Fair Play & Sportsmanship](#fair-play).",
+        ],
+      },
+      { kind: "heading", text: "Through the season" },
+      {
+        kind: "list",
+        items: [
+          "The cycle runs every week from the draft through the last playoff week, whether or not you are still alive in the bracket.",
+          "Keepers are taken from rosters as they stand after the final week, so playoff-week moves change what you can keep.",
         ],
       },
     ],
