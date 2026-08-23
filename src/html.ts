@@ -15,6 +15,8 @@ import {
   SLEEPER_FIRST_SEASON,
   mflHomeUrl,
   GALLERY,
+  PHOTO_ARCHIVE,
+  type ArchivePhoto,
   SEASON_HONORS,
   LEAGUE_HISTORY,
   LEAGUE_FIRST_SEASON,
@@ -268,12 +270,6 @@ const SUB_H3 = `${SUB_H3_BASE} mt-0 mb-3`;
  * size the tables are deliberately below.
  */
 const TABLE_NOTE = "text-sm text-stone mt-3";
-/**
- * A destination that hasn't been built yet, in body copy. Same call as `NAV_PLANNED` in the
- * site nav: an inert span rather than a link to nowhere, so it never invites a dead click.
- * Both places it appears today point at pages `SITE_NAV` also lists as planned.
- */
-const PLANNED = "text-stone cursor-default";
 /**
  * The traded-picks cells' horizontal padding, tightened a step below `md` — `HIST_EDGE`'s job on
  * the History tables, for the same reason. Five columns, two of them full team names, is more
@@ -1299,7 +1295,7 @@ function galleryHtml(chrome: SiteChrome): string {
 ${figures}
         </div>
         <div class="mt-3 text-[13px]">
-          <span class="${PLANNED}" title="Coming soon">More in the Photo Gallery &#8594;</span>
+          <a href="${esc(chrome.base)}gallery.html" class="${LINK}">More in the Photo Gallery &#8594;</a>
         </div>
       </section>`;
 }
@@ -1309,7 +1305,9 @@ ${figures}
  *
  * A native `<dialog>` rather than a hand-built overlay: `showModal()` brings the backdrop, the
  * Escape key, the focus trap, and the inert background with it, none of which is worth
- * re-implementing. Both parts render only on the home page, and only when there are photos.
+ * re-implementing. Both parts render on the two pages with photos (home and the gallery), and
+ * only while the caller's own photo list is non-empty — which list that is differs per page,
+ * which is why the guard is a parameter rather than a read of `GALLERY`.
  *
  * **The links work without any of this.** `galleryHtml()` wraps each photo in a plain anchor to
  * its full-size file, so the script's job is to intercept that click, not to create it — which
@@ -1320,8 +1318,8 @@ ${figures}
  * Closing on any click that isn't the photo covers the backdrop, the margins, and the × button
  * in one rule, so the button needs no handler and no enclosing form.
  */
-function lightboxHtml(): string {
-  if (GALLERY.length === 0) return "";
+function lightboxHtml(hasPhotos: boolean): string {
+  if (!hasPhotos) return "";
 
   return `  <dialog id="lightbox" class="p-0 m-0 w-full h-full max-w-none max-h-none border-0 bg-transparent backdrop:bg-ink/90">
     <div class="w-full h-full flex flex-col items-center justify-center gap-3 p-4 sm:p-8 cursor-zoom-out">
@@ -1429,7 +1427,7 @@ ${siteHeader(chrome)}
 ${honorsHtml()}${heroHtml(latest, draftOrder?.season)}${ruleChangesHtml()}${columnsHtml}${survivorNoticeHtml()}${siteLinksHtml()}
 ${backToTopHtml()}
   </main>
-${lightboxHtml()}
+${lightboxHtml(GALLERY.length > 0)}
 ${COUNTDOWN_SCRIPT}
 ${LIGHTBOX_SCRIPT}
 </body>
@@ -3368,6 +3366,89 @@ ${siteHeader(chrome)}
 ${body}${rulesArchiveHtml(archive)}
 ${backToTopHtml()}
   </main>${tabsScript}
+</body>
+</html>`;
+}
+
+// ── Photo Gallery page ──
+
+/**
+ * The height, in CSS px, a gallery row starts from. Each figure's flex basis is this times its
+ * aspect ratio and its grow factor is the aspect alone, so flexbox hands every photo in a row
+ * a width proportional to its aspect — which is the one distribution that renders a row of
+ * mixed aspects at a single shared height with no crop. A row then stretches only to fill the
+ * measure, so real heights run ~220–300px on desktop; on a phone most photos take a row of
+ * their own and render full-width.
+ */
+const GALLERY_ROW_H = 220;
+
+/**
+ * One photo in the gallery: the home column's figure, rendered at the photo's own aspect.
+ *
+ * No cover crop, deliberately breaking from the home column: the league's photos are
+ * edge-to-edge group shots and tight trophy portraits, and any uniform cell must clip the
+ * subject of one of them (a uniform 4:3 grid was the first cut here, and it took the tenth
+ * owner's face off the 2025 draft photo). The home column crops because it shares a height
+ * budget with the draft order card; this page scrolls, so nothing forces a crop, and the
+ * justified row above is what keeps uncropped mixed aspects from reading as a ragged grid.
+ *
+ * `ArchivePhoto.width`/`height` ride on the `<img>` so rows hold their height before files load.
+ */
+function archiveFigureHtml(photo: ArchivePhoto, chrome: SiteChrome): string {
+  const aspect = photo.width / photo.height;
+  const grow = Number(aspect.toFixed(4));
+  const basis = Math.round(GALLERY_ROW_H * aspect);
+  return `      <figure class="m-0 flex-[${grow}_1_${basis}px] flex flex-col gap-2">
+        <a href="${esc(chrome.base)}assets/photos/${esc(photo.full)}" data-lightbox data-caption="${esc(photo.caption)}" class="block rounded-xl overflow-hidden cursor-zoom-in focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-fern">
+          <img src="${esc(chrome.base)}assets/photos/${esc(photo.file)}" alt="${esc(photo.alt)}" width="${photo.width}" height="${photo.height}" loading="lazy" decoding="async" class="w-full h-auto rounded-xl border border-line box-border">
+        </a>
+        <figcaption class="text-[13px] text-fern">${esc(photo.caption)}</figcaption>
+      </figure>`;
+}
+
+/**
+ * The Photo Gallery page, at `output/gallery.html` (served as `/gallery`).
+ *
+ * A root-level page like the others, on the same `base: ""` chrome and 1080px measure. One
+ * flat run of photos in `PHOTO_ARCHIVE`'s own order — newest subject first, back to the
+ * league's start — with no season headings and no sub-nav: the whole archive is one scroll,
+ * and the captions carry the years. The rows are the justified flex rows `GALLERY_ROW_H`
+ * describes, closed by a high-grow spacer that soaks up the last row's slack so its photos
+ * keep their natural size instead of stretching to fill the measure. The home column's pair
+ * appears here too; the two lists are deliberately separate (see `PHOTO_ARCHIVE`).
+ * No `extraStyles`: the page has no scrolling table and no tab bar.
+ */
+export function generateGalleryHtml(navLinks: NavLink[], hasMark = false): string {
+  const chrome: SiteChrome = { base: "", hasMark };
+  const hasPhotos = PHOTO_ARCHIVE.length > 0;
+
+  const body = hasPhotos
+    ? `    <div class="flex flex-wrap gap-6">
+${PHOTO_ARCHIVE.map((p) => archiveFigureHtml(p, chrome)).join("\n")}
+      <div class="flex-[999_1_0px]"></div>
+    </div>
+`
+    : `    <p class="text-stone">No photos yet.</p>
+`;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+${htmlHead({
+    title: `${SITE.wordmark} \u2014 Photo Gallery`,
+    ogTitle: "Photo Gallery",
+    description: "League photos back to 2006: draft days, champions, and the Toilet Bowl.",
+    siteName: SITE.wordmark,
+    path: "gallery.html",
+  })}
+<body class="bg-cream text-ink font-sans antialiased">
+${siteHeader(chrome)}
+  <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
+    <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-8">Photo Gallery</h1>
+${body}
+${backToTopHtml()}
+  </main>
+${lightboxHtml(hasPhotos)}
+${LIGHTBOX_SCRIPT}
 </body>
 </html>`;
 }

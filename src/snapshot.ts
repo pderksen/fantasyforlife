@@ -697,6 +697,11 @@ export function getRulesOutputPath(): string {
   return join(DATA_DIR, "..", "output", "rules.html");
 }
 
+/** The Photo Gallery page. Flat file at the output root, same rule as the pages above. */
+export function getGalleryOutputPath(): string {
+  return join(DATA_DIR, "..", "output", "gallery.html");
+}
+
 // ── Static assets ──
 
 /**

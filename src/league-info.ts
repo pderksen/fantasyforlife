@@ -77,7 +77,8 @@ export const SITE_NAV: NavItem[] = [
   // seventeen years of rules documents that exist nowhere else on the site are worth the nav
   // item on their own, and the page says plainly which season it is still waiting on.
   { label: "Official Rules", href: "rules.html" },
-  { label: "Photo Gallery" },
+  // Written to output/gallery.html, served at /gallery. Same flat-file rule as history.html.
+  { label: "Photo Gallery", href: "gallery.html" },
   { label: "Sleeper", href: "https://sleeper.com/leagues", pill: true, external: true },
 ];
 
@@ -1200,7 +1201,8 @@ export interface GalleryPhoto {
 /**
  * The two photos beside the draft order. The column stretches to the draft order card's
  * height and the figures divide it, so this is a fixed pair rather than a feed — adding a
- * third would squeeze all three into letterbox strips. The gallery page is where more go.
+ * third would squeeze all three into letterbox strips. `PHOTO_ARCHIVE` is where more go,
+ * and this pair should hold the league's newest photos, rotated by hand as new ones land.
  */
 export const GALLERY: GalleryPhoto[] = [
   {
@@ -1224,6 +1226,131 @@ export const GALLERY: GalleryPhoto[] = [
     // buys it a crop of a few per cent, and the near-top focus that spends those on the piano.
     weight: 1.55,
     focus: "50%_10%",
+  },
+];
+
+/**
+ * A photo on the Photo Gallery page. Files live in `assets/photos/`, like `GALLERY`'s.
+ *
+ * No `focus` and no `weight`, unlike `GalleryPhoto`: the gallery renders every photo at its
+ * own aspect, uncropped, so there is no crop to steer and no height budget to divide. Both
+ * fields exist on the home column because that column crops to a cap; this page just scrolls.
+ */
+export interface ArchivePhoto {
+  /** The cut the gallery row renders, within `assets/photos/` — the 650px cut, or the whole
+   * photo for an original too small to be worth two files (see `docs/photos.md`). */
+  file: string;
+  /** The cut the lightbox opens, same directory. Names the same file as `file` for a photo
+   * with a single cut. */
+  full: string;
+  /** Pixel width of `file`. Drives the justified-row layout and the `<img>` size attributes,
+   * so it must match the file on disk — read it with ffprobe at cut time, never eyeball it. */
+  width: number;
+  /** Pixel height of `file`. Same contract as `width`. */
+  height: number;
+  alt: string;
+  caption: string;
+}
+
+/**
+ * Every league photo, in render order: newest subject first, back to the league's start. The
+ * array order is the page order (the `PrizeSeason.prizes` rule), and the caption carries the
+ * year, so ordering is by the season a photo is *about*, never the date it was shot — the
+ * trophies photographed at the 2025 draft are the 2024 season's (the year-prefix rule in
+ * `docs/photos.md`).
+ *
+ * Deliberately not reconciled with `GALLERY` (the SEASON_HONORS / LEAGUE_HISTORY call): the
+ * home column is a hand-picked weighted pair sized for its own slot, this is the complete
+ * archive, and the same photo appears in both by design — with its own cut for each slot.
+ */
+export const PHOTO_ARCHIVE: ArchivePhoto[] = [
+  {
+    file: "2025-draft-day-league-photo-650.jpg",
+    full: "2025-draft-day-league-photo-2000.jpg",
+    width: 650,
+    height: 384,
+    alt: "The league's ten owners on 2025 draft day, one attending by laptop",
+    caption: "Draft Day 2025",
+  },
+  {
+    file: "2025-draft-board-650.jpg",
+    full: "2025-draft-board-2000.jpg",
+    width: 650,
+    height: 438,
+    alt: "The 2025 draft board on the wall, every pick filled in",
+    caption: "The 2025 draft board",
+  },
+  {
+    file: "2024-champion-toilet-bowl-trophies-650.jpg",
+    full: "2024-champion-toilet-bowl-trophies-1400.jpg",
+    width: 650,
+    height: 542,
+    alt: "The 2024 champion and Toilet Bowl trophies, held by their winners",
+    caption: "2024 Champ (Easton) & Toilet Bowl champ (Clovis)",
+  },
+  {
+    file: "2023-champion-kingsburg-killaz-650.jpg",
+    full: "2023-champion-kingsburg-killaz-2000.jpg",
+    width: 650,
+    height: 866,
+    alt: "The Kingsburg Killaz owner with the championship trophy",
+    caption: "2023 Champ (Kingsburg)",
+  },
+  {
+    file: "2022-draft-day-650.jpg",
+    full: "2022-draft-day-2000.jpg",
+    width: 650,
+    height: 364,
+    alt: "Nine owners behind the draft board on 2022 draft day, two more edited into the corners",
+    caption: "Draft Day 2022",
+  },
+  {
+    file: "2021-champion-easton-evil-empire.jpg",
+    full: "2021-champion-easton-evil-empire.jpg",
+    width: 318,
+    height: 496,
+    alt: "The Easton Evil Empire owner with the championship trophy",
+    caption: "2021 Champ (Easton)",
+  },
+  {
+    file: "2020-champion-clovis-jets.jpg",
+    full: "2020-champion-clovis-jets.jpg",
+    width: 519,
+    height: 827,
+    alt: "The Clovis Jets owner with the championship trophy in his classroom",
+    caption: "2020 Champ (Clovis)",
+  },
+  {
+    file: "2020-draft-day-650.jpg",
+    full: "2020-draft-day-2000.jpg",
+    width: 650,
+    height: 376,
+    alt: "The 2020 draft over Zoom, the owners in a video call grid",
+    caption: "Draft Day 2020, over Zoom",
+  },
+  {
+    file: "2019-draft-day-650.jpg",
+    full: "2019-draft-day-2000.jpg",
+    width: 650,
+    height: 488,
+    alt: "The owners gathered at the draft table on 2019 draft day, one joining by iPad",
+    caption: "Draft Day 2019",
+  },
+  {
+    file: "2006-2018-champions.jpg",
+    full: "2006-2018-champions.jpg",
+    width: 744,
+    height: 731,
+    alt: "A collage of league champions through 2018, each holding the championship trophy",
+    caption: "Champions through 2018",
+  },
+  {
+    file: "2006-2018-toilet-bowl-champs.jpg",
+    full: "2006-2018-toilet-bowl-champs.jpg",
+    width: 878,
+    height: 485,
+    alt: "A collage of Toilet Bowl champions through 2018 with the toilet-paper trophy",
+    caption: "Toilet Bowl champs through 2018",
   },
 ];
 

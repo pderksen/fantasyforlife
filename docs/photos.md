@@ -44,7 +44,7 @@ displays.
 | Full width of the column (hero, banner) | ~1016px | **2000px** |
 | Home page gallery column | ~618px | **900px** |
 | Two side by side | ~496px | **1000px** |
-| Three-up gallery grid | ~323px | **650px** |
+| Photo Gallery row | ~165–510px | **650px** |
 | Inline portrait or avatar | 128px | **256px** |
 
 Height follows from the crop, which follows from the slot: a hero wants something near 16:9 or
@@ -52,11 +52,11 @@ Height follows from the crop, which follows from the slot: a hero wants somethin
 uncropped and as large as they come. Downscaling and cropping are lossless decisions to defer;
 they cannot be undone once the original is gone.
 
-**A slot has to exist before a target is real.** Two do now: the home page's gallery column,
-listed above at ~618 CSS px, and the lightbox behind it, which takes the full-column 2000px row
-because it renders to the viewport. Everything else in the table is what the current layout
-implies, not a spec anything is built against. Deciding "these twelve go in a three-up grid on
-the history page" is what turns the 650px row into the answer.
+**A slot has to exist before a target is real.** Three do now: the home page's gallery column,
+listed above at ~618 CSS px; the Photo Gallery page's justified rows,
+which render a photo ~220–300 CSS px tall on desktop and take the 650px row; and the lightbox behind both, which takes the full-column
+2000px row because it renders to the viewport. Everything else in the table is what the
+current layout implies, not a spec anything is built against.
 
 **The doubling in that table is a ceiling, not a floor.** The gallery row is 900 against ~618,
 about 1.45x rather than 2x, because a photograph resampled by ffmpeg holds up at 1.5x far better
@@ -67,7 +67,9 @@ headroom with what is left.
 sit `object-cover`, so a file's own aspect never sets the layout — see `galleryHtml()` in
 `html.ts`. That is what lets the rule above (cut uncropped, at native aspect) stay true for
 photos that ship into it. What the crop *shows* is `GalleryPhoto.focus`, an `object-position`,
-which is a page decision and not something to bake into a file.
+which is a page decision and not something to bake into a file. The Photo Gallery page's grid
+makes the opposite call and renders every file at its own aspect, uncropped; the reasoning is
+in `docs/site-design.md`.
 
 ## Format
 
@@ -128,18 +130,32 @@ an `--optimize-assets` CLI step; it was not worth the dependency at current volu
 
 ## What is in `assets/photos/` today
 
-Cut 2026-08-16 from two iPhone 15 originals, both shot 2025-08-23 at the 2025 draft.
+The 2024 trophy and 2025 league-photo cuts landed 2026-08-16, from two iPhone 15 originals shot at the 2025 draft. The other nine photos were cut 2026-08-23 from the originals then staged in the inbox, several of them small or already-compressed files that are the best surviving copy of their year.
 
 | File | Size | Bytes | Is |
 |------|------|-------|-----|
-| `2024-champion-toilet-bowl-trophies-1400.jpg` | 1400×1168 | 379 KB | The 2024 champion and toilet-bowl trophies, held by their winners. The home page lightbox |
+| `2006-2018-champions.jpg` | 744×731 | 237 KB | Collage of champions through 2018. Single cut, gallery row + lightbox |
+| `2006-2018-toilet-bowl-champs.jpg` | 878×485 | 156 KB | Collage of Toilet Bowl champs through 2018. Single cut |
+| `2019-draft-day-2000.jpg` | 2000×1500 | 454 KB | 2019 draft day, one owner joining by iPad. Lightbox |
+| `2019-draft-day-650.jpg` | 650×488 | 75 KB | Same, gallery row |
+| `2020-champion-clovis-jets.jpg` | 519×827 | 90 KB | The 2020 champion with the trophy. Single cut |
+| `2020-draft-day-2000.jpg` | 2000×1158 | 327 KB | The 2020 draft, held over Zoom. Lightbox |
+| `2020-draft-day-650.jpg` | 650×376 | 75 KB | Same, gallery row |
+| `2021-champion-easton-evil-empire.jpg` | 318×496 | 47 KB | The 2021 champion with the trophy. Single cut |
+| `2022-draft-day-2000.jpg` | 2000×1120 | 617 KB | 2022 draft day, two absent owners edited in. Lightbox |
+| `2022-draft-day-650.jpg` | 650×364 | 110 KB | Same, gallery row |
+| `2023-champion-kingsburg-killaz-2000.jpg` | 1500×2000 | 339 KB | The 2023 champion with the trophy. Lightbox |
+| `2023-champion-kingsburg-killaz-650.jpg` | 650×866 | 96 KB | Same, gallery row |
+| `2024-champion-toilet-bowl-trophies-1400.jpg` | 1400×1168 | 379 KB | The 2024 champion and toilet-bowl trophies, held by their winners. The lightbox, home page and gallery |
 | `2024-champion-toilet-bowl-trophies-900.jpg` | 900×750 | 179 KB | Same, what the home page column renders |
-| `2024-champion-toilet-bowl-trophies-650.jpg` | 650×542 | 101 KB | Same, gallery thumb |
-| `2025-draft-day-league-photo-2000.jpg` | 2000×1184 | 453 KB | All ten owners on 2025 draft day, one attending by laptop. The home page lightbox |
+| `2024-champion-toilet-bowl-trophies-650.jpg` | 650×542 | 101 KB | Same, gallery row |
+| `2025-draft-board-2000.jpg` | 2000×1348 | 848 KB | The completed 2025 draft board. Lightbox |
+| `2025-draft-board-650.jpg` | 650×438 | 135 KB | Same, gallery row |
+| `2025-draft-day-league-photo-2000.jpg` | 2000×1184 | 453 KB | All ten owners on 2025 draft day, one attending by laptop. The lightbox, home page and gallery |
 | `2025-draft-day-league-photo-900.jpg` | 900×532 | 130 KB | Same, what the home page column renders |
-| `2025-draft-day-league-photo-650.jpg` | 650×384 | 76 KB | Same, gallery thumb |
+| `2025-draft-day-league-photo-650.jpg` | 650×384 | 76 KB | Same, gallery row |
 
-Both are uncropped, at the aspect they were shot. Two calls worth recording:
+All are uncropped, at the aspect they arrived. Calls worth recording:
 
 - **Year prefix is the photo's subject, not its capture date.** Both were taken on the same
   afternoon, but the trophies are the *2024* season's, awarded at the 2025 draft. A gallery
@@ -150,7 +166,7 @@ Both are uncropped, at the aspect they were shot. Two calls worth recording:
   above; the near-square trophy shot gets 1400, which is 2x of the ~700 CSS px a 1.2:1 photo
   should actually occupy in a 1016px column — 2000 would render it 848px tall. Both large cuts
   land within 16px of the same height, so they stack or sit side by side cleanly. The 650 pair is
-  the three-up grid row, whose slot still does not exist.
+  the gallery row, which the Photo Gallery page now renders.
 - **Then a third width, because oversampling is not free.** Added 2026-08-16: the home page
   column is ~618 CSS px wide, and serving the 2000px file into it meant the *browser* did a 3.2x
   downscale on every page view, which reads harsh next to an ffmpeg lanczos cut. The 900px pair
@@ -158,11 +174,19 @@ Both are uncropped, at the aspect they were shot. Two calls worth recording:
   Windows display, at under a third of the pixels. The large cuts stay in the ladder as what the
   lightbox opens, which is a slot that genuinely wants them: it renders at whatever the viewport
   gives it, and nothing loads it until a photo is clicked.
+- **What a photo needs cut, by where it appears.** A gallery photo needs two files: the 650
+  cut and a full cut for the lightbox, sized by the frame as above and capped at the
+  original's width, since an upscale buys pixels with no detail in them. An original at or
+  below ~900px wide gets **one** file at its own size instead, named without a width suffix
+  and entered as both `file` and `full`: two files a hundred pixels apart is a rung nothing
+  renders. Record every cut's pixel size in the entry's `width`/`height` with ffprobe, never
+  by eye: the justified rows and the `<img>` size attributes both read them. A photo also
+  featured in the home page column needs the 900 as well, named in its `GALLERY` entry.
 
 ## Brand marks
 
 Two master files, both flat vector-style art over a dark green field with a **paper-grain
-texture** baked in. They arrived on 2026-08-16 and live in the gitignored inbox:
+texture** baked in. They arrived on 2026-08-16 and were staged in the gitignored inbox; as of 2026-08-23 they are no longer on disk there, so confirm the off-repo archive holds them:
 
 | Master | Size | Is |
 |--------|------|-----|

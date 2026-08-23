@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
-import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, getExportOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, getHistoryOutputPath, getPrizesOutputPath, getTiersOutputPath, getRulesOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft, resolveTrades, saveTrades, preDraftWindowClosed, hasSiteMark, syncStaticAssets, SnapshotGuardError } from "./snapshot.js";
-import { generateHtml, generateIndexHtml, generateTiersHtml, generateHistoryHtml, generatePrizesHtml, generateRulesHtml, writeHtml, formatPacificDate } from "./html.js";
+import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, getExportOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, getHistoryOutputPath, getPrizesOutputPath, getTiersOutputPath, getRulesOutputPath, getGalleryOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft, resolveTrades, saveTrades, preDraftWindowClosed, hasSiteMark, syncStaticAssets, SnapshotGuardError } from "./snapshot.js";
+import { generateHtml, generateIndexHtml, generateTiersHtml, generateHistoryHtml, generatePrizesHtml, generateRulesHtml, generateGalleryHtml, writeHtml, formatPacificDate } from "./html.js";
 import { generateWorkbook, writeWorkbook } from "./xlsx.js";
 import { getLeagueDrafts, getDraftPicks, getDraftTradedPicksRaw, fetchAllPlayers, getLeagueTradedPicks, getPickTrades, getTrades, getLeague } from "./sleeper-api.js";
 import { getTierConfig, getLatestDraftOrder } from "./tiers.js";
@@ -138,6 +138,16 @@ async function regenerateRules(): Promise<void> {
   const outputPath = getRulesOutputPath();
   await writeHtml(generateRulesHtml(buildIndexNavLinks(), hasSiteMark()), outputPath);
   console.log(`Rules written: ${outputPath}`);
+}
+
+/**
+ * Rewrite the Photo Gallery page. Reads no snapshot data — the photos are hand-kept in
+ * `PHOTO_ARCHIVE` — so it is written on every run, like the History and Prize pages.
+ */
+async function regenerateGallery(): Promise<void> {
+  const outputPath = getGalleryOutputPath();
+  await writeHtml(generateGalleryHtml(buildIndexNavLinks(), hasSiteMark()), outputPath);
+  console.log(`Gallery written: ${outputPath}`);
 }
 
 interface RosterPageInputs {
@@ -417,6 +427,7 @@ async function main(): Promise<void> {
   await regenerateHistory();
   await regeneratePrizes();
   await regenerateRules();
+  await regenerateGallery();
 
   if (openHomePage) {
     const indexPath = getIndexOutputPath();

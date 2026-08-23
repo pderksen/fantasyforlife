@@ -32,10 +32,11 @@ shape of call as leaving Tailwind on its CDN.
 custom CSS, but Tailwind and the font both load from CDNs at page view. That's deliberate, not
 an oversight to fix.
 
-**Three images on the whole site**: `output/assets/ffl-avatar-128.png` (the header's mark, on
-every page) and the two large photo cuts in the home page's gallery column. Everything else is
-markup. The larger avatar, the banner cut, and the two 650px thumbs sit in `output/assets/`
-unreferenced, staged for slots not yet built; the ladder is in `docs/photos.md`.
+**The images on the site**: `output/assets/ffl-avatar-128.png` (the header's mark, on every
+page), the two 900px cuts in the home page's gallery column, and the Photo Gallery's photos;
+the large cuts load only when a lightbox opens one. Everything else is markup. The larger
+avatar and the banner cut sit in `output/assets/` unreferenced, staged for slots not yet
+built; the ladder and the photo ledger are in `docs/photos.md`.
 
 ---
 
@@ -60,8 +61,9 @@ differ per page:
   narrow column above a much wider table. The gutters match the roster wrapper's so the
   wordmark lines up with the h1.
 
-**Planned pages render as `span`, not a dimmed `a`.** One nav item (Photo Gallery) has no page
-yet. A link that goes nowhere invites the click and then reads as broken. `NavItem.href` in `league-info.ts` is the only switch — fill one in and
+**Planned pages render as `span`, not a dimmed `a`.** No nav item is planned today; the Photo
+Gallery was the last and went live in Aug 2026. The mechanism stays because a link that goes
+nowhere invites the click and then reads as broken. `NavItem.href` in `league-info.ts` is the only switch — fill one in and
 the item becomes a live link.
 
 **A relative `href` names a file at the output root.** `navItemHtml()` prefixes it with
@@ -79,7 +81,7 @@ points at a specific season and stage.
 
 ### The header scrolls away, and every page closes on "Back to top"
 
-`backToTopHtml()` in `html.ts`, one renderer, called by all four page generators. It emits a
+`backToTopHtml()` in `html.ts`, one renderer, called by all six page generators. It emits a
 plain `<a href="#top">`; `#top` is the document top by definition, so no page carries an id to
 match it.
 
@@ -752,11 +754,13 @@ honors and the draft countdown are competing for, and one band above the closing
 read on a page this short. It was in `SITE_NAV` until Aug 2026, where it rendered as a dimmed
 "Coming soon" span, which said the opposite of the truth.
 
-**Two destinations are inert.** "All 20XX prize winners" under the honors and "More in the Photo
-Gallery" under the photos are `PLANNED` spans, the body-copy twin of `NAV_PLANNED`: the Prize
-Tracker and Photo Gallery pages don't exist, and a link that goes nowhere invites the click and
-then reads as broken. The prize table itself was on this page until the gallery pass; the data
-stays in `PRIZE_WINNERS` waiting for the page, since it is hand-settled and in no API.
+**Both closing destinations are live now.** "All 20XX prize winners" under the honors and "More
+in the Photo Gallery" under the photos began as `PLANNED` spans, the body-copy twin of
+`NAV_PLANNED`, while the Prize Tracker and Photo Gallery pages did not exist: a link that goes
+nowhere invites the click and then reads as broken. The prize link went live in Aug 2026 and
+the gallery link followed the same month; `PLANNED` was deleted with its last caller. The prize
+table itself was on this page until the gallery pass; the data from that era stays in
+`PRIZE_WINNERS` as a second copy of a hand-settled record.
 
 **Traded picks are not on this page.** They were, until the gallery pass. The hero card's eyebrow
 now reads "Current Tiers & Traded Picks" and points at the roster page that carries the table, so
@@ -1023,6 +1027,47 @@ carries a `<title>` and runs about 215KB, while the sign-in wall carries no titl
 2014 come back titled "KAN Official Rules", the Keeper Alliance Network the league played in
 then, which the page deliberately does not explain, the same call `MFL_SEASONS` documents for
 the old league sites.
+
+---
+
+## Photo Gallery Page
+
+`output/gallery.html`, one flat run of every league photo, rendered from `PHOTO_ARCHIVE` in
+`league-info.ts` in the array's own order: newest subject first, back to the league's start.
+No season headings, no sub-nav, no anchors. The whole archive is one scroll and the caption
+under each photo carries its year, so page chrome would only restate what the captions
+already say. Year sections with a jump-pill row were the first cut and were dropped the same
+day: eleven photos spread over twenty seasons made every heading a label on one or two items.
+
+**Rows are justified flexbox, and every photo is uncropped.** Each figure's flex basis is its
+aspect ratio times `GALLERY_ROW_H` (220px) and its grow factor is the aspect alone, so the
+widths in a row stay proportional to their aspects however far the row stretches, and a row
+of mixed aspects lands at one shared height with no crop. A high-grow spacer closes the
+container so the last row keeps natural sizes instead of stretching to the measure. Two
+simpler layouts failed on the seed photos: a uniform-cell grid must clip the subject of
+either an edge-to-edge group shot or a tight trophy portrait (a 4:3 cell took the tenth
+owner's face off the 2025 draft photo), and natural-height grid cells left ~300px voids
+beside the portraits. The home column still crops, because it shares a height budget with
+the draft order card; this page scrolls, so nothing forces a crop. That is also why
+`ArchivePhoto` has no `focus` and no `weight`, and why it does carry `width` and `height`:
+the row math and the `<img>` size attributes both need the real file dimensions.
+
+**Ordering is by subject season, not capture date.** The trophies photographed at the 2025
+draft are the 2024 season's, so they sit between the 2025 photos and 2023 (the year-prefix
+rule in `docs/photos.md`). The page reads as the league's history in pictures rather than as
+a camera roll.
+
+**The archive is separate data from `GALLERY`, and the same photo appears in both.** The home
+column is a hand-picked weighted pair sized for its own slot (900px cuts, `focus`, `weight`);
+the archive is the complete record. Deriving one from the other would couple a curated layout
+to a growing list, the same reason `SEASON_HONORS` is not derived from `LEAGUE_HISTORY`. The
+price is the same too: a photo featured on the home page is entered twice, once per slot.
+
+**The lightbox is the home page's, parameterized.** `lightboxHtml(hasPhotos)` takes its guard
+as an argument because its two callers gate on different lists; `LIGHTBOX_SCRIPT` is
+data-free and ships unchanged. Each photo stays a plain `<a>` to its full cut, so the no-JS
+path is the same one the home column protects. An empty archive drops the dialog and the
+rows and leaves a "No photos yet." notice.
 
 ---
 
