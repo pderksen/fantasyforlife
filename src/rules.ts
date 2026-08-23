@@ -380,19 +380,67 @@ export const RULES_SECTIONS: RulesSection[] = [
       },
     ],
   },
+  // Rewritten for 2026, when the contest moved off elimination and onto revives: a miss costs a
+  // revive and the run continues, so every entry plays all seventeen weeks and the winner is the
+  // one who spent the fewest. Two things about that are worth keeping written down.
+  //
+  // **The tiebreaker is here because the format makes ties likely, not because one happened.**
+  // Ten entries choosing over seventeen weeks will regularly finish level on revives, and a tie
+  // discovered in January is settled by whoever argues hardest. The ladder walks the revives in
+  // order (latest first revive, then the second, and so on), which keeps the whole contest scored
+  // on survivor performance rather than importing a points total from the main league to break it.
+  //
+  // **Sleeper's own article describes the default format, in which a wrong pick ends the season,
+  // and it does not document the revive settings at all.** So the link below names what it is
+  // actually good for, making and changing picks, and the sentence around it says plainly that
+  // this league overrides the elimination it describes. Linking it unqualified would put a page
+  // saying "you'll be eliminated" one click from a rule saying nobody is.
+  //
+  // **Straight scoring is stated rather than left to the default.** Sleeper offers Straight and
+  // Spread, and the choice decides whether a pick has to win outright or only cover, which is
+  // the whole mechanic. It happens to be Sleeper's default, which is exactly why it is written
+  // down: a rule that matches a default is indistinguishable from a setting nobody looked at.
+  //
+  // **There is no separate buy-in, and the prize figure is not typed here.** Survivor is one of
+  // the eight lines in `PRIZE_SEASONS`, funded by the league entry fee like the rest, so the
+  // rules point at the Prize Tracker instead of naming an amount that could drift from it.
   {
     id: "survivor",
     title: "Survivor Contest",
     blocks: [
       {
         kind: "text",
-        text: "An optional side contest, $10 per person due on draft day, winner take all (ties split). It runs in its own Sleeper league that only the mobile app shows.",
+        text: "The prize is one of the lines on the [Prize Tracker](prizes.html), covered by the league entry fee like every other prize. It runs in its own Sleeper league, visible only in the Sleeper mobile app.",
       },
+      { kind: "heading", text: "How it works" },
       {
         kind: "list",
         items: [
-          "Pick one NFL team to win each week. A loss or tie is a strike, and two strikes end your run.",
-          "A team can only be picked once. Taking a strike resets the list of teams available to you.",
+          "The contest runs Weeks 1 through 17.",
+          "Each week, pick one NFL team to win. The pick can be changed until that team's game kicks off.",
+          "Straight scoring, not spread. The pick has to win its game outright, with no point spread applied either way.",
+          "A team can only be used once all season. Picking the Bills in Week 1 spends them for the year.",
+          "A loss or a tie costs one revive. Nobody is knocked out: you keep picking the following week, and every team you have already used stays used.",
+          "After Week 17, the fewest revives wins.",
+        ],
+      },
+      {
+        kind: "text",
+        text: "Sleeper's [NFL Survivor](https://support.sleeper.com/en/articles/9689521-nfl-survivor) article covers making and changing picks, and both scoring formats, but it describes the default elimination rules, in which one wrong pick ends your season. This league runs Straight scoring with revives switched on, so a miss costs a revive and nothing more.",
+      },
+      { kind: "heading", text: "Tiebreakers" },
+      {
+        kind: "text",
+        text: "Ten entries over seventeen picks makes a tie on revives likely rather than remote, so it is settled in advance. Everything below is survivor performance: no points, and nothing carried over from the main league.",
+      },
+      {
+        kind: "list",
+        ordered: true,
+        items: [
+          "Fewest revives.",
+          "Still tied: the latest first revive, so whoever went furthest into the season before their first miss.",
+          "Still tied: the latest second revive, then the third, and on down until one entry is ahead.",
+          "Still tied after every revive has been compared: co-champions, and the prize splits evenly.",
         ],
       },
     ],

@@ -916,7 +916,7 @@ export function getLatestPrizes(): { season: string; prizes: Prize[] } | undefin
  */
 export interface PrizeLine {
   label: string;
-  /** Qualifier shown small under the label, e.g. "(lowest strikes)". */
+  /** Qualifier shown small under the label, e.g. "All 17 weeks, fewest revives". */
   note?: string;
   /** Payout in whole dollars, before any split. */
   amount: number;
@@ -993,7 +993,7 @@ export const PRIZE_SEASONS: Record<string, PrizeSeason> = {
       { label: "Finalist Champion", amount: 500, headline: true },
       { label: "Finalist Runner-Up", amount: 250 },
       { label: "Best regular season record", amount: 100 },
-      { label: "Survivor winner", note: "All 17 weeks, fewest revives and strikes", amount: 100 },
+      { label: "Survivor winner", note: "All 17 weeks, fewest revives", amount: 100 },
     ],
     notes: [
       "Owners can win multiple prizes.",
@@ -1125,6 +1125,11 @@ export const RULE_CHANGES: Record<string, RuleChanges> = {
         label: "Prizes are simplified and updated.",
         detail: "Fewer lines and bigger payouts. The two division prizes retired along with the divisions, and that money went into the points ladder.",
         link: { href: "prizes.html", label: "See Prize Tracker" },
+      },
+      {
+        label: "Survivor runs on revives.",
+        detail: "Pick one NFL team to win each week, Weeks 1 through 17, each team spent once. A loss or tie costs a revive rather than ending your run, and the fewest revives wins. Ties break on whoever lasted longest before their first revive.",
+        link: { href: "rules.html#survivor", label: "See the Survivor rules" },
       },
     ],
     unchanged: [
