@@ -300,7 +300,8 @@ this page), then a plain middot-separated text row, which had nothing for the h1
   on `honorsSection()` gated by `opts.id` (which the home page does not pass, so the shared
   renderer stays correct there), and on the Scoring Records era headings.
 - **The underline means "you are here", which it did not until the row went sticky.** Every live
-  tab carried one while nothing observed scroll position. `HISTORY_TABS_SCRIPT` now moves a single
+  tab carried one while nothing observed scroll position. `tabsScriptHtml()` (shared with the
+  rules page's part bar, addressed by the nav's id) now moves a single
   `tab-on` class as the page scrolls, and `TAB_STYLES` draws it, so `htmlHead({ extraStyles })`
   has to carry `TAB_STYLES` or the active tab silently renders like every other. `a.tab-on` is
   element-qualified on purpose: at 0,1,1 it beats the `border-transparent` and `text-ink` on the
@@ -900,12 +901,33 @@ be; it is replaced wholesale each year rather than growing, so the file count wo
 and one file means a reader can search the whole thing with the browser's own find. Sub-pages
 would only earn their place if past seasons became site sections too, and those are links.
 
-**The contents list is a grid of jump links, not the History page's tab bar.** `TAB_ROW` works at
-four tabs. A rules set runs to fifteen sections or more, and fifteen underlined tabs wrap into
-three rows of something that still reads as navigation, competing with the green bar directly
-above it. A plain list of moss links in a card is honest about being a table of contents. It is a
-CSS grid rather than CSS columns so the order reads left to right and does not depend on the
-browser balancing column heights.
+**Navigation is a part-level sticky tab bar over a grouped contents card.** The first build had
+only the contents card, and the page's length made that a one-way trip: the card scrolls out of
+view within the first screen, so moving between sections meant scrolling all the way back up. The
+objection that kept `TAB_ROW` off this page was count, not kind: fifteen per-section underlined
+tabs wrap into three rows of something that still reads as navigation, competing with the green
+bar directly above it. Grouping the sections into five parts (plus Past Years) dissolves that,
+six tabs being the scale the History bar already works at, so the bar arrived here with the same
+mechanics: the same `TAB_ROW` and `TAB_STYLES`, the scroll-spy script now shared as
+`tabsScriptHtml(navId)`, and `ANCHOR_OFFSET` on every target. The parts (`RULES_PARTS` in
+`rules.ts`) are navigation only. They render no heading of their own in the body, because the
+site has no heading level above `SECTION_H2` and the bar plus the grouped contents already say
+where you are; a tab simply jumps to its part's first section, which also gives the scroll-spy
+correct you-are-here marking for free, the last target crossed being that span's first section.
+
+**The contents card stays, grouped under the bar's part labels.** The bar's tabs are terse by
+necessity (the row has to hold a single line at `md`, which the six current labels clear at
+roughly 660px of 704), so the card is what spells out what each tab covers: "Scoring" holds
+Lineups and Injured Reserve, and the group labels repeat the tab labels exactly so the mapping
+teaches itself. It is a CSS grid rather than CSS columns so the order reads left to right and
+does not depend on the browser balancing column heights.
+
+**Only the page-end back-to-top link survives.** Per-part links (five, tucked into the gap after
+each part's last card) shipped briefly in Aug 2026 and were pulled the same day: even at one per
+part they read as clutter between the cards against the one long scroll they saved, and from `md`
+up the sticky bar makes them redundant anyway. Below `md` the bar scrolls away as on the History
+page, and the contents card at the top plus the page-end link are the navigation, the same deal
+every long page here offers a phone.
 
 **A section's `id` is permanent and its `title` is not.** A reader linking a teammate to the trade
 deadline is linking to `rules.html#trades`, so renaming an id breaks that link to fix nothing

@@ -64,6 +64,42 @@ export interface RulesSection {
 }
 
 /**
+ * A major part of the rules, for navigation only. One tab in the page's sticky sub-nav and one
+ * labelled group in the contents card; sections render identically whatever part holds them.
+ * `from` names the part's first section, and the part runs until the next part's `from`, so the
+ * grouping is contiguous by construction and a new section slots into whichever part it lands
+ * inside with no edit here.
+ */
+export interface RulesPart {
+  label: string;
+  from: string;
+}
+
+/**
+ * The sub-nav's parts, in document order.
+ *
+ * This exists because thirteen per-section tabs cannot hold one row and six can: the bar has to
+ * fit a single line at `md` (704px of measure), which is what keeps these labels terse.
+ * "Scoring" covers Lineups and Injured Reserve too; the contents card, whose groups carry these
+ * same labels, is what spells that out. Measure before growing a label or adding a part (14px
+ * Schibsted Grotesk at ~7.5px per character, plus 28px per gap; the current six tabs run
+ * ~660px).
+ *
+ * `rulesPartSpans()` in `html.ts` resolves each part to its span of sections and **throws** on
+ * anything that would drop a section from the nav (a `from` naming no section, parts out of
+ * document order, a first part not starting at the first section), so a mistake fails the
+ * `--generate` run instead of quietly thinning the bar. Rewrite this list alongside
+ * `RULES_SECTIONS` each August; while that array is empty, this one is ignored.
+ */
+export const RULES_PARTS: RulesPart[] = [
+  { label: "Basics", from: "league-basics" },
+  { label: "Scoring", from: "scoring" },
+  { label: "Waivers & Trades", from: "waivers-faab" },
+  { label: "Keepers & Draft", from: "keepers" },
+  { label: "Season & Prizes", from: "schedule-playoffs" },
+];
+
+/**
  * The current season's rules.
  *
  * Built from the 2025 rules doc, rewritten where the league's 2026 Sleeper settings decide

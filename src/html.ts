@@ -43,6 +43,7 @@ import {
   type PrizeSeason,
 } from "./league-info.js";
 import {
+  RULES_PARTS,
   RULES_SEASON,
   RULES_SECTIONS,
   rulesArchive,
@@ -1616,7 +1617,13 @@ const TAB_STYLES = `    a.tab-on { color: var(--color-moss); border-color: var(-
 `;
 
 /**
- * Which section the sticky sub-nav points at, updated as the page scrolls.
+ * Which section a sticky sub-nav points at, updated as the page scrolls.
+ *
+ * One script with two callers, addressed by the nav's own id: the History page's section tabs
+ * (`history-tabs`) and the rules page's part tabs (`rules-tabs`). It resolves its targets from
+ * the links' own `href`s, so a bar whose tabs jump to the first section of a *span* (the rules
+ * bar) gets correct you-are-here marking with no extra wiring: standing anywhere inside a span,
+ * the last target crossed is that span's first section.
  *
  * An enhancement over a bar that already works: every tab is a plain in-page link, and with the
  * script blocked the server-rendered first tab stays marked, which is exactly true when the page
@@ -1631,9 +1638,10 @@ const TAB_STYLES = `    a.tab-on { color: var(--color-moss); border-color: var(-
  * `requestAnimationFrame` collapses a scroll burst into one paint, and the listeners are
  * `passive` so they never hold up the scroll itself.
  */
-const HISTORY_TABS_SCRIPT = `  <script>
+function tabsScriptHtml(navId: string): string {
+  return `  <script>
     (function () {
-      var nav = document.getElementById("history-tabs");
+      var nav = document.getElementById("${navId}");
       if (!nav) return;
       var links = [].slice.call(nav.querySelectorAll('a[href^="#"]'));
       var sections = links.map(function (a) { return document.getElementById(a.getAttribute("href").slice(1)); });
@@ -1657,6 +1665,7 @@ const HISTORY_TABS_SCRIPT = `  <script>
       paint();
     })();
   </script>`;
+}
 
 /**
  * The League History page's own sub-nav: one jump link per section of the page below it.
@@ -1680,7 +1689,7 @@ const HISTORY_TABS_SCRIPT = `  <script>
  * The underline means "you are here", which it did not until Aug 2026. Every live tab used to
  * carry one, because nothing observed scroll position; the bar going sticky is what made that
  * worth changing, since a pinned row of four identical underlines states nothing you cannot see.
- * `HISTORY_TABS_SCRIPT` moves the mark and `TAB_STYLES` draws it.
+ * `tabsScriptHtml()` moves the mark and `TAB_STYLES` draws it.
  *
  * A tab's label, the heading it lands on and the section's id all say the same thing, and that
  * is the rule to hold when one of them moves. All three were rewritten in Aug 2026: "Records"
@@ -2473,7 +2482,7 @@ ${siteHeader(chrome)}
 ${historyNavHtml(earlier.length > 0)}
 ${newest ? honorBlocks(newest) : ""}${seasonResults}${recordsHtml()}${statRecordsHtml()}${earlierSeasons}${pastLeaguesHtml()}${backToTopHtml()}
   </main>
-${HISTORY_TABS_SCRIPT}
+${tabsScriptHtml("history-tabs")}
 </body>
 </html>`;
 }
@@ -3022,7 +3031,7 @@ ${body}
 function rulesSectionHtml(section: RulesSection): string {
   const blocks = section.blocks.map(rulesBlockHtml).join("\n");
 
-  return `    <section id="${esc(section.id)}" class="mb-10 scroll-mt-6">
+  return `    <section id="${esc(section.id)}" class="mb-10 ${ANCHOR_OFFSET}">
       <h2 class="${SECTION_H2}">${esc(section.title)}</h2>
       <div class="${CARD} px-5 py-5">
 ${blocks}
@@ -3053,7 +3062,7 @@ function rulesChangesSectionHtml(): string {
     .map((n) => `          ${ruleNoteLi(n, RULES_SEASON)}`)
     .join("\n");
 
-  return `    <section id="${RULES_CHANGES_ID}" class="mb-10 scroll-mt-6">
+  return `    <section id="${RULES_CHANGES_ID}" class="mb-10 ${ANCHOR_OFFSET}">
       <h2 class="${SECTION_H2}">New in ${esc(RULES_SEASON)}</h2>
       <div class="${CARD} px-5 py-5">
         <ul class="m-0 p-0 list-none flex flex-col gap-3">
@@ -3064,36 +3073,133 @@ ${items}
 `;
 }
 
-/**
- * The page's contents, one jump link per section.
- *
- * A list and not the League History page's underlined tab bar, which is the one place the two
- * pages deliberately differ. That bar works at four tabs; a rules set runs to fifteen or more,
- * and fifteen underlined tabs wrap into three rows of what still reads as a nav and competes with
- * the green bar above it. A plain list in a card is honest about being a contents list.
- *
- * Takes id/title pairs rather than `RulesSection`s, because two of the page's sections are not
- * in `RULES_SECTIONS`: the derived New-in-season section above the rules and the archive below
- * them. The caller assembles the full list, so "On this page" means the whole page.
- *
- * Row-major across the grid rather than CSS columns, so the order reads left to right and does
- * not depend on the browser balancing column heights.
- */
-function rulesContentsHtml(sections: { id: string; title: string }[]): string {
-  if (sections.length === 0) return "";
+/** A part resolved to the sections it spans, in document order. */
+interface RulesPartSpan {
+  label: string;
+  sections: RulesSection[];
+}
 
-  const links = sections
+/**
+ * Resolve `RULES_PARTS` against `RULES_SECTIONS`: each part runs from its `from` section to the
+ * one before the next part's `from`, so every section belongs to exactly one part by
+ * construction.
+ *
+ * Anything that would drop a section from the nav **throws** instead: a `from` naming no
+ * section, parts out of document order, a first part that does not start at the first section,
+ * or no parts at all while sections exist. The failure lands at `--generate` time, which is
+ * exactly when the August rewrite of `RULES_SECTIONS` is being done, rather than a section
+ * silently missing from the bar and the contents groups (the fate CLAUDE.md documents for a
+ * renamed `DRAFT_ORDERS` key). An empty `RULES_SECTIONS` returns no spans, keeping the pending
+ * page reachable.
+ */
+function rulesPartSpans(): RulesPartSpan[] {
+  if (RULES_SECTIONS.length === 0) return [];
+  if (RULES_PARTS.length === 0) {
+    throw new Error("RULES_PARTS is empty while RULES_SECTIONS has content, so no section would reach the sub-nav");
+  }
+
+  const starts = RULES_PARTS.map((part) => {
+    const index = RULES_SECTIONS.findIndex((s) => s.id === part.from);
+    if (index === -1) {
+      throw new Error(`RULES_PARTS names "${part.from}", which is no RULES_SECTIONS id`);
+    }
+    return { label: part.label, index };
+  });
+
+  if (starts[0].index !== 0) {
+    throw new Error(`The first rules part must start at "${RULES_SECTIONS[0].id}", the first section`);
+  }
+  for (let i = 1; i < starts.length; i++) {
+    if (starts[i].index <= starts[i - 1].index) {
+      throw new Error(`RULES_PARTS is out of document order at "${RULES_PARTS[i].from}"`);
+    }
+  }
+
+  return starts.map((start, i) => ({
+    label: start.label,
+    sections: RULES_SECTIONS.slice(start.index, i + 1 < starts.length ? starts[i + 1].index : undefined),
+  }));
+}
+
+/**
+ * The rules page's sticky sub-nav: one tab per part, plus the archive.
+ *
+ * The History page's bar reused at part granularity. Its own contents comment used to record why
+ * this page had no tab bar (thirteen per-section tabs wrap into three rows of what reads as a
+ * second site nav); grouping is what dissolves that objection, since six tabs is the count the
+ * pattern already works at. The labels have to hold one row at `md`, which is what keeps them
+ * terse; see `RULES_PARTS`.
+ *
+ * A tab jumps to its part's *first section*, so the bar adds no anchors and no wrapper markup of
+ * its own, and the scroll-spy marks the right tab for every section in the span (see
+ * `tabsScriptHtml()`). The one special case: when the New-in-season section renders it sits
+ * above the first part's first section, so the first tab targets it instead; either way that tab
+ * is the top of its span. First tab pre-marked `tab-on`, the same no-JS story as History's bar.
+ */
+function rulesNavHtml(parts: RulesPartSpan[], hasChanges: boolean): string {
+  if (parts.length === 0) return "";
+
+  const tabs = [
+    ...parts.map((part, i) => ({
+      label: part.label,
+      href: `#${i === 0 && hasChanges ? RULES_CHANGES_ID : part.sections[0].id}`,
+    })),
+    { label: "Past Years", href: "#past-rules" },
+  ];
+
+  const items = tabs
     .map(
-      (s) =>
-        `        <a href="#${esc(s.id)}" class="${LINK} text-[15px]">${esc(s.title)}</a>`,
+      (tab, i) =>
+        `      <a href="${esc(tab.href)}" class="${TAB_LINK}${i === 0 ? " tab-on" : ""}">${esc(tab.label)}</a>`,
+    )
+    .join("\n");
+
+  return `    <nav id="rules-tabs" class="${TAB_ROW}">
+${items}
+    </nav>`;
+}
+
+/** One labelled group of the contents card: a part's label over its sections' jump links. */
+interface RulesContentsGroup {
+  label: string;
+  links: { id: string; title: string }[];
+}
+
+/**
+ * The page's contents, one jump link per section, grouped under the sub-nav's part labels.
+ *
+ * Still a list in a card rather than a second tab bar: the full per-section index runs past
+ * a dozen entries, and that many underlined tabs wrap into three rows of what reads as a nav
+ * competing with the green bar above it. The sticky bar above this card carries the part labels
+ * instead, and this card stays the complete index. The groups repeat the bar's labels on
+ * purpose: the card is what teaches what each terse tab covers ("Scoring" holds Lineups and
+ * Injured Reserve), and both render from `rulesPartSpans()`, so they cannot drift apart.
+ *
+ * Takes assembled groups rather than `RulesSection`s, because two of the page's sections are not
+ * in `RULES_SECTIONS`: the derived New-in-season section joins the first part's group, and the
+ * archive closes the list. Group labels take the same `LABEL_TYPE` treatment as the archive
+ * card's own group labels below. Row-major across the grid rather than CSS columns, so the order
+ * reads left to right and does not depend on the browser balancing column heights.
+ */
+function rulesContentsHtml(groups: RulesContentsGroup[]): string {
+  if (groups.length === 0) return "";
+
+  const groupHtml = groups
+    .map(
+      (g) => `          <div>
+            <div class="${LABEL_TYPE} mb-2.5">${esc(g.label)}</div>
+            <div class="flex flex-col gap-1.5">
+${g.links.map((l) => `              <a href="#${esc(l.id)}" class="${LINK} text-[15px]">${esc(l.title)}</a>`).join("\n")}
+            </div>
+          </div>`,
     )
     .join("\n");
 
   return `    <section class="mb-10">
       <h2 class="${SECTION_H2}">On this page</h2>
       <div class="${CARD} px-5 py-5">
-        <div class="grid gap-x-6 gap-y-2 sm:grid-cols-2 md:grid-cols-3">
-${links}
+        <div class="grid gap-x-6 gap-y-5 sm:grid-cols-2 md:grid-cols-3">
+${groupHtml}
         </div>
       </div>
     </section>
@@ -3186,7 +3292,7 @@ ${tiles(entries)}
       : `
       <p class="${TABLE_NOTE} max-w-[720px]">No rules document survives for ${esc(formatSeasonList(missing))}.</p>`;
 
-  return `    <section id="past-rules" class="mb-10 scroll-mt-6">
+  return `    <section id="past-rules" class="mb-10 ${ANCHOR_OFFSET}">
       <h2 class="${SECTION_H2}">Past Years&rsquo; Rules</h2>
       <div class="${CARD} px-5 py-5 max-w-[720px] flex flex-col gap-5">
 ${groups}
@@ -3211,24 +3317,39 @@ function formatSeasonList(seasons: string[]): string {
  * roster table, it is replaced wholesale each August rather than accumulating, and a single file
  * means a reader can search the whole thing at once.
  *
- * Sections, in order: the contents, the rules themselves, then every past season's rules. The
- * archive sits last because it is the least of what somebody opening this page came for, and it
- * is the one part of the page that grows.
+ * In order: the sticky part bar (below the h1, the same placement and reasoning as the History
+ * page's), the contents, the rules themselves, then every past season's rules. The archive sits
+ * last because it is the least of what somebody opening this page came for, and it is the one
+ * part of the page that grows. A back-to-top link closed each part briefly in Aug 2026 and was
+ * pulled the same day: five of them between the cards read as clutter against the one long
+ * scroll they saved, so the page keeps only the page-end link every page has.
  */
 export function generateRulesHtml(navLinks: NavLink[], hasMark = false): string {
   const chrome: SiteChrome = { base: "", hasMark };
   const archive = rulesArchive();
 
   const changes = rulesChangesSectionHtml();
-  const contents = [
-    ...(changes ? [{ id: RULES_CHANGES_ID, title: `New in ${RULES_SEASON}` }] : []),
-    ...RULES_SECTIONS,
-    { id: "past-rules", title: "Past Years’ Rules" },
+  const parts = rulesPartSpans();
+
+  // The contents card's groups mirror the bar's tabs exactly: the derived New-in-season section
+  // joins the first part, and the archive closes the list under the same label as its tab.
+  const contents: RulesContentsGroup[] = [
+    ...parts.map((part, i) => ({
+      label: part.label,
+      links: [
+        ...(i === 0 && changes ? [{ id: RULES_CHANGES_ID, title: `New in ${RULES_SEASON}` }] : []),
+        ...part.sections,
+      ],
+    })),
+    { label: "Past Years", links: [{ id: "past-rules", title: "Past Years’ Rules" }] },
   ];
 
   const body = RULES_SECTIONS.length
-    ? `${rulesContentsHtml(contents)}${changes}${RULES_SECTIONS.map(rulesSectionHtml).join("")}`
+    ? `${rulesNavHtml(parts, Boolean(changes))}\n${rulesContentsHtml(contents)}${changes}${RULES_SECTIONS.map(rulesSectionHtml).join("")}`
     : rulesPendingHtml(archive);
+
+  // The scroll-spy only ships with the bar it drives, so the pending page stays script-free.
+  const tabsScript = RULES_SECTIONS.length ? `\n${tabsScriptHtml("rules-tabs")}` : "";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -3238,7 +3359,7 @@ ${htmlHead({
     description: "The league's official rules, plus every past season's rulebook.",
     siteName: SITE.wordmark,
     path: "rules.html",
-    extraStyles: TABLE_SCROLL_STYLES,
+    extraStyles: TABLE_SCROLL_STYLES + TAB_STYLES,
   })}
 <body class="bg-cream text-ink font-sans antialiased">
 ${siteHeader(chrome)}
@@ -3246,7 +3367,7 @@ ${siteHeader(chrome)}
     <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-8">Official Rules</h1>
 ${body}${rulesArchiveHtml(archive)}
 ${backToTopHtml()}
-  </main>
+  </main>${tabsScript}
 </body>
 </html>`;
 }

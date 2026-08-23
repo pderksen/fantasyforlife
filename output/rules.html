@@ -55,6 +55,7 @@
       background-size: 34px 100%, 34px 100%, 13px 100%, 13px 100%;
       background-attachment: local, local, scroll, scroll;
     }
+    a.tab-on { color: var(--color-moss); border-color: var(--color-moss); }
   </style>
 </head>
 <body class="bg-cream text-ink font-sans antialiased">
@@ -79,28 +80,66 @@
   </header>
   <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
     <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-8">Official Rules</h1>
+    <nav id="rules-tabs" class="flex flex-wrap items-end gap-x-6 sm:gap-x-7 gap-y-1 mb-11 border-b border-line md:sticky md:top-0 md:z-30 md:bg-cream md:pt-4">
+      <a href="#whats-new" class="inline-flex items-baseline gap-2 whitespace-nowrap pb-2.5 -mb-px border-b-2 text-sm font-medium border-transparent text-ink no-underline transition-colors hover:text-moss hover:border-moss/40 tab-on">Basics</a>
+      <a href="#scoring" class="inline-flex items-baseline gap-2 whitespace-nowrap pb-2.5 -mb-px border-b-2 text-sm font-medium border-transparent text-ink no-underline transition-colors hover:text-moss hover:border-moss/40">Scoring</a>
+      <a href="#waivers-faab" class="inline-flex items-baseline gap-2 whitespace-nowrap pb-2.5 -mb-px border-b-2 text-sm font-medium border-transparent text-ink no-underline transition-colors hover:text-moss hover:border-moss/40">Waivers &amp; Trades</a>
+      <a href="#keepers" class="inline-flex items-baseline gap-2 whitespace-nowrap pb-2.5 -mb-px border-b-2 text-sm font-medium border-transparent text-ink no-underline transition-colors hover:text-moss hover:border-moss/40">Keepers &amp; Draft</a>
+      <a href="#schedule-playoffs" class="inline-flex items-baseline gap-2 whitespace-nowrap pb-2.5 -mb-px border-b-2 text-sm font-medium border-transparent text-ink no-underline transition-colors hover:text-moss hover:border-moss/40">Season &amp; Prizes</a>
+      <a href="#past-rules" class="inline-flex items-baseline gap-2 whitespace-nowrap pb-2.5 -mb-px border-b-2 text-sm font-medium border-transparent text-ink no-underline transition-colors hover:text-moss hover:border-moss/40">Past Years</a>
+    </nav>
     <section class="mb-10">
       <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">On this page</h2>
       <div class="bg-white border border-line rounded-xl px-5 py-5">
-        <div class="grid gap-x-6 gap-y-2 sm:grid-cols-2 md:grid-cols-3">
-        <a href="#whats-new" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">New in 2026</a>
-        <a href="#league-basics" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">League Basics</a>
-        <a href="#scoring" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Scoring</a>
-        <a href="#lineups" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Lineups</a>
-        <a href="#injured-reserve" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Injured Reserve</a>
-        <a href="#waivers-faab" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Waivers &amp; FAAB</a>
-        <a href="#trades" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Trades</a>
-        <a href="#keepers" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Keepers</a>
-        <a href="#draft" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Draft Day</a>
-        <a href="#schedule-playoffs" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Schedule &amp; Playoffs</a>
-        <a href="#prizes" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Entry Fee &amp; Prizes</a>
-        <a href="#fair-play" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Fair Play &amp; Sportsmanship</a>
-        <a href="#survivor" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Survivor Contest</a>
-        <a href="#past-rules" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Past Years’ Rules</a>
+        <div class="grid gap-x-6 gap-y-5 sm:grid-cols-2 md:grid-cols-3">
+          <div>
+            <div class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-2.5">Basics</div>
+            <div class="flex flex-col gap-1.5">
+              <a href="#whats-new" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">New in 2026</a>
+              <a href="#league-basics" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">League Basics</a>
+            </div>
+          </div>
+          <div>
+            <div class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-2.5">Scoring</div>
+            <div class="flex flex-col gap-1.5">
+              <a href="#scoring" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Scoring</a>
+              <a href="#lineups" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Lineups</a>
+              <a href="#injured-reserve" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Injured Reserve</a>
+            </div>
+          </div>
+          <div>
+            <div class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-2.5">Waivers &amp; Trades</div>
+            <div class="flex flex-col gap-1.5">
+              <a href="#waivers-faab" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Waivers &amp; FAAB</a>
+              <a href="#trades" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Trades</a>
+            </div>
+          </div>
+          <div>
+            <div class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-2.5">Keepers &amp; Draft</div>
+            <div class="flex flex-col gap-1.5">
+              <a href="#keepers" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Keepers</a>
+              <a href="#draft" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Draft Day</a>
+            </div>
+          </div>
+          <div>
+            <div class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-2.5">Season &amp; Prizes</div>
+            <div class="flex flex-col gap-1.5">
+              <a href="#schedule-playoffs" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Schedule &amp; Playoffs</a>
+              <a href="#prizes" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Entry Fee &amp; Prizes</a>
+              <a href="#fair-play" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Fair Play &amp; Sportsmanship</a>
+              <a href="#survivor" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Survivor Contest</a>
+            </div>
+          </div>
+          <div>
+            <div class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-2.5">Past Years</div>
+            <div class="flex flex-col gap-1.5">
+              <a href="#past-rules" class="text-moss no-underline transition-opacity hover:opacity-70 text-[15px]">Past Years’ Rules</a>
+            </div>
+          </div>
         </div>
       </div>
     </section>
-    <section id="whats-new" class="mb-10 scroll-mt-6">
+    <section id="whats-new" class="mb-10 scroll-mt-6 md:scroll-mt-16">
       <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">New in 2026</h2>
       <div class="bg-white border border-line rounded-xl px-5 py-5">
         <ul class="m-0 p-0 list-none flex flex-col gap-3">
@@ -115,7 +154,7 @@
         </ul>
       </div>
     </section>
-    <section id="league-basics" class="mb-10 scroll-mt-6">
+    <section id="league-basics" class="mb-10 scroll-mt-6 md:scroll-mt-16">
       <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">League Basics</h2>
       <div class="bg-white border border-line rounded-xl px-5 py-5">
         <p class="text-[15px] leading-relaxed mt-0 mb-3 last:mb-0">The FFL (Fantasy For Life) is a 10-owner keeper league established in 2006, hosted on <a href="https://sleeper.com/leagues" target="_blank" rel="noopener noreferrer" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">Sleeper</a> since 2025. Every season back to the beginning is on the <a href="history.html" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">League History</a> page.</p>
@@ -127,7 +166,7 @@
         </ul>
       </div>
     </section>
-    <section id="scoring" class="mb-10 scroll-mt-6">
+    <section id="scoring" class="mb-10 scroll-mt-6 md:scroll-mt-16">
       <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Scoring</h2>
       <div class="bg-white border border-line rounded-xl px-5 py-5">
         <p class="text-[15px] leading-relaxed mt-0 mb-3 last:mb-0">Points are scored to two decimal places. The full settings live under League Settings in the Sleeper app or website, and every player's weekly line can be opened play by play. <a href="https://support.sleeper.com/en/articles/4126744-how-can-i-see-my-player-s-points-breakdown" target="_blank" rel="noopener noreferrer" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">How can I see my player's points breakdown?</a></p>
@@ -278,7 +317,7 @@
         </ul>
       </div>
     </section>
-    <section id="lineups" class="mb-10 scroll-mt-6">
+    <section id="lineups" class="mb-10 scroll-mt-6 md:scroll-mt-16">
       <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Lineups</h2>
       <div class="bg-white border border-line rounded-xl px-5 py-5">
         <ul class="list-disc pl-5 text-[15px] leading-relaxed flex flex-col gap-1.5 mt-0 mb-3 last:mb-0">
@@ -290,7 +329,7 @@
         </ul>
       </div>
     </section>
-    <section id="injured-reserve" class="mb-10 scroll-mt-6">
+    <section id="injured-reserve" class="mb-10 scroll-mt-6 md:scroll-mt-16">
       <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Injured Reserve</h2>
       <div class="bg-white border border-line rounded-xl px-5 py-5">
         <ul class="list-disc pl-5 text-[15px] leading-relaxed flex flex-col gap-1.5 mt-0 mb-3 last:mb-0">
@@ -300,7 +339,7 @@
         </ul>
       </div>
     </section>
-    <section id="waivers-faab" class="mb-10 scroll-mt-6">
+    <section id="waivers-faab" class="mb-10 scroll-mt-6 md:scroll-mt-16">
       <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Waivers &amp; FAAB</h2>
       <div class="bg-white border border-line rounded-xl px-5 py-5">
         <p class="text-[15px] leading-relaxed mt-0 mb-3 last:mb-0">Every pickup goes through Sleeper's waiver and free agent system, and you make your own: commissioners are not responsible for running pickups for anyone.</p>
@@ -315,7 +354,7 @@
         </ul>
       </div>
     </section>
-    <section id="trades" class="mb-10 scroll-mt-6">
+    <section id="trades" class="mb-10 scroll-mt-6 md:scroll-mt-16">
       <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Trades</h2>
       <div class="bg-white border border-line rounded-xl px-5 py-5">
         <ul class="list-disc pl-5 text-[15px] leading-relaxed flex flex-col gap-1.5 mt-0 mb-3 last:mb-0">
@@ -330,7 +369,7 @@
         </ul>
       </div>
     </section>
-    <section id="keepers" class="mb-10 scroll-mt-6">
+    <section id="keepers" class="mb-10 scroll-mt-6 md:scroll-mt-16">
       <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Keepers</h2>
       <div class="bg-white border border-line rounded-xl px-5 py-5">
         <p class="text-[15px] leading-relaxed mt-0 mb-3 last:mb-0">This is a 3-player keeper league. Keeping only 3 is what keeps the draft meaningful and gives a losing season a real reset. Rosters split into three tiers by draft round, and you keep one player from each tier.</p>
@@ -379,7 +418,7 @@
         </ul>
       </div>
     </section>
-    <section id="draft" class="mb-10 scroll-mt-6">
+    <section id="draft" class="mb-10 scroll-mt-6 md:scroll-mt-16">
       <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Draft Day</h2>
       <div class="bg-white border border-line rounded-xl px-5 py-5">
         <ul class="list-disc pl-5 text-[15px] leading-relaxed flex flex-col gap-1.5 mt-0 mb-3 last:mb-0">
@@ -391,7 +430,7 @@
         </ul>
       </div>
     </section>
-    <section id="schedule-playoffs" class="mb-10 scroll-mt-6">
+    <section id="schedule-playoffs" class="mb-10 scroll-mt-6 md:scroll-mt-16">
       <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Schedule &amp; Playoffs</h2>
       <div class="bg-white border border-line rounded-xl px-5 py-5">
         <p class="text-[15px] leading-relaxed mt-0 mb-3 last:mb-0">The regular season runs 14 weeks. With divisions gone, the schedule is drawn at random: which opponents you meet twice is the luck of the draw, and week 14 is a second meeting with a randomly drawn opponent. Week 14 counts like any other game in the standings.</p>
@@ -419,13 +458,13 @@
         </ul>
       </div>
     </section>
-    <section id="prizes" class="mb-10 scroll-mt-6">
+    <section id="prizes" class="mb-10 scroll-mt-6 md:scroll-mt-16">
       <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Entry Fee &amp; Prizes</h2>
       <div class="bg-white border border-line rounded-xl px-5 py-5">
         <p class="text-[15px] leading-relaxed mt-0 mb-3 last:mb-0">The entry fee is $160, due by draft day, and every dollar of it goes back out as prize money. Payouts, season status and the all-time ledger live on the <a href="prizes.html" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">Prize Tracker</a>.</p>
       </div>
     </section>
-    <section id="fair-play" class="mb-10 scroll-mt-6">
+    <section id="fair-play" class="mb-10 scroll-mt-6 md:scroll-mt-16">
       <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Fair Play &amp; Sportsmanship</h2>
       <div class="bg-white border border-line rounded-xl px-5 py-5">
         <ul class="list-disc pl-5 text-[15px] leading-relaxed flex flex-col gap-1.5 mt-0 mb-3 last:mb-0">
@@ -436,7 +475,7 @@
         </ul>
       </div>
     </section>
-    <section id="survivor" class="mb-10 scroll-mt-6">
+    <section id="survivor" class="mb-10 scroll-mt-6 md:scroll-mt-16">
       <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Survivor Contest</h2>
       <div class="bg-white border border-line rounded-xl px-5 py-5">
         <p class="text-[15px] leading-relaxed mt-0 mb-3 last:mb-0">The prize is one of the lines on the <a href="prizes.html" class="text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70">Prize Tracker</a>, covered by the league entry fee like every other prize. It runs in its own Sleeper league, visible only in the Sleeper mobile app.</p>
@@ -460,7 +499,7 @@
         </ol>
       </div>
     </section>
-    <section id="past-rules" class="mb-10 scroll-mt-6">
+    <section id="past-rules" class="mb-10 scroll-mt-6 md:scroll-mt-16">
       <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0">Past Years&rsquo; Rules</h2>
       <div class="bg-white border border-line rounded-xl px-5 py-5 max-w-[720px] flex flex-col gap-5">
         <div>
@@ -493,5 +532,31 @@
       <a href="#top" class="text-moss no-underline transition-opacity hover:opacity-70 text-sm">&#8593; Back to top</a>
     </div>
   </main>
+  <script>
+    (function () {
+      var nav = document.getElementById("rules-tabs");
+      if (!nav) return;
+      var links = [].slice.call(nav.querySelectorAll('a[href^="#"]'));
+      var sections = links.map(function (a) { return document.getElementById(a.getAttribute("href").slice(1)); });
+      if (!sections.length) return;
+      var ticking = false;
+      function paint() {
+        ticking = false;
+        var pick = 0;
+        for (var i = 0; i < sections.length; i++) {
+          if (sections[i] && sections[i].getBoundingClientRect().top <= 96) pick = i;
+        }
+        for (var j = 0; j < links.length; j++) links[j].classList.toggle("tab-on", j === pick);
+      }
+      function onScroll() {
+        if (ticking) return;
+        ticking = true;
+        window.requestAnimationFrame(paint);
+      }
+      window.addEventListener("scroll", onScroll, { passive: true });
+      window.addEventListener("resize", onScroll, { passive: true });
+      paint();
+    })();
+  </script>
 </body>
 </html>
