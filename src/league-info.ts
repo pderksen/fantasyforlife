@@ -1034,7 +1034,10 @@ export const LEAGUE_FACTS = {
   qbLimit: 4,
   /** FAAB blind-bidding budget for the season, in virtual dollars (`settings.waiver_budget`). */
   faabBudget: 100,
-  /** Trades close before this week's games (`settings.trade_deadline`). */
+  /**
+   * Trading stays open through this week's games and closes when its last one ends
+   * (`settings.trade_deadline`; Sleeper's deadline is the end of the named week, not its start).
+   */
   tradeDeadlineWeek: 11,
 };
 
@@ -1103,6 +1106,16 @@ export const RULE_CHANGES: Record<string, RuleChanges> = {
       {
         label: "Week 14 is a random rematch.",
         detail: "A second meeting with an opponent, also drawn at random. Sleeper gives no way to set it.",
+      },
+      {
+        label: "Simpler playoff tiebreakers.",
+        detail: "Seeding ties break by total points scored, then total points against, the same order the standings show all season. The old head-to-head ladder retires with the divisions.",
+        link: { href: "rules.html#schedule-playoffs", label: "See the playoff rules" },
+      },
+      {
+        label: "AutoSubs are on.",
+        detail: "Name a bench player ahead of time and Sleeper starts him automatically if your starter is ruled inactive, up to 3 a week.",
+        link: { href: "rules.html#lineups", label: "See the lineup rules" },
       },
       {
         label: "No trading picks into a throwback year.",

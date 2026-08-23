@@ -96,7 +96,7 @@ export const RULES_SECTIONS: RulesSection[] = [
         kind: "list",
         items: [
           "Weekly starting lineup: 1 QB, 2 RB, 2 WR, 1 TE, 1 Flex (RB/WR/TE), 1 Superflex (QB/RB/WR/TE), 1 K, 1 Def/ST.",
-          "Roster limit: {rosterLimit} players, with at most {qbLimit} QBs. Sleeper enforces both. [How do I set positional limits?](https://support.sleeper.com/en/articles/5379935-how-do-i-set-positional-limits)",
+          "Roster limit: {rosterLimit} players, with at most {qbLimit} QBs.",
           "Your roster must always hold enough players at each position to field a full lineup.",
           "{keeperCount} players are kept into the next season, except into a throwback year (every fifth season: 2025, 2030, ...), when nobody keeps anyone and all {teamCount} teams draft fresh.",
         ],
@@ -109,7 +109,7 @@ export const RULES_SECTIONS: RulesSection[] = [
     blocks: [
       {
         kind: "text",
-        text: "Scoring is unchanged from 2025 and is scored to two decimal places. The full settings live in the Sleeper app under League Settings, and every player's weekly line can be opened play by play. [How can I see my player's points breakdown?](https://support.sleeper.com/en/articles/4126744-how-can-i-see-my-player-s-points-breakdown)",
+        text: "Points are scored to two decimal places. The full settings live under League Settings in the Sleeper app or website, and every player's weekly line can be opened play by play. [How can I see my player's points breakdown?](https://support.sleeper.com/en/articles/4126744-how-can-i-see-my-player-s-points-breakdown)",
       },
       { kind: "heading", text: "Passing" },
       {
@@ -158,7 +158,6 @@ export const RULES_SECTIONS: RulesSection[] = [
           ["1–6 points allowed", "5"],
           ["35+ points allowed", "-5"],
           ["Defensive 2-point conversion return", "2"],
-          ["1-point safety", "1"],
         ],
       },
       { kind: "heading", text: "Scoring notes" },
@@ -168,7 +167,7 @@ export const RULES_SECTIONS: RulesSection[] = [
           "Every TD is worth 6 points except a passing TD (5). Return and defensive TDs count for the individual player and for the Def/ST when its unit was on the field.",
           "All offensive players can score in every category. A kicker who throws a TD pass on a fake field goal gets the passing points.",
           "Return yardage is not scored, for individuals or defenses. Return TDs are.",
-          "Points allowed only count while the opposing offense or special teams are on the field, so a touchdown thrown against your defense's opponent does not raise your points allowed. [How are Points Allowed calculated?](https://support.sleeper.com/en/articles/4126495-how-are-points-allowed-calculated)",
+          "Points allowed counts only what the opposing offense and special teams score. A touchdown by the opposing defense (an interception returned for a score, say) does not add to it, because your defense was not on the field to prevent it. [How are Points Allowed calculated?](https://support.sleeper.com/en/articles/4126495-how-are-points-allowed-calculated)",
           "Sleeper applies official NFL stat corrections automatically in the days after the games. [Stat Corrections](https://support.sleeper.com/en/articles/2441282-stat-corrections)",
           "Scoring disputes go to the commissioner by Wednesday 9pm PT of that week; scores are final after that week's corrections land.",
         ],
@@ -182,12 +181,11 @@ export const RULES_SECTIONS: RulesSection[] = [
       {
         kind: "list",
         items: [
-          "Set your lineup in the Sleeper app. Lineups carry over from week to week, and a carried-over lineup will happily start players on bye or out injured, so check yours every week.",
+          "Set your lineup in the Sleeper app or website. Lineups carry over from week to week, and a carried-over lineup will happily start players on bye or out injured, so check yours every week.",
           "Players lock at kickoff of their own game, starters and bench alike. A locked player can't be moved in or out of your lineup.",
           "Sleeper's AutoSubs can automatically replace a starter who is ruled inactive with a bench player you designate ahead of time, up to 3 substitutions per week. [How does Player AutoSubs work?](https://support.sleeper.com/en/articles/9731991-how-does-player-autosubs-work)",
           "Submitting a deliberately partial lineup for tactical reasons is allowed.",
           "Abandoning your lineup is a serious offense: an obviously dead lineup left to ride costs $25 of FAAB, and a pattern of it is grounds for not being invited back.",
-          "Flex and Superflex take whatever positions Sleeper designates a player. [Which players are dual-eligible on Sleeper?](https://support.sleeper.com/en/articles/4298804-which-players-are-dual-eligible-on-sleeper)",
         ],
       },
     ],
@@ -218,11 +216,18 @@ export const RULES_SECTIONS: RulesSection[] = [
         kind: "list",
         items: [
           "Each team gets a {faabBudget} FAAB budget for the season (virtual dollars, nothing to do with real money). Players on waivers go to the highest blind bid; $0 bids are allowed, whole dollars only. [How does FAAB bidding work?](https://support.sleeper.com/en/articles/1876040-how-does-faab-bidding-work)",
-          "Waiver claims process Wednesday evening. After they clear, unclaimed players are free agents on a first-come, first-served basis until their next game kicks off. Players on bye can be added until Monday 9pm.",
+          // TODO (2026-08-23): provisional wording, not yet confirmed correct. The 8pm PT
+          // Monday/Tuesday cadence is read off the league's custom daily waiver schedule and its
+          // `daily_waivers_hour`, which is solid. What is not settled is whether Monday actually
+          // blocks free agent adds: it is set to `Waivers` where Tuesday is `Waivers+FA`, and the
+          // schedule also carries an "after games waivers clear" day of Wednesday 12am that may
+          // change when a player who has played becomes biddable at all. Do not treat this line as
+          // verified until somebody has watched a live week run.
+          "Waiver claims process at 8pm PT on Monday and Tuesday. Once Tuesday's run clears there are no more waivers that week: everyone still unrostered is a free agent, first come first served, until their next game kicks off.",
           "Tied bids go to the higher waiver priority, which starts the season as reverse draft order and rolls back as claims are won.",
           "A claim that would push you past {rosterLimit} players must name a drop, or it fails. [Why was my waiver claim invalid?](https://support.sleeper.com/en/articles/3978623-why-was-my-waiver-claim-invalid)",
           "A dropped player can be picked up right away by any other team, subject to the waiver state Sleeper puts them in. Two teams using drops and pickups to move players around a trade is a fair-play violation, and the commissioner can undo it.",
-          "Waivers and pickups run through the playoffs, and week 1 claims are open before any games start. Keepers are taken from rosters as they stand after the final week, so playoff-week moves change what you can keep. [Waivers for Regular Season & Playoffs](https://support.sleeper.com/en/articles/3978868-waivers-for-regular-season-playoffs)",
+          "Waivers and pickups run through the playoffs, and week 1 claims are open before any games start. Keepers are taken from rosters as they stand after the final week, so playoff-week moves change what you can keep.",
           "FAAB dollars can be traded, as long as nobody ends up holding more than {faabBudget}.",
         ],
       },
@@ -235,7 +240,7 @@ export const RULES_SECTIONS: RulesSection[] = [
       {
         kind: "list",
         items: [
-          "The trade deadline is before week {tradeDeadlineWeek}'s games. Trading reopens after the Super Bowl and runs all offseason. [When is my trade deadline?](https://support.sleeper.com/en/articles/2435411-when-is-my-trade-deadline)",
+          "The trade deadline is the end of week {tradeDeadlineWeek}: trading stays open through that week's games and closes when its last one ends. Trading reopens after the Super Bowl and runs all offseason. [When is my trade deadline?](https://support.sleeper.com/en/articles/2435411-when-is-my-trade-deadline)",
           "No limit on trades per season. Propose, counter and accept in the app. [How to Trade](https://support.sleeper.com/en/articles/3188802-how-to-trade)",
           "Trades can include players, draft picks and FAAB dollars. Picks can come from any round of any future season, except that picks landing on a throwback year (2030 is the next) cannot be traded. [Can I trade draft picks?](https://support.sleeper.com/en/articles/3974639-can-i-trade-draft-picks)",
           "An accepted trade sits in review for up to 2 days before it processes. Trades are reviewed by the commissioner, not by league vote.",
@@ -257,15 +262,15 @@ export const RULES_SECTIONS: RulesSection[] = [
       },
       {
         kind: "text",
-        text: "The tier boundaries depend on which kind of draft the players came out of. A throwback year (and the league's first year) drafts the full {rosterLimit}-man roster, so the tiers spread across all {rosterLimit} rounds. In a keeper year the {keeperCount} keepers fill the top slots and the draft runs {draftRounds} rounds, so the boundaries sit higher up.",
+        text: "The tier boundaries depend on which kind of draft the players came out of. A keeper year is the usual case: the {keeperCount} keepers fill the top roster slots and the draft runs {draftRounds} rounds. A throwback year (and the league's first year) drafts the full {rosterLimit}-man roster instead, so the same three tiers spread across all {rosterLimit} rounds.",
       },
       {
         kind: "table",
-        columns: ["Tier", "Throwback-year draft", "Keeper-year draft"],
+        columns: ["Tier", "Keeper-year draft", "Throwback-year draft"],
         rows: [
-          ["1", "Rounds 1–5", "Rounds 1–3"],
-          ["2", "Rounds 6–10", "Rounds 4–8"],
-          ["3", "Rounds 11+, and undrafted pickups", "Rounds 9+, and undrafted pickups"],
+          ["1", "Rounds 1–3", "Rounds 1–5"],
+          ["2", "Rounds 4–8", "Rounds 6–10"],
+          ["3", "Rounds 9+, and undrafted pickups", "Rounds 11+, and undrafted pickups"],
         ],
       },
       {
@@ -275,10 +280,17 @@ export const RULES_SECTIONS: RulesSection[] = [
           "You can always substitute downward: in place of a higher-tier keeper, keep an extra player from a lower tier (two Tier 3s and a Tier 1, say). Never the reverse.",
           "A kept player climbs one tier for the next season, no matter how many keepers shared his tier.",
           "Free agent pickups count as Tier 3. A traded player keeps the tier he was originally drafted in, and a dropped and re-added player keeps his drafted round.",
-          "Example: off the 2025 throwback roster, keep a round-2 pick (Tier 1), a round-8 pick (Tier 2) and a waiver pickup (Tier 3). In 2026 the first two count as Tier 1 and the pickup as Tier 2, and the draft runs {draftRounds} rounds against the keeper-year boundaries.",
-          "Declare keepers in the Sleeper app before the draft; selections can be revised up to 24 hours before it. Until then everyone holds their full {rosterLimit}-man roster to study and trade with.",
+          "Declare keepers in the Sleeper app or website. Selections can be set and changed freely up to 24 hours before draft time, when they lock. Until then everyone holds their full {rosterLimit}-man roster to study and trade with.",
           "Keeper rosters lock when the final week of the season completes, so playoff-week pickups and drops change your keeper options.",
           "Where everyone's roster actually tiers out, season by season, is on [Keeper Tiers](tiers.html).",
+        ],
+      },
+      { kind: "heading", text: "Examples" },
+      {
+        kind: "list",
+        items: [
+          "Throwback year, which is how 2026's keepers come off the 2025 roster. Nobody was kept into 2025, so every tier reads off that one draft: a round-2 pick is Tier 1, a round-8 pick is Tier 2, and a waiver add is Tier 3. Keep one of each and they move up for 2026: the round-2 pick stays Tier 1, the round-8 pick becomes Tier 1, and the waiver add becomes Tier 2.",
+          "Keeper year, which is how 2027's keepers will come off the 2026 roster. A round-2 pick is Tier 1, a round-6 pick is Tier 2, and a round-12 pick or a waiver add is Tier 3. Keep one of each and they move up for 2027: the round-2 pick is already Tier 1 and stays there, the round-6 pick becomes Tier 1, and the round-12 pick becomes Tier 2.",
         ],
       },
     ],
@@ -291,7 +303,7 @@ export const RULES_SECTIONS: RulesSection[] = [
         kind: "list",
         items: [
           "Draft order comes out of the previous season's brackets: every eliminated team plays on for its slot, the champion picks last and the losers bracket winner picks first. The full slotting is under [Schedule & Playoffs](#schedule-playoffs). In a throwback year the order is drawn by lottery instead.",
-          "After round 1, the draft snakes: standard serpentine order. [What draft types are supported?](https://support.sleeper.com/en/articles/1876072-what-draft-types-are-supported)",
+          "After round 1, the draft snakes: standard serpentine order.",
           "Be there. An owner who truly cannot attend (or part of it) must send a representative, and the representative cannot be another owner in this league. No double drafting and no phone drafting; a stand-in leaves when the owner arrives.",
           "You can trade picks during the draft, but the clock does not stop while you work out the details. Trade while other teams are picking. [Can I trade during a draft?](https://support.sleeper.com/en/articles/4027030-can-i-trade-during-a-draft)",
           "Every roster leaves the draft at exactly {rosterLimit} players, so teams that traded picks away or collected extras make their final picks accordingly.",
@@ -305,13 +317,13 @@ export const RULES_SECTIONS: RulesSection[] = [
     blocks: [
       {
         kind: "text",
-        text: "The regular season runs 14 weeks. With divisions gone, the schedule is drawn at random: which opponents you meet twice is the luck of the draw, and week 14 is a second meeting with a randomly drawn opponent. Week 14 counts like any other game in the standings, but not toward head-to-head tiebreakers.",
+        text: "The regular season runs 14 weeks. With divisions gone, the schedule is drawn at random: which opponents you meet twice is the luck of the draw, and week 14 is a second meeting with a randomly drawn opponent. Week 14 counts like any other game in the standings.",
       },
       { kind: "heading", text: "Playoffs" },
       {
         kind: "list",
         items: [
-          "Playoffs run weeks 15–17. The top 6 records make the championship bracket, and the top 2 take the first-round byes; the other 4 teams enter the losers bracket. [How do playoff teams get determined?](https://support.sleeper.com/en/articles/2203518-how-do-playoff-teams-get-determined)",
+          "Playoffs run weeks 15–17. The top 6 records make the championship bracket, and the top 2 take the first-round byes; the other 4 teams enter the losers bracket.",
           "Round 1 is #3 vs #6 and #4 vs #5. The bracket re-seeds after round 1, so the #1 seed faces the lowest surviving seed.",
           "One loss eliminates. The champion's name goes on the trophy, which they hold until the next champion takes it.",
           "A regular-season tie stands as a tie on your record. A playoff tie goes to the higher seed.",
@@ -319,19 +331,8 @@ export const RULES_SECTIONS: RulesSection[] = [
       },
       { kind: "heading", text: "Seeding tiebreakers" },
       {
-        kind: "list",
-        ordered: true,
-        items: [
-          "Head-to-head record",
-          "Points scored against each other (two-team ties only)",
-          "Total points scored in all games",
-          "Most weekly wins if the tied teams had played every team every week; if three or more are still tied, count second-place weeks, then third, and so on",
-          "Coin toss",
-        ],
-      },
-      {
         kind: "text",
-        text: "In a multi-way tie the list runs until one team can be placed, then starts back at the top with the teams remaining, until everyone is seeded.",
+        text: "Teams with the same record are seeded by total points scored, then total points against: the same order the standings show all season, applied by Sleeper automatically. Anything still tied after that goes to a coin toss.",
       },
       { kind: "heading", text: "Losers bracket" },
       {
