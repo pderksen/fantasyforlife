@@ -720,8 +720,10 @@ intercepts the click and hands it to a native `<dialog>` instead, which brings t
 Escape key, the focus trap, and the inert background for free — and bails out untouched if
 `showModal` is missing, leaving the plain link behind. Modified clicks (ctrl, cmd, middle) fall
 through on purpose: the element looks like a link, so "open in a new tab" has to work on it.
-Closing on any click that is not the photo covers the backdrop, the margins, and the × in one
-rule, which is why that button carries no handler and needs no form.
+Closing on any click that is neither the photo nor a `data-lb-nav` button covers the backdrop,
+the margins, and the × in one rule, which is why that button carries no handler and needs no
+form. The arrows are the single exception and they earn it by attribute rather than by
+identity, so the close rule stays one line however many controls the overlay grows.
 
 **What the closing rows replaced.** A "Tiers by Season" chip grid and a "Past Seasons" section,
 which between them took a third of the page to say what two rows of links say. Gone with them:
@@ -1063,11 +1065,41 @@ the archive is the complete record. Deriving one from the other would couple a c
 to a growing list, the same reason `SEASON_HONORS` is not derived from `LEAGUE_HISTORY`. The
 price is the same too: a photo featured on the home page is entered twice, once per slot.
 
-**The lightbox is the home page's, parameterized.** `lightboxHtml(hasPhotos)` takes its guard
-as an argument because its two callers gate on different lists; `LIGHTBOX_SCRIPT` is
-data-free and ships unchanged. Each photo stays a plain `<a>` to its full cut, so the no-JS
-path is the same one the home column protects. An empty archive drops the dialog and the
-rows and leaves a "No photos yet." notice.
+**The lightbox is the home page's, parameterized.** `lightboxHtml(photoCount)` takes a count
+rather than a flag because its two callers gate on different lists and because the number
+decides two things: zero drops the overlay, one drops the arrows inside it. `LIGHTBOX_SCRIPT`
+is data-free and ships unchanged. Each photo stays a plain `<a>` to its full cut, so the no-JS
+path is the same one the home column protects. An empty archive drops the dialog and the rows
+and leaves a "No photos yet." notice.
+
+**The arrows walk the page's own photo links, so eleven photos are one continuous read.** The
+script takes `a[data-lightbox]` in DOM order as its playlist, which is `PHOTO_ARCHIVE`'s order
+here and `GALLERY`'s on the home page, so nothing is kept in sync and a photo added to either
+list is in the sequence the moment it renders. Stepping wraps at both ends: ten photos deep,
+the alternative is a disabled arrow saying the list has stopped, and continuing is the better
+answer. Wrapping also leaves both arrows live in every frame, so neither needs a disabled
+style. Keyboard is ArrowLeft and ArrowRight on the dialog; Escape is already the native
+`<dialog>` behavior and is not bound.
+
+**No photo is ever enlarged past its own pixels.** The overlay image is `flex-1` with
+`object-contain`, so its box grows to whatever is spare and the picture is scaled up to
+fill it. That was invisible while every photo was a 2000px cut and obvious the moment the
+archive brought in what the league actually had: a 318x496 champion shot rendered at 2.03x
+on a laptop, and the two collages at 1.38x and 1.71x, which is precisely the browser-side
+resampling the cut sizes in `docs/photos.md` exist to avoid. `fit()` caps the box at the
+frame's `naturalWidth`/`naturalHeight` once it loads. The cap is read off the loaded image
+rather than recorded per photo for the reason the row heights are not: a number kept in two
+places drifts, and this one is already on disk. It also covers the home page, whose
+`GalleryPhoto` records no dimensions at all. Large cuts are unaffected and still scale down
+to fit, since the cap is an upper bound and not a size.
+
+**The close rule is what the arrows had to be fitted into.** The overlay closes on any click
+that is not the photo, which is what lets the × work with no handler, and a bare button inside
+it would therefore close the dialog instead of advancing. The exemption is `data-lb-nav`, an
+attribute rather than an element check, so the rule reads the same after a third control is
+added. The arrows sit on the overlay's own vertical centre rather than the photo's: frames
+change height, and an arrow that moved with the frame would have to be re-found between
+clicks, which is exactly what a next button exists to avoid.
 
 ---
 

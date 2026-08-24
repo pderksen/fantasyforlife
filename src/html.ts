@@ -1301,6 +1301,16 @@ ${figures}
 }
 
 /**
+ * The lightbox's prev/next buttons, minus their side. Typed off the × above it (same sage, same
+ * hover, same transparent chrome) so the three controls read as one set, at a larger size and a
+ * wider tap target because these two are aimed at rather than reached for. Vertically centred on
+ * the overlay, not on the photo: the photo's height changes with every frame, and a control that
+ * moved with it would have to be chased.
+ */
+const LB_NAV =
+  "absolute top-1/2 -translate-y-1/2 bg-transparent border-0 px-3 py-6 leading-none text-4xl text-sage hover:text-parchment cursor-pointer select-none";
+
+/**
  * The overlay the gallery photos open into, and the script that drives it.
  *
  * A native `<dialog>` rather than a hand-built overlay: `showModal()` brings the backdrop, the
@@ -1315,22 +1325,55 @@ ${figures}
  * Modified clicks (a middle click, a ctrl/cmd click) fall through deliberately, so "open in a
  * new tab" keeps working on an element that looks like a link because it is one.
  *
- * Closing on any click that isn't the photo covers the backdrop, the margins, and the × button
- * in one rule, so the button needs no handler and no enclosing form.
+ * Closing on any click that is neither the photo nor a `data-lb-nav` button covers the backdrop,
+ * the margins, and the × in one rule, so the × needs no handler and no enclosing form. The nav
+ * buttons are the one exception, and they are exempted by that attribute rather than by identity
+ * so a third control never has to touch the close rule again.
+ *
+ * The prev/next pair renders only for a list worth stepping through, so a one-photo page gets
+ * the overlay with no arrows in it and the script's own guard never has to fire.
  */
-function lightboxHtml(hasPhotos: boolean): string {
-  if (!hasPhotos) return "";
+function lightboxHtml(photoCount: number): string {
+  if (photoCount === 0) return "";
+
+  const nav = photoCount > 1
+    ? `
+    <button type="button" data-lb-nav data-lb-step="-1" aria-label="Previous photo" class="${LB_NAV} left-1 sm:left-4">&#10094;</button>
+    <button type="button" data-lb-nav data-lb-step="1" aria-label="Next photo" class="${LB_NAV} right-1 sm:right-4">&#10095;</button>`
+    : "";
 
   return `  <dialog id="lightbox" class="p-0 m-0 w-full h-full max-w-none max-h-none border-0 bg-transparent backdrop:bg-ink/90">
     <div class="w-full h-full flex flex-col items-center justify-center gap-3 p-4 sm:p-8 cursor-zoom-out">
       <img id="lightbox-image" src="" alt="" class="flex-1 min-h-0 max-w-full object-contain">
       <p id="lightbox-caption" class="m-0 shrink-0 text-sm text-parchment"></p>
     </div>
-    <button type="button" aria-label="Close" class="absolute top-3 right-4 bg-transparent border-0 p-2 leading-none text-3xl text-sage hover:text-parchment cursor-pointer">&times;</button>
+    <button type="button" aria-label="Close" class="absolute top-3 right-4 bg-transparent border-0 p-2 leading-none text-3xl text-sage hover:text-parchment cursor-pointer">&times;</button>${nav}
   </dialog>`;
 }
 
-/** Opens a gallery photo in the `<dialog>` above. Vanilla and inline — the project ships no JS bundle. */
+/**
+ * Opens a gallery photo in the `<dialog>` above, and steps between them. Vanilla and inline —
+ * the project ships no JS bundle.
+ *
+ * The photo links themselves are the playlist, in DOM order, so the arrows walk the page's own
+ * running order with nothing to keep in sync: `PHOTO_ARCHIVE`'s order on the gallery, `GALLERY`'s
+ * on the home page. `show()` reads a frame out of the link it lands on exactly as the click
+ * handler does, which is why opening and stepping cannot drift apart.
+ *
+ * **Stepping wraps.** Ten photos deep in the gallery, the alternative is a disabled arrow at each
+ * end, and disabling a control to say "this list has an end" is a worse answer than simply
+ * continuing. It also keeps both arrows live in every frame, so neither has a state to style.
+ *
+ * **`fit()` is what stops a small photo being blown up.** The image is `flex-1`, so its box grows
+ * to whatever the overlay has spare and `object-contain` then scales the picture up to fill it:
+ * the 318x496 champion shot rendered at ~1.6x on a laptop, which is exactly the browser-side
+ * resampling every cut in `docs/photos.md` was sized to avoid. Capping the box at the frame's own
+ * `naturalWidth`/`naturalHeight` holds every photo at 1:1 or below. It reads that off the loaded
+ * image rather than off a recorded dimension, so it needs no second copy of a number that lives
+ * on disk, covers `GALLERY` (which records none) and the archive alike, and cannot drift from a
+ * recut file. The `min(100%, …)` keeps the viewport cap that `max-w-full` was providing, and the
+ * inline pair is cleared on every step so a frame never inherits the one before it.
+ */
 const LIGHTBOX_SCRIPT = `  <script>
     (function () {
       var dlg = document.getElementById("lightbox");
@@ -1338,19 +1381,58 @@ const LIGHTBOX_SCRIPT = `  <script>
       var img = document.getElementById("lightbox-image");
       var caption = document.getElementById("lightbox-caption");
       var links = document.querySelectorAll("a[data-lightbox]");
+      if (!links.length) return;
+      var index = 0;
+
+      function fit() {
+        if (!img.naturalWidth) return;
+        img.style.maxWidth = "min(100%, " + img.naturalWidth + "px)";
+        img.style.maxHeight = "min(100%, " + img.naturalHeight + "px)";
+      }
+      img.addEventListener("load", fit);
+
+      function show(next) {
+        index = (next + links.length) % links.length;
+        var link = links[index];
+        var thumb = link.querySelector("img");
+        img.style.maxWidth = "";
+        img.style.maxHeight = "";
+        img.src = link.href;
+        img.alt = thumb ? thumb.alt : "";
+        caption.textContent = link.dataset.caption || "";
+        if (img.complete) fit();
+      }
+
       for (var i = 0; i < links.length; i++) {
         links[i].addEventListener("click", function (e) {
           if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
           e.preventDefault();
-          var thumb = this.querySelector("img");
-          img.src = this.href;
-          img.alt = thumb ? thumb.alt : "";
-          caption.textContent = this.dataset.caption || "";
+          show(Array.prototype.indexOf.call(links, this));
           dlg.showModal();
         });
       }
+
+      var navs = dlg.querySelectorAll("[data-lb-nav]");
+      for (var n = 0; n < navs.length; n++) {
+        navs[n].addEventListener("click", function () {
+          show(index + Number(this.dataset.lbStep));
+        });
+      }
+
+      dlg.addEventListener("keydown", function (e) {
+        if (navs.length === 0) return;
+        if (e.key === "ArrowRight") {
+          e.preventDefault();
+          show(index + 1);
+        } else if (e.key === "ArrowLeft") {
+          e.preventDefault();
+          show(index - 1);
+        }
+      });
+
       dlg.addEventListener("click", function (e) {
-        if (e.target !== img) dlg.close();
+        if (e.target === img || (e.target.closest && e.target.closest("[data-lb-nav]"))) return;
+        dlg.close();
       });
     })();
   </script>`;
@@ -1427,7 +1509,7 @@ ${siteHeader(chrome)}
 ${honorsHtml()}${heroHtml(latest, draftOrder?.season)}${ruleChangesHtml()}${columnsHtml}${survivorNoticeHtml()}${siteLinksHtml()}
 ${backToTopHtml()}
   </main>
-${lightboxHtml(GALLERY.length > 0)}
+${lightboxHtml(GALLERY.length)}
 ${COUNTDOWN_SCRIPT}
 ${LIGHTBOX_SCRIPT}
 </body>
@@ -3447,7 +3529,7 @@ ${siteHeader(chrome)}
 ${body}
 ${backToTopHtml()}
   </main>
-${lightboxHtml(hasPhotos)}
+${lightboxHtml(PHOTO_ARCHIVE.length)}
 ${LIGHTBOX_SCRIPT}
 </body>
 </html>`;
