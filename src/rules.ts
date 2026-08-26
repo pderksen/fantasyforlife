@@ -253,24 +253,51 @@ export const RULES_SECTIONS: RulesSection[] = [
   // (`daily_waivers_days` currently carries more than one active day at `daily_waivers_hour`
   // 20, not the single Wednesday run these rules describe), so the league has to be
   // reconfigured before the season opens or the page describes a week nobody plays.
+  //
+  // The two Tuesday runs are a second, separate setting change, and each has to be made and
+  // then undone in its own week: Sleeper's waiver day is one league-wide value, not a per-week
+  // schedule, so Week 1 and Week 12 have to be flipped to Tuesday and flipped back. Leaving
+  // either one set is what would silently move every following week off Wednesday.
   {
     id: "waivers-faab",
     title: "Waivers & Free Agency",
     blocks: [
       {
         kind: "text",
-        text: "There are two ways to add a player and only one of them is running at any moment. From Monday night to Wednesday night everybody unrostered is on waivers, and a blind FAAB bid is the only way in. The rest of the week is free agency: no bidding, nothing to spend, whoever gets there first. You make your own moves either way, and commissioners are not responsible for running pickups for anyone.",
+        text: "There are two ways to add a player and only one of them is running at any moment. From Mon night to Wed night everybody unrostered is on waivers, and a blind FAAB bid is the only way in. The rest of the week is free agency: no bidding, nothing to spend, whoever gets there first. Two weeks a year run a day early and Week 1 opens at the draft, both covered below. You make your own moves either way, and commissioners are not responsible for running pickups for anyone.",
       },
       { kind: "heading", text: "The weekly cycle" },
       {
         kind: "list",
         ordered: true,
         items: [
-          "Monday, 8pm PT. Waivers open. Every player not on a roster locks and stays locked until Wednesday, so nobody can be added directly.",
-          "Monday 8pm to Wednesday 8pm PT. Get your bids in. Bidding is blind, nobody sees what anyone else has offered, and you can bid on as many players as you want.",
-          "Wednesday, 8pm PT. Every bid in the league processes at once. The highest bid on a player wins them, the money comes off that team's budget, and losing bids cost nothing.",
-          "Wednesday, just after 8pm PT. Free agency opens the moment that run finishes. Anyone still unrostered is free to add, first come first served, at no cost.",
-          "Wednesday 8pm to Monday 8pm PT. Free agency runs all the way to Monday night, when waivers open again and the cycle repeats.",
+          "Mon, 8pm PT. Waivers open. Every player not on a roster locks and stays locked until Wed, so nobody can be added directly.",
+          "Mon 8pm to Wed 8pm PT. Get your bids in. Bidding is blind, nobody sees what anyone else has offered, and you can bid on as many players as you want.",
+          "Wed, 8pm PT. Every bid in the league processes at once. The highest bid on a player wins them, the money comes off that team's budget, and losing bids cost nothing.",
+          "Wed, just after 8pm PT. Free agency opens the moment that run finishes. Anyone still unrostered is free to add, first come first served, at no cost.",
+          "Wed 8pm to Mon 8pm PT. Free agency runs all the way to Mon night, when waivers open again and the cycle repeats.",
+        ],
+      },
+      { kind: "heading", text: "Weeks with a Wednesday game" },
+      {
+        kind: "text",
+        text: "The run has to land before the week's first kickoff, so a week that opens with a Wed game processes Tue at 8pm PT instead. The next week goes back to Wed. As the NFL schedules it now that is two weeks a year: Week 1, and Week 12 in Thanksgiving week.",
+      },
+      {
+        kind: "table",
+        columns: ["2026", "Waivers process", "First game"],
+        rows: [
+          ["Week 1", "Tue, Sep 8, 8pm PT", "Wed, Sep 9, 5:20pm PT"],
+          ["Week 12", "Tue, Nov 24, 8pm PT", "Wed, Nov 25, 5:00pm PT"],
+        ],
+      },
+      {
+        kind: "list",
+        items: [
+          "Waivers still open Mon at 8pm PT, so bidding is 24 hours instead of 48.",
+          "Free agency opens the moment the run finishes, the same as any other week.",
+          "Week 1 starts earlier: waivers open when the draft ends, not on a Mon, and everyone undrafted locks from that moment.",
+          "So there is no free agency at all between the draft and Week 1's run. In 2026 that is a ten-day window, Aug 29 to Sep 8.",
         ],
       },
       { kind: "heading", text: "Bidding" },
@@ -281,7 +308,7 @@ export const RULES_SECTIONS: RulesSection[] = [
           "Whole dollars only, and $0 bids are allowed. A $0 bid still beats not bidding at all.",
           "Tied bids go to the higher waiver priority, which starts the season as reverse draft order. Winning a claim drops you to the back of it.",
           "A claim that would push you past {rosterLimit} players has to name the player you are dropping, or it fails. [Why was my waiver claim invalid?](https://support.sleeper.com/en/articles/3978623-why-was-my-waiver-claim-invalid)",
-          "You can still drop a player during the waiver window. They go straight onto the board with everybody else, biddable in that same Wednesday run.",
+          "You can still drop a player during the waiver window. They go straight onto the board with everybody else, biddable in that same week's run.",
           "FAAB dollars can be traded, as long as nobody ends up holding more than {faabBudget}.",
         ],
       },
@@ -291,7 +318,7 @@ export const RULES_SECTIONS: RulesSection[] = [
         items: [
           "No bidding and no cost, so a free agent is gone the second another owner wants them.",
           "Drops take effect immediately: a player you release is on the board for anyone to claim right away, with no waiting period.",
-          "A player locks when their own game kicks off and stays locked for the rest of the week, so a Thursday night player is out of reach by Thursday evening. A player whose team is on bye never kicks off, so they stay available all week.",
+          "A player locks when their own game kicks off and stays locked for the rest of the week, so a Thu night player is out of reach by Thu evening, and a Wed night one a day earlier. A player whose team is on bye never kicks off, so they stay available all week.",
           "The {rosterLimit} roster limit still applies, so drop first or make the add name a drop.",
           "Two teams using drops and pickups to walk a player from one roster to the other is a fair-play violation, and the commissioner can undo it. See [Fair Play & Sportsmanship](#fair-play).",
         ],
@@ -300,7 +327,7 @@ export const RULES_SECTIONS: RulesSection[] = [
       {
         kind: "list",
         items: [
-          "The cycle runs every week from the draft through the last playoff week, whether or not you are still alive in the bracket.",
+          "The cycle runs every week from the draft through the last playoff week, whether or not you are still alive in the bracket. The first run of it is the Tue before the opener, not a Wed.",
           "Keepers are taken from rosters as they stand after the final week, so playoff-week moves change what you can keep.",
         ],
       },

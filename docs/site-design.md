@@ -587,9 +587,9 @@ held to a 1080px measure. Exact classes live in `html.ts`; this documents struct
 2. **Hero** — two cards. Left: shortcut to the newest tiers (`newestNavLink()`). Right: the
    next draft's date and a live countdown. Either can be absent and the row carries whichever
    it has.
-3. **"What's new in 20XX"** — one full-width card holding "What's changing" and "Staying the
-   same" side by side at `md`, then a footer that appears only once there is a rules document to
-   point at. No header strip, and an optional `intro` paragraph that can sit above the split;
+3. **"What's new in 20XX"** — one full-width card holding "What's changing" stacked above
+   "Staying the same", then a footer that appears only once there is a rules document to
+   point at. No header strip, and an optional `intro` paragraph that can sit above the pair;
    2026 sets neither. Copy from `RULE_CHANGES` in `league-info.ts`.
 4. **"20XX Draft Order" + "From the gallery"** — side by side on wide screens, stacked below
    ~900px. Draft order from `DRAFT_ORDERS` in `tiers.ts`, photos from `GALLERY` in
@@ -613,10 +613,25 @@ resampling those files were cut at 900px to avoid (`docs/photos.md`). Running th
 side by side instead would fix the width and break the framing, since they are a 1.69 and a 1.20
 aspect and equal heights crop the near-square trophy frame hard, which is the failure
 `GALLERY_MAX_H` was raised to 860 to fix in the first place. The second problem is shape: the draft
-order is one column of ten short rows, about 443px, while these are seven rules that each run to
-a sentence, so a half-width column puts most of them on three lines. Given the full measure they
-split into two columns and most fall to two, which is what makes seven rules read as two short
-lists rather than one long one.
+order is one column of ten short rows, about 443px, while these are rules that each run to
+a sentence, so a half-width column puts most of them on three lines. Given the full measure most
+fall to one.
+
+**The two lists stack, changed above unchanged, and are not columns.** They sat side by side in a
+`md:grid-cols-2` split until the Aug 2026 waiver rules took the changed list to ten against
+unchanged's five. Two columns at that ratio leave the right one ending halfway up the left, which
+reads as a card that ran out of content rather than as two finished lists. Worse, they make the
+reading order a guess: an owner scanning the changes reaches the foot of a column and has to go
+back up to find the rest, and nothing on the card says which way it runs. Stacked, "what's
+changing" is finished before "staying the same" starts, which is the order somebody opening this
+card wants them in, and the second list stops competing with the first for the same glance.
+
+Neither list takes a width cap, so both run the full ~970px of the card's inner measure. That is
+long for prose, and it is tolerable here because every line opens on a bold lead-in and most run
+to one line, so the eye never has to find the start of a wrapped line. It is also what
+`rulesChangesSectionHtml()` has always done with this same list on the rules page: capping the
+home card alone would set the same rules at two measures on two pages, which is a worse
+inconsistency than a wide line.
 
 It sits **below the hero cards rather than above them**. The countdown is the most time-sensitive
 thing on the page in the weeks before a draft and the honors are what the page opens on, so the
@@ -635,14 +650,15 @@ card already names it and the two `SUB_H3`s name its halves, so a third label wa
 explaining itself three times. This is the one card on the home page without a strip, and it is
 also the only one whose contents are self-describing.
 
-The heading above it reads "What's new in 20XX" rather than "20XX Rule Changes". Half the card is
-rules that did not change, so naming the whole thing after changes described one column and
+The heading above it reads "What's new in 20XX" rather than "20XX Rule Changes". Part of the card
+is rules that did not change, so naming the whole thing after changes described one list and
 contradicted the other.
 
-**Both halves of the split are load-bearing.** Four of the 2026 survey questions came back as
-"leave it alone", and a card listing only what changed gives an owner no way to tell an upheld
-rule from one nobody raised. Listing both is also what keeps the changed column short enough to
-scan, which is the reason the card splits at all rather than running one list of eight.
+**Both lists are load-bearing.** Four of the 2026 survey questions came back as "leave it alone",
+and a card listing only what changed gives an owner no way to tell an upheld rule from one nobody
+raised. Keeping them as two labelled lists rather than one run of fifteen is what lets an owner
+stop reading at the end of the first: the changes are the part with a deadline attached, and the
+sub-heading is what marks where they end.
 
 **The card writes no number another page owns.** The throwback year it names comes from
 `isThrowbackSeason()`'s cadence, so it cannot contradict the Keeper Tiers hub, and the entry fee

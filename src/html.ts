@@ -1101,10 +1101,10 @@ function ruleNoteLi(n: RuleNote, season: string): string {
 }
 
 /**
- * A list of rules under its own sub-heading, one half of the rule changes card's split.
+ * A list of rules under its own sub-heading, one of the rule changes card's two stacked lists.
  *
  * No bullet markers: every line opens on a bold lead-in that already sets it apart, and a
- * marker column beside that would spend width the second column needs on a phone.
+ * marker column beside that would indent every rule to buy nothing.
  */
 function ruleListHtml(title: string, notes: RuleNote[], season: string): string {
   const items = notes
@@ -1126,10 +1126,20 @@ ${items}
  * planned. Two things ruled that out. The photo column next to that card renders 900px cuts
  * into a ~618px slot, so moving the photos below to make room would have them upscaled at the
  * 1080px measure, which is the exact resampling `docs/photos.md` cut those files to avoid. And
- * the two cards do not share a shape: the draft order is one column of ten short rows, and this
- * is seven rules that each run to a sentence, so half the measure puts most of them on three
- * lines. At the full width they sit in two columns and most fall to two, which is what makes
- * seven rules read as two short lists rather than one long one.
+ * the two cards do not share a shape: the draft order is one column of ten short rows, and these
+ * are rules that each run to a sentence, so half the measure puts most of them on three lines.
+ * At the full measure most fall to one.
+ *
+ * **The two lists stack, changed above unchanged, and are not columns.** They were a
+ * `md:grid-cols-2` split until the waiver rules took the changed list to ten against unchanged's
+ * five. Two columns of that ratio leave the right one ending halfway up the left, and they make
+ * the reading order a guess: an owner scanning the changes reaches the foot of a column and has
+ * to go back up for the rest. Stacked, "what's changing" is finished before "staying the same"
+ * starts, which is the order somebody opening this card wants them in. It also matches
+ * `rulesChangesSectionHtml()`, which has always rendered this same list as one full-width column
+ * on the rules page, so the two pages now render a `RuleNote` identically as well as sourcing it
+ * from the same object. The lists take no width cap for that reason: adding one here would put
+ * the same rules at two measures on two pages.
  *
  * **Below the hero cards, not above them.** The countdown is the most time-sensitive thing on
  * the page in the weeks before a draft, and the honors above it are what the page opens on.
@@ -1184,7 +1194,7 @@ function ruleChangesHtml(): string {
       <div class="${CARD}">
         <div class="px-5 sm:px-6 py-5">${rules.intro ? `
           <p class="m-0 max-w-[68ch] text-[15px] leading-relaxed">${esc(rules.intro)}</p>` : ""}
-          <div class="${rules.intro ? "mt-6 " : ""}grid gap-x-12 gap-y-6 md:grid-cols-2">
+          <div class="${rules.intro ? "mt-6 " : ""}flex flex-col gap-8">
 ${ruleListHtml("What's changing", rules.changed, season)}
 ${ruleListHtml("Staying the same", rules.unchanged, season)}
           </div>${footer ? `

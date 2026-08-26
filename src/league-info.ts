@@ -1132,6 +1132,18 @@ export const RULE_CHANGES: Record<string, RuleChanges> = {
         detail: "Pick one NFL team to win each week, Weeks 1 through 17, each team spent once. A loss or tie costs a revive rather than ending your run, and the fewest revives wins. Ties break on whoever lasted longest before their first revive.",
         link: { href: "rules.html#survivor", label: "See the Survivor rules" },
       },
+      {
+        label: "Two weeks a year process on Tuesday.",
+        detail:
+          "The waiver run has to land before the week's first kickoff, and the NFL now opens the season on a Wed and plays a Wed game in Thanksgiving week. Those weeks run Tue at 8pm PT, which is 24 hours of bidding instead of 48. In 2026 that is Sep 8 for Week 1 and Nov 24 for Week 12.",
+        link: { href: "rules.html#waivers-faab", label: "See the waiver rules" },
+      },
+      {
+        label: "No free agency between the draft and Week 1.",
+        detail:
+          "Everybody undrafted goes on waivers the moment the draft ends and stays locked there, so a FAAB bid is the only way to add anyone until that first run clears. In 2026 that window is Aug 29 to Sep 8.",
+        link: { href: "rules.html#waivers-faab", label: "See the waiver rules" },
+      },
     ],
     unchanged: [
       {
