@@ -240,24 +240,6 @@ export const RULES_SECTIONS: RulesSection[] = [
       },
     ],
   },
-  // TODO (2026-08-23): one thing below is still unconfirmed, and it is the part the whole week
-  // turns on. Whether a custom waiver day really blocks direct adds for the entire window
-  // before it is with Sleeper support: Sleeper's daily waivers normally put only *dropped*
-  // players on the board, which would leave never-rostered free agents addable straight through
-  // Monday night and collapse the waiver window into nothing. The other two are settled by the
-  // commissioner and are safe to state as rules. Free agency runs continuously from Wednesday's
-  // run to the following Monday, with each player locking at their own kickoff, and a player
-  // dropped during free agency hits the board immediately rather than re-entering waivers.
-  //
-  // Separately, the 2026 league's settings do not express any of this yet
-  // (`daily_waivers_days` currently carries more than one active day at `daily_waivers_hour`
-  // 20, not the single Wednesday run these rules describe), so the league has to be
-  // reconfigured before the season opens or the page describes a week nobody plays.
-  //
-  // The two Tuesday runs are a second, separate setting change, and each has to be made and
-  // then undone in its own week: Sleeper's waiver day is one league-wide value, not a per-week
-  // schedule, so Week 1 and Week 12 have to be flipped to Tuesday and flipped back. Leaving
-  // either one set is what would silently move every following week off Wednesday.
   {
     id: "waivers-faab",
     title: "Waivers & Free Agency",

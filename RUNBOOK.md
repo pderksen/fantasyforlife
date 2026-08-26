@@ -112,6 +112,35 @@ Decide once the draft has run, in this order:
 
 Either way, re-run `--snapshot-draft 2026` afterward and confirm the legend appears.
 
+### Waiver day: the two Tuesday weeks
+
+Waivers run one night a week at 8pm PT, normally Wednesday. Two weeks a year the NFL opens the
+week with a Wednesday game, so the run has to move up to Tuesday to stay ahead of kickoff:
+**Week 1** and **Week 12** (Thanksgiving week). Sleeper's waiver day is one league-wide value
+rather than a per-week schedule, so each one is a change and a change back.
+
+| When | Set the Sleeper waiver day to |
+|---|---|
+| Before Week 1's run (Sep 8 in 2026) | Tuesday |
+| After that run | Wednesday |
+| Before Week 12's run (Nov 24 in 2026) | Tuesday |
+| After that run | Wednesday |
+
+**Leaving either one set moves every following week off Wednesday**, and nothing will tell you.
+No command reads these settings and no page renders them, so the only check is the league's own
+settings screen.
+
+Two things to confirm in the same pass, both of which the published rules assume:
+
+- **One run day, not several.** `daily_waivers_days` is a bitmask, and both 2025 and 2026 have
+  carried more than one day active. The rules describe a single weekly run.
+- **Free agents stay locked during the window.** Try adding a never-rostered player on a Monday
+  night. If it goes straight onto your roster instead of queuing as a claim, the league is not
+  running the week the rules describe.
+
+The published copy is `waivers-faab` in [src/rules.ts](src/rules.ts), and its date table is
+hand-written per season. Update it when the NFL schedule comes out.
+
 ---
 
 ## 3. In-season: traded picks and trade log refresh
@@ -337,7 +366,8 @@ all three are worth eyeballing before they ship.
 | Early Aug | Update `DEFAULT_LEAGUE_ID`, `DRAFT_ORDERS`, `TIER_CONFIGS`. Re-enable the workflow in the Actions tab if the dead season disabled it. |
 | Mid–late Aug | Automated daily. Nothing to do (skip in throwback years: turn the workflow off, or let the keeper-less capture be overwritten). |
 | Draft day (late Aug) | Run `--snapshot pre-draft` by hand right before the draft starts, then `--snapshot-draft <season>` after it ends. Commit and push both. In 2026, also settle the post-draft keeper flag (step 2). |
-| Sep–Dec | Automated weekly on Thursdays. Nothing to do. |
+| Week 1 (early Sep) and Week 12 (Thanksgiving) | Move the Sleeper waiver day to Tuesday for that week, then back to Wednesday after the run. See [step 2](#2-draft-day-annual-config-first). |
+| Sep–Dec | Automated weekly on Thursdays. Nothing else to do. |
 | Early Jan | `--snapshot end-of-season` by hand. Commit and push. |
 | Early Jan, once results settle | Type the season into `LEAGUE_HISTORY`, `SEASON_HONORS`, `STAT_ERAS` and `PRIZE_SEASONS`. Nothing writes these for you. |
 | Feb–Jul | Nothing to run. Expect GitHub to disable the schedule. |
