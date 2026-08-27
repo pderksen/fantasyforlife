@@ -3,7 +3,7 @@
   "leagueName": "Fantasy For Life (FFL)",
   "season": "2026",
   "snapshotType": "pre-draft",
-  "capturedAt": "2026-08-26T11:47:50.212Z",
+  "capturedAt": "2026-08-27T18:37:36.964Z",
   "rosters": [
     {
       "ownerName": "Clovis Jets",
@@ -114,7 +114,8 @@
         {
           "name": "Shough, Tyler",
           "position": "QB",
-          "team": "NO"
+          "team": "NO",
+          "keeper": true
         },
         {
           "name": "Stafford, Matthew",
@@ -171,8 +172,7 @@
         {
           "name": "Fannin, Harold",
           "position": "TE",
-          "team": "CLE",
-          "keeper": true
+          "team": "CLE"
         },
         {
           "name": "Bates, Jake",
