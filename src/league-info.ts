@@ -1141,7 +1141,7 @@ export const RULE_CHANGES: Record<string, RuleChanges> = {
       {
         label: "No free agency between the draft and Week 1.",
         detail:
-          "Everybody undrafted goes on waivers the moment the draft ends and stays locked there, so a FAAB bid is the only way to add anyone until that first run clears. In 2026 that window is Aug 29 to Sep 8.",
+          "Everybody undrafted locks the moment the draft ends and stays locked until Week 1's waivers open on the Mon, so nobody can be added or even bid on until then, and the Tue run is the first time anyone changes hands. In 2026 that is locked Aug 29 to Sep 7, bidding Sep 7 to Sep 8, and first come first served after the 8pm PT run.",
         link: { href: "rules.html#waivers-faab", label: "See the waiver rules" },
       },
     ],

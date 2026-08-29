@@ -246,7 +246,7 @@ export const RULES_SECTIONS: RulesSection[] = [
     blocks: [
       {
         kind: "text",
-        text: "There are two ways to add a player and only one of them is running at any moment. From Mon night to Wed night everybody unrostered is on waivers, and a blind FAAB bid is the only way in. The rest of the week is free agency: no bidding, nothing to spend, whoever gets there first. Two weeks a year run a day early and Week 1 opens at the draft, both covered below. You make your own moves either way, and commissioners are not responsible for running pickups for anyone.",
+        text: "There are two ways to add a player and only one of them is running at any moment. From Mon night to Wed night everybody unrostered is on waivers, and a blind FAAB bid is the only way in. The rest of the week is free agency: no bidding, nothing to spend, whoever gets there first. Two weeks a year run a day early, and nothing moves at all between the draft and Week 1's window, both covered below. You make your own moves either way, and commissioners are not responsible for running pickups for anyone.",
       },
       { kind: "heading", text: "The weekly cycle" },
       {
@@ -278,8 +278,8 @@ export const RULES_SECTIONS: RulesSection[] = [
         items: [
           "Waivers still open Mon at 8pm PT, so bidding is 24 hours instead of 48.",
           "Free agency opens the moment the run finishes, the same as any other week.",
-          "Week 1 starts earlier: waivers open when the draft ends, not on a Mon, and everyone undrafted locks from that moment.",
-          "So there is no free agency at all between the draft and Week 1's run. In 2026 that is a ten-day window, Aug 29 to Sep 8.",
+          "Week 1 also locks the board early. Everyone undrafted locks the moment the draft ends and stays locked until waivers open on the Mon: no adds, no bids, nothing until then.",
+          "So there is no free agency at all between the draft and Week 1's run. In 2026 that means locked from the draft on Aug 29 through Mon, Sep 7, bidding from 8pm PT that night to Tue, Sep 8, 8pm PT, then first come first served the moment the run clears, a day ahead of the Wed, Sep 9 opener.",
         ],
       },
       { kind: "heading", text: "Bidding" },
