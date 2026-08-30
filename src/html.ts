@@ -454,12 +454,11 @@ function dataRow(cells: string[]): string {
 }
 
 /** Render a built grid's rows as table markup. Layout decisions all live in `roster-grid.ts`. */
-function renderGridRows(rows: GridRow[], colSpan: number, hasRoundColumn: boolean): string[] {
-  return rows.map((row) => {
-    if (row.kind === "tier") return tierRow(row.label, row.tierIndex, colSpan);
-    const roundCell = hasRoundColumn ? [`      <td class="${CELL}">${esc(row.label ?? "")}</td>`] : [];
-    return dataRow([...roundCell, ...row.cells.map(playerCell)]);
-  });
+function renderGridRows(rows: GridRow[], colSpan: number): string[] {
+  return rows.map((row) =>
+    row.kind === "tier"
+      ? tierRow(row.label, row.tierIndex, colSpan)
+      : dataRow(row.cells.map(playerCell)));
 }
 
 // ── Traded picks table (roster pages only; the index dropped its copy in Aug 2026) ──
@@ -702,9 +701,6 @@ const ROSTER_STYLES = `    .pos-wr  { background: #d0e8ff; }
     .tier-3 td { background: #8b1a1a; }
 `;
 
-const ROUND_COL_STYLE = `    tr:not(.tier) > td:first-child { text-align: center; font-weight: bold; color: #888; width: 30px; }
-`;
-
 // ── Page generators ──
 
 /**
@@ -734,13 +730,13 @@ export function generateHtml(
 ): string {
   const typeLabel = SNAPSHOT_TYPE_LABELS[snapshot.snapshotType] ?? "Rosters";
   const grid = buildRosterGrid(snapshot, ownerOrder, tiers, draftRounds);
-  const { rosters, hasRoundColumn, rows } = grid;
+  const { rosters, rows } = grid;
 
   const headerCells = rosters
     .map((r) => `      <th class="${TH}">${esc(r.ownerName)}</th>`)
     .join("\n");
 
-  const dataRows = renderGridRows(rows, rosters.length + (hasRoundColumn ? 1 : 0), hasRoundColumn);
+  const dataRows = renderGridRows(rows, rosters.length);
 
   const navHtml = navBar(navLinks, snapshot.season, `${chrome.base}tiers.html`);
   const refreshHtml = isNewestPage(snapshot, navLinks)
@@ -749,8 +745,7 @@ export function generateHtml(
   // Sibling file, written by the same run that writes this page.
   const exportHtml = exportRowHtml(exportFileName(snapshot.season, snapshot.snapshotType));
 
-  const styles = TABLE_SCROLL_STYLES + ROSTER_STYLES + (hasRoundColumn ? ROUND_COL_STYLE : "");
-  const roundTh = hasRoundColumn ? `      <th class="${TH}">Round</th>\n` : "";
+  const styles = TABLE_SCROLL_STYLES + ROSTER_STYLES;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -772,7 +767,7 @@ ${navHtml}
   <div class="${TABLE_WRAP}">
   <table class="border-collapse bg-white text-xs">
     <tr>
-${roundTh}${headerCells}
+${headerCells}
     </tr>
 ${dataRows.join("\n")}
   </table>

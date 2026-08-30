@@ -4,17 +4,20 @@ import type { SnapshotType, TierConfig } from "./types.js";
  * Tier configurations keyed by "season:snapshotType". Each entry lists tier breaks;
  * the label row is inserted right above the position `beforeRound` names.
  *
- * `beforeRound` is not one thing. buildPostDraftRows() and buildTieredRows() read it
- * as a DRAFT ROUND, which covers every normal path (post-draft, pre-draft,
+ * `beforeRound` is not one thing. buildPostDraftTierRows() and buildTieredRows()
+ * read it as a DRAFT ROUND, which covers every normal path (post-draft, pre-draft,
  * end-of-season). buildSequentialRows() reads it as a 1-based ROW INDEX, and only
  * runs as the fallback when a tier config exists but draftRounds comes back empty.
  * Same config, different bar placement, no error. See the call sites in html.ts.
  */
 const TIER_CONFIGS: Record<string, TierConfig> = {
+  // Throwback year, so every player on the page was drafted in this one draft and the
+  // labels can name its rounds outright. No "/ Free Agency" tail, unlike the end-of-season
+  // entry below: a post-draft roster is the draft and nothing else has reached it yet.
   "2025:post-draft": [
-    { label: "TIER 1", beforeRound: 1 },
-    { label: "TIER 2", beforeRound: 6 },
-    { label: "TIER 3", beforeRound: 11 },
+    { label: "TIER 1 — Drafted Rounds 1–5", beforeRound: 1 },
+    { label: "TIER 2 — Drafted Rounds 6–10", beforeRound: 6 },
+    { label: "TIER 3 — Drafted Rounds 11+", beforeRound: 11 },
   ],
   "2025:end-of-season": [
     { label: "TIER 1 — Drafted Rounds 1–5", beforeRound: 1 },
@@ -27,6 +30,19 @@ const TIER_CONFIGS: Record<string, TierConfig> = {
     { label: "TIER 1 — Drafted Rounds 1–5 (2025)", beforeRound: 1 },
     { label: "TIER 2 — Drafted Rounds 6–10 (2025)", beforeRound: 6 },
     { label: "TIER 3 — Drafted Rounds 11+ / Free Agency (2025)", beforeRound: 11 },
+  ],
+  // First keeper-year draft on Sleeper. Keeper-year boundaries are T1 1-3, T2 4-8, T3 9+
+  // (the rules page's keeper table), narrower than a throwback year's because the draft
+  // runs 14 rounds behind the 3 keepers rather than the full 17.
+  //
+  // The labels name the drafted rounds, and the keepers at the head of T1 and T2 are the
+  // one thing they do not describe: a keeper reached that tier by the rules' one-tier climb,
+  // not by being drafted there. The yellow highlight and the legend under the table are what
+  // separate them, which is the same job they do on the pre-draft page.
+  "2026:post-draft": [
+    { label: "TIER 1 — Drafted Rounds 1–3", beforeRound: 1 },
+    { label: "TIER 2 — Drafted Rounds 4–8", beforeRound: 4 },
+    { label: "TIER 3 — Drafted Rounds 9+", beforeRound: 9 },
   ],
 };
 

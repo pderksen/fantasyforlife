@@ -145,6 +145,7 @@ export function getDraftDate(season: string): string | undefined {
  */
 export const SLEEPER_DRAFT_IDS: Record<string, string> = {
   "2025": "1220634181302767616",
+  "2026": "1331127568832667648",
 };
 
 /** A season's public Sleeper draft board, or undefined until that draft has run. */

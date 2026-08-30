@@ -10,10 +10,9 @@ export interface GridTierRow {
   tierIndex: number;
 }
 
-/** One row of player cells. `label` is the post-draft round ("4a"); absent on other layouts. */
+/** One row of player cells. No layout labels its rows — only tier bars carry text. */
 export interface GridDataRow {
   kind: "data";
-  label?: string;
   /** One entry per owner column, in `RosterGrid.rosters` order. `undefined` = empty cell. */
   cells: (SnapshotPlayer | undefined)[];
 }
@@ -29,8 +28,6 @@ export type GridRow = GridTierRow | GridDataRow;
 export interface RosterGrid {
   /** Owner columns in display order. */
   rosters: SnapshotRoster[];
-  /** Post-draft layouts carry a leading "Round" column; the others don't. */
-  hasRoundColumn: boolean;
   /**
    * True when every column was placed by `ownerOrder` — i.e. the header really is the
    * season's draft order, and both renderers can say so in their footer. False when no
@@ -41,8 +38,8 @@ export interface RosterGrid {
   rows: GridRow[];
 }
 
-function dataRow(cells: (SnapshotPlayer | undefined)[], label?: string): GridDataRow {
-  return label == null ? { kind: "data", cells } : { kind: "data", label, cells };
+function dataRow(cells: (SnapshotPlayer | undefined)[]): GridDataRow {
+  return { kind: "data", cells };
 }
 
 function buildSequentialRows(rosters: SnapshotRoster[], maxPlayers: number, tiers?: TierConfig): GridRow[] {
@@ -116,46 +113,58 @@ function buildTieredRows(
   return rows;
 }
 
-function buildPostDraftRows(rosters: SnapshotRoster[], tiers?: TierConfig): GridRow[] {
-  const allRounds = new Set<number>();
-  for (const r of rosters) {
-    for (const p of r.players) {
-      if (p.round != null) allRounds.add(p.round);
-    }
-  }
-  const sortedRounds = [...allRounds].sort((a, b) => a - b);
+/**
+ * Post-draft: tier blocks, no round column.
+ *
+ * The page answers "which tier does each player sit in for next year's keepers", not "what
+ * happened in the draft" — Sleeper's own draft board is one click away from the Keeper Tiers
+ * hub and is the better record of that. So a round decides which block a player lands in and
+ * where he sits inside it, then stops being shown. The round column and its per-round rows
+ * went in Aug 2026, and the gaps went with them: a team that traded a pick used to leave a
+ * blank in every other column at that round, and a team that cut one left a hole of its own.
+ * The league's own 2022 and 2023 post-draft sheets are laid out exactly this way.
+ *
+ * Keepers open their tier. They were not drafted this season at all, so their block comes
+ * from `keeperTier`, the rules' one-tier climb settled at capture by `loadKeeperTiers()` in
+ * `snapshot.ts`. A keeper with none falls back to the top tier, which is where the roster
+ * slots keepers fill actually sit. Note that the tier labels name drafted rounds and a
+ * keeper has none of this draft, so the yellow highlight is the only thing marking the
+ * exception — the same arrangement the pre-draft page already runs.
+ */
+function buildPostDraftTierRows(rosters: SnapshotRoster[], tiers: TierConfig): GridRow[] {
+  const tierRanges = tiers.map((t, i) => ({
+    min: t.beforeRound,
+    max: i + 1 < tiers.length ? tiers[i + 1].beforeRound : Infinity,
+  }));
 
-  const roundMaxPicks = new Map<number, number>();
-  for (const round of sortedRounds) {
-    let max = 1;
-    for (const r of rosters) {
-      const count = r.players.filter((p) => p.round === round).length;
-      if (count > max) max = count;
+  function getTierIndex(p: SnapshotPlayer): number {
+    if (p.keeper) return Math.min(p.keeperTier ?? 0, tiers.length - 1);
+    if (p.round == null) return tiers.length - 1;
+    for (let i = 0; i < tierRanges.length; i++) {
+      if (p.round >= tierRanges[i].min && p.round < tierRanges[i].max) return i;
     }
-    roundMaxPicks.set(round, max);
+    return tiers.length - 1;
   }
 
-  const tierAtRound = new Map<number, GridTierRow>();
-  if (tiers) {
-    for (let i = 0; i < tiers.length; i++) {
-      tierAtRound.set(tiers[i].beforeRound, { kind: "tier", label: tiers[i].label, tierIndex: i });
+  const rosterBuckets = rosters.map((r) => {
+    const buckets: SnapshotPlayer[][] = tiers.map(() => []);
+    for (const p of r.players) buckets[getTierIndex(p)].push(p);
+    // Keepers first, then draft order. Keepers all sort equal on round, so the capture's own
+    // position order holds between them.
+    for (const bucket of buckets) {
+      bucket.sort((a, b) =>
+        Number(!!b.keeper) - Number(!!a.keeper) || (a.round ?? 0) - (b.round ?? 0));
     }
-  }
+    return buckets;
+  });
 
   const rows: GridRow[] = [];
-  for (const round of sortedRounds) {
-    const tier = tierAtRound.get(round);
-    if (tier) rows.push(tier);
-
-    const maxPicks = roundMaxPicks.get(round)!;
-    const needsSuffix = maxPicks > 1;
-
-    for (let slot = 0; slot < maxPicks; slot++) {
-      const label = needsSuffix ? `${round}${String.fromCharCode(97 + slot)}` : `${round}`;
-      rows.push(dataRow(
-        rosters.map((r) => r.players.filter((p) => p.round === round)[slot]),
-        label,
-      ));
+  for (let t = 0; t < tiers.length; t++) {
+    const maxInTier = Math.max(...rosterBuckets.map((rb) => rb[t].length));
+    if (maxInTier === 0) continue;
+    rows.push({ kind: "tier", label: tiers[t].label, tierIndex: t });
+    for (let i = 0; i < maxInTier; i++) {
+      rows.push(dataRow(rosterBuckets.map((rb) => rb[t][i])));
     }
   }
   return rows;
@@ -167,6 +176,9 @@ function buildPostDraftRows(rosters: SnapshotRoster[], tiers?: TierConfig): Grid
  * Which of the three layouts runs is decided here and nowhere else — see the
  * `beforeRound` note in `TIER_CONFIGS`, since sequential reads it as a row index
  * while the other two read it as a draft round.
+ *
+ * No layout carries a round column any more. Post-draft was the last one that did, and it
+ * gave that up in Aug 2026 to become tier blocks like the other two.
  */
 export function buildRosterGrid(
   snapshot: Snapshot,
@@ -188,15 +200,15 @@ export function buildRosterGrid(
 
   const isPostDraft = snapshot.snapshotType === "post-draft" && rosters.some((r) => r.players.some((p) => p.round != null));
   const useTieredLayout = !isPostDraft && tiers && draftRounds && draftRounds.size > 0;
-  const rows = isPostDraft
-    ? buildPostDraftRows(rosters, tiers)
+  const rows = isPostDraft && tiers
+    ? buildPostDraftTierRows(rosters, tiers)
     : useTieredLayout
       ? buildTieredRows(rosters, tiers!, draftRounds!)
       : buildSequentialRows(rosters, maxPlayers, tiers);
 
   const columnsInDraftOrder = !!ownerOrder && rosters.every((r) => ownerOrder.includes(r.ownerName));
 
-  return { rosters, hasRoundColumn: isPostDraft, columnsInDraftOrder, rows };
+  return { rosters, columnsInDraftOrder, rows };
 }
 
 /**

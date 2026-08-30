@@ -58,7 +58,8 @@ const STYLE = {
   TIER_1: 10,
   TIER_2: 11,
   TIER_3: 12,
-  ROUND: 13,
+  // 13 was the round column, dropped in Aug 2026. Its `cellXfs` entry stays where it is:
+  // reclaiming the slot would renumber everything below it, which is the trap above.
   TP_HEADER: 14,
   TP_CELL: 15,
   TP_MUTED: 16,
@@ -170,15 +171,12 @@ function buildRosterSheet(
   draftRounds?: DraftRoundLookup,
 ): SheetSpec {
   const grid = buildRosterGrid(snapshot, ownerOrder, tiers, draftRounds);
-  const { rosters, hasRoundColumn, rows: gridRows } = grid;
-  const width = rosters.length + (hasRoundColumn ? 1 : 0);
+  const { rosters, rows: gridRows } = grid;
+  const width = rosters.length;
   const rows = new SheetRows();
   const merges: string[] = [];
 
-  rows.add([
-    ...(hasRoundColumn ? [{ style: STYLE.HEADER, value: { text: "Round" } as CellValue }] : []),
-    ...rosters.map((r) => ({ style: STYLE.HEADER, value: { text: r.ownerName } as CellValue })),
-  ]);
+  rows.add(rosters.map((r) => ({ style: STYLE.HEADER, value: { text: r.ownerName } as CellValue })));
 
   for (const row of gridRows) {
     if (row.kind === "tier") {
@@ -191,10 +189,7 @@ function buildRosterSheet(
       ]);
       merges.push(`A${r}:${colName(width - 1)}${r}`);
     } else {
-      rows.add([
-        ...(hasRoundColumn ? [{ style: STYLE.ROUND, value: { text: row.label ?? "" } as CellValue }] : []),
-        ...row.cells.map((p) => ({ style: playerStyle(p), value: playerValue(p) })),
-      ]);
+      rows.add(row.cells.map((p) => ({ style: playerStyle(p), value: playerValue(p) })));
     }
   }
 
@@ -212,9 +207,7 @@ function buildRosterSheet(
   }
   rows.add([{ style: STYLE.FOOTER, value: { text: `Data retrieved ${formatPacificTime(snapshot.capturedAt)}` } }]);
 
-  const cols = hasRoundColumn
-    ? `<cols><col min="1" max="1" width="7" customWidth="1"/><col min="2" max="${width}" width="26" customWidth="1"/></cols>`
-    : `<cols><col min="1" max="${width}" width="26" customWidth="1"/></cols>`;
+  const cols = `<cols><col min="1" max="${width}" width="26" customWidth="1"/></cols>`;
 
   const typeLabel = SNAPSHOT_TYPE_LABELS[snapshot.snapshotType] ?? "Rosters";
   return {

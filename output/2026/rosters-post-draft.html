@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fantasy For Life — 2026 Post-Draft Rosters</title>
+  <meta name="description" content="Every roster as drafted in 2026, by round.">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" type="image/png" sizes="32x32" href="../assets/ffl-favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="../assets/ffl-favicon-16.png">
+  <link rel="apple-touch-icon" href="../assets/ffl-favicon-180.png">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Fantasy For Life">
+  <meta property="og:title" content="2026 Post-Draft Rosters">
+  <meta property="og:description" content="Every roster as drafted in 2026, by round.">
+  <meta property="og:url" content="https://fantasyforlife.pages.dev/2026/rosters-post-draft.html">
+  <meta property="og:image" content="https://fantasyforlife.pages.dev/assets/ffl-avatar-512.png">
+  <meta property="og:image:width" content="512">
+  <meta property="og:image:height" content="512">
+  <meta property="og:image:alt" content="Fantasy For Life shield">
+  <meta name="twitter:card" content="summary">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    @theme {
+      --font-sans: "Schibsted Grotesk", system-ui, -apple-system, sans-serif;
+      --color-ink: #16211a;        /* body text */
+      --color-cream: #faf9f5;      /* page background */
+      --color-forest: #183f24;     /* header bar, active pills */
+      --color-parchment: #f2ecdc;  /* text on forest */
+      --color-sage: #b9c4ae;       /* muted text on forest */
+      --color-moss: #1d4a2c;       /* links */
+      --color-stone: #8a9284;      /* muted labels */
+      --color-fern: #6f7a6e;       /* secondary body text */
+      --color-line: #d8d6cc;       /* card and table borders */
+      --color-rule: #e9e7dd;       /* hairline row dividers */
+      --color-brass: #c9a53c;      /* the season's top honor */
+      --color-shell: #eeece2;      /* neutral fill: honor icon discs, table header strips */
+      --color-clay: #f0ead8;       /* warm fill: toilet-bowl honor card, throwback history row */
+      --color-clay-line: #ddd3b8;  /* toilet-bowl honor card: border */
+      --color-clay-ink: #8a7a4a;   /* toilet-bowl honor card: label and glyph */
+    }
+  </style>
+  <style>
+    .tbl-scroll {
+      --tbl-bg: #fff;
+      background:
+        linear-gradient(to right, var(--tbl-bg) 40%, transparent) left center,
+        linear-gradient(to left, var(--tbl-bg) 40%, transparent) right center,
+        radial-gradient(farthest-side at 0 50%, #16211a24, #16211a00) left center,
+        radial-gradient(farthest-side at 100% 50%, #16211a24, #16211a00) right center;
+      background-repeat: no-repeat;
+      background-size: 34px 100%, 34px 100%, 13px 100%, 13px 100%;
+      background-attachment: local, local, scroll, scroll;
+    }
+    .pos-wr  { background: #d0e8ff; }
+    .pos-rb  { background: #d0f0d0; }
+    .pos-qb  { background: #ffc0cb; }
+    .pos-te  { background: #ffe0b2; }
+    .pos-def { background: #d2b48c; }
+    .pos-k   { background: #e0d0f0; }
+    /* Keepers. Declared after the position tints so it wins — same specificity, later
+       rule. The position stays readable in the cell text. */
+    .keeper  { background: #ffff00; }
+    /* Sticky header. border-collapse hands cell borders to the table, so a pinned th
+       loses its own borders mid-scroll and the row reads as one merged dark bar.
+       Redraw the right and bottom edges as a shadow, which travels with the cell. */
+    th.sticky { box-shadow: inset -1px 0 #d1d5db, 0 1px 0 #d1d5db; }
+    .tier td { font-weight: bold; color: white; text-align: left; font-size: 12px; letter-spacing: 1px; padding: 3px 8px; }
+    .tier-1 td { background: #1a6b2a; }
+    .tier-2 td { background: #8b6914; }
+    .tier-3 td { background: #8b1a1a; }
+  </style>
+</head>
+<body class="bg-cream text-ink font-sans antialiased">
+  <header class="bg-forest text-parchment">
+    <div class="px-3 sm:px-5 py-4 flex items-center justify-between gap-6 flex-wrap">
+      <a href="../index.html" class="flex items-center gap-3.5 no-underline text-parchment">
+        <img src="../assets/ffl-avatar-128.png" alt="" width="42" height="42" class="w-[42px] h-[42px] rounded-lg">
+        <span>
+          <span class="block font-bold text-[17px] tracking-tight leading-tight">Fantasy For Life</span>
+          <span class="block text-xs text-sage">est. 2006</span>
+        </span>
+      </a>
+      <nav class="flex items-center gap-x-6 gap-y-3 text-sm flex-wrap justify-end">
+        <a href="../tiers.html" class="no-underline text-parchment transition-opacity hover:opacity-70">Keeper Tiers</a>
+        <a href="../prizes.html" class="no-underline text-parchment transition-opacity hover:opacity-70">Prize Tracker</a>
+        <a href="../history.html" class="no-underline text-parchment transition-opacity hover:opacity-70">League History</a>
+        <a href="../rules.html" class="no-underline text-parchment transition-opacity hover:opacity-70">Official Rules</a>
+        <a href="../gallery.html" class="no-underline text-parchment transition-opacity hover:opacity-70">Photo Gallery</a>
+        <a href="https://sleeper.com/leagues" target="_blank" rel="noopener noreferrer" class="no-underline text-forest bg-parchment rounded-full px-4 py-1.5 font-medium transition-opacity hover:opacity-80">Sleeper &#8599;</a>
+      </nav>
+    </div>
+  </header>
+  <div class="px-3 sm:px-5 pt-5 sm:pt-6 pb-10">
+  <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-ink mb-1">2026 Post-Draft Rosters</h1>
+  <div class="text-sm text-stone mb-4">Fantasy For Life (FFL) <span class="text-stone/70">&middot; Updated nightly or upon request</span></div>
+  <nav class="flex flex-wrap items-center gap-2 mb-6">
+      <a href="../tiers.html" class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg text-ink bg-white border border-line transition-colors hover:border-moss hover:text-moss no-underline">&#8592; All Keeper Tiers</a>
+      <span class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg text-parchment bg-forest border border-forest">Post-Draft</span>
+      <a href="rosters-pre-draft.html" class="inline-block px-3.5 py-1.5 text-sm font-medium rounded-lg text-ink bg-white border border-line transition-colors hover:border-moss hover:text-moss no-underline">Pre-Draft</a>
+    </nav>
+  <div class="overflow-auto max-h-[100dvh]">
+  <table class="border-collapse bg-white text-xs">
+    <tr>
+      <th class="border border-gray-300 px-2 py-1 whitespace-nowrap bg-forest text-parchment sticky top-0 z-10">Lemoore Liberators</th>
+      <th class="border border-gray-300 px-2 py-1 whitespace-nowrap bg-forest text-parchment sticky top-0 z-10">Easton Evil Empire</th>
+      <th class="border border-gray-300 px-2 py-1 whitespace-nowrap bg-forest text-parchment sticky top-0 z-10">Clovis Jets</th>
+      <th class="border border-gray-300 px-2 py-1 whitespace-nowrap bg-forest text-parchment sticky top-0 z-10">South Town Freedom Fighters</th>
+      <th class="border border-gray-300 px-2 py-1 whitespace-nowrap bg-forest text-parchment sticky top-0 z-10">Kingsburg Killaz</th>
+      <th class="border border-gray-300 px-2 py-1 whitespace-nowrap bg-forest text-parchment sticky top-0 z-10">Riverstone Stoners</th>
+      <th class="border border-gray-300 px-2 py-1 whitespace-nowrap bg-forest text-parchment sticky top-0 z-10">Dinkey Creek Dirt Clods</th>
+      <th class="border border-gray-300 px-2 py-1 whitespace-nowrap bg-forest text-parchment sticky top-0 z-10">Vancouver Moose Drool</th>
+      <th class="border border-gray-300 px-2 py-1 whitespace-nowrap bg-forest text-parchment sticky top-0 z-10">Sanger Squatty Pottys</th>
+      <th class="border border-gray-300 px-2 py-1 whitespace-nowrap bg-forest text-parchment sticky top-0 z-10">Visalia Viagra Vipers</th>
+    </tr>
+    <tr class="tier tier-1"><td colspan="10">TIER 1 — Drafted Rounds 1–3</td></tr>
+    <tr>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb keeper">Burrow, Joe CIN QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr keeper">Egbuka, Emeka TB WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr keeper">Jefferson, Justin MIN WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb keeper">McCaffrey, Christian SF RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb keeper">Williams, Caleb CHI QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb keeper">Jackson, Lamar BAL QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb keeper">Robinson, Bijan ATL RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb keeper">Maye, Drake NE QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr keeper">McMillan, Tetairoa CAR WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr keeper">Nacua, Puka LAR WR</td>
+    </tr>
+    <tr>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr keeper">Smith, DeVonta PHI WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr keeper">Smith-Njigba, Jaxon SEA WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr keeper">Rice, Rashee KC WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Cook, James BUF RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb keeper">Gibbs, Jahmyr DET RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb keeper">Purdy, Brock SF QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Achane, De'Von MIA RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr keeper">Chase, Ja'Marr CIN WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-te keeper">Bowers, Brock LV TE</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr keeper">Pickens, George DAL WR</td>
+    </tr>
+    <tr>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb">Allen, Josh BUF QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Taylor, Jonathan IND RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">St. Brown, Amon-Ra DET WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb">Prescott, Dak DAL QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Brown, A.J. NE WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Lamb, CeeDee DAL WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">London, Drake ATL WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Barkley, Saquon PHI RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb">Daniels, Jayden WAS QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Hampton, Omarion LAC RB</td>
+    </tr>
+    <tr>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Jeanty, Ashton LV RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Nabers, Malik NYG WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-te">McBride, Trey ARI TE</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Moore, DJ BUF WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Collins, Nico HOU WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Walker, Kenneth KC RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Henry, Derrick BAL RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb">Hurts, Jalen PHI QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Brown, Chase CIN RB</td>
+    </tr>
+    <tr>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Williams, Javonte DAL RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Love, Jeremiyah ARI RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Williams, Kyren LAR RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Swift, D'Andre CHI RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb">Nix, Bo DEN QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Jacobs, Josh GB RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">McConkey, Ladd LAC WR</td>
+    </tr>
+    <tr>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb">Herbert, Justin LAC QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+    </tr>
+    <tr>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Hall, Breece NYJ RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+    </tr>
+    <tr class="tier tier-2"><td colspan="10">TIER 2 — Drafted Rounds 4–8</td></tr>
+    <tr>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr keeper">Shakir, Khalil BUF WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb keeper">Lawrence, Trevor JAX QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb keeper">Dart, Jaxson NYG QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb keeper">Darnold, Sam SEA QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-te keeper">Loveland, Colston CHI TE</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-te keeper">Pitts, Kyle ATL TE</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb keeper">Shough, Tyler NO QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr keeper">Olave, Chris NO WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr keeper">Watson, Christian GB WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb keeper">Brissett, Jacoby ARI QB</td>
+    </tr>
+    <tr>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Judkins, Quinshon CLE RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-te">Warren, Tyler IND TE</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb">Mahomes, Patrick KC QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb keeper">Skattebo, Cam NYG RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Wilson, Garrett NYJ WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Waddle, Jaylen DEN WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb keeper">Stafford, Matthew LAR QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Flowers, Zay BAL WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Irving, Bucky TB RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb">Goff, Jared DET QB</td>
+    </tr>
+    <tr>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Burden, Luther CHI WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Montgomery, David HOU RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Price, Jadarian SEA RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Etienne, Travis NO RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Williams, Jameson DET WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Tuten, Bhayshul JAX RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Higgins, Tee CIN WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Brooks, Jonathon CAR RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">McLaurin, Terry WAS WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Pollard, Tony TEN RB</td>
+    </tr>
+    <tr>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Evans, Mike SF WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Washington, Parker JAX WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Henderson, TreVeyon NE RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Adams, Davante LAR WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Harvey, RJ DEN RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Odunze, Rome CHI WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Warren, Jaylen PIT RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb">Young, Bryce CAR QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Metcalf, DK PIT WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb">Jones, Daniel IND QB</td>
+    </tr>
+    <tr>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Stevenson, Rhamondre NE RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb">Murray, Kyler MIN QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Tate, Carnell TEN WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb">Mayfield, Baker TB QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb">Stroud, C.J. HOU QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-te">LaPorta, Sam DET TE</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb">Love, Jordan GB QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Sutton, Courtland DEN WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Dobbins, J.K. DEN RB</td>
+    </tr>
+    <tr>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Dowdle, Rico PIT RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb">Willis, Malik MIA QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb">Ward, Cam TEN QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Godwin, Chris TB WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Corum, Blake LAR RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Lemon, Makai PHI WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Thomas, Brian JAX WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Reed, Jayden GB WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+    </tr>
+    <tr>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-te">Kraft, Tucker GB TE</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Johnston, Quentin LAC WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Diggs, Stefon WAS WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Wilson, Michael ARI WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+    </tr>
+    <tr>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-te">Likely, Isaiah NYG TE</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+    </tr>
+    <tr class="tier tier-3"><td colspan="10">TIER 3 — Drafted Rounds 9+</td></tr>
+    <tr>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-te">Kelce, Travis KC TE</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Tyson, Jordyn NO WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Croskey-Merritt, Jacory WAS RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Harrison, Marvin ARI WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Mason, Jordan MIN RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Gainwell, Kenny TB RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Monangai, Kyle CHI RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-te">Fannin, Harold CLE TE</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Pacheco, Isiah DET RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Pierce, Alec IND WR</td>
+    </tr>
+    <tr>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Robinson, Wan'Dale TEN WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-k">Aubrey, Brandon DAL K</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Stribling, De'Zhaun SF WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-te">Ferguson, Jake DAL TE</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Lloyd, MarShawn GB RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Concepcion, KC CLE WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Hubbard, Chuba CAR RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Pittman, Michael PIT WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Singleton, Nicholas TEN RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-te">Kittle, George SF TE</td>
+    </tr>
+    <tr>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb">Rodgers, Aaron PIT QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-def">Rams, Los Angeles LAR DEF</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-te">Sadiq, Kenyon NYJ TE</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Washington, Mike LV RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Addison, Jordan MIN WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Rodriguez, Chris JAX RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-te">Kincaid, Dalton BUF TE</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-te">Johnson, Juwan NO TE</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Shaheed, Rashid SEA WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Jones, Aaron MIN RB</td>
+    </tr>
+    <tr>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb">Smith, Geno NYJ QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-k">Dicker, Cameron LAC K</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-qb">Mendoza, Fernando LV QB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-def">Broncos, Denver DEN DEF</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-def">Texans, Houston HOU DEF</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-def">Seahawks, Seattle SEA DEF</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">White, Rachaad WAS RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Mooney, Darnell NYG WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Golden, Matthew GB WR</td>
+    </tr>
+    <tr>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-def">Eagles, Philadelphia PHI DEF</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-def">Ravens, Baltimore BAL DEF</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-def">Vikings, Minnesota MIN DEF</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-k">Little, Cam JAX K</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-k">Myers, Jason SEA K</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-k">Fairbairn, Ka'imi HOU K</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-def">Patriots, New England NE DEF</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-def">Jaguars, Jacksonville JAX DEF</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-k">Butker, Harrison KC K</td>
+    </tr>
+    <tr>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-te">Andrews, Mark BAL TE</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-k">Pineiro, Eddy SF K</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Wicks, Dontayvion PHI WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Nailor, Jalen LV WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-rb">Robinson, Brian ATL RB</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Downs, Josh IND WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-k">Loop, Tyler BAL K</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-def">Chargers, Los Angeles LAC DEF</td>
+    </tr>
+    <tr>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-k">Bates, Jake DET K</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Worthy, Xavier KC WR</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-wr">Douglas, Caleb MIA WR</td>
+    </tr>
+    <tr>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap pos-k">Mevis, Harrison LAR K</td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+      <td class="border border-gray-300 px-2 py-1 whitespace-nowrap"></td>
+    </tr>
+  </table>
+  </div>
+  <p class="mt-3 flex items-center gap-2 text-xs text-fern">
+    <span class="keeper inline-block w-3.5 h-3.5 rounded-sm border border-line"></span>
+    Keeper
+  </p>
+  <p class="mt-2 text-xs text-fern">Column order is the 2026 draft order.</p>
+  <div class="mt-8">
+    <a href="rosters-post-draft-2026-ffl.xlsx" download class="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium rounded-lg text-ink bg-white border border-line transition-colors hover:border-moss hover:text-moss no-underline" title="Download this page as an Excel workbook"><svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 3a.75.75 0 0 1 .75.75v7.19l2.22-2.22a.75.75 0 1 1 1.06 1.06l-3.5 3.5a.75.75 0 0 1-1.06 0l-3.5-3.5a.75.75 0 1 1 1.06-1.06l2.22 2.22V3.75A.75.75 0 0 1 10 3Z"/><path d="M3.75 12.5a.75.75 0 0 1 .75.75v1.25c0 .414.336.75.75.75h9.5a.75.75 0 0 0 .75-.75v-1.25a.75.75 0 0 1 1.5 0v1.25A2.25 2.25 0 0 1 14.75 16.75h-9.5A2.25 2.25 0 0 1 3 14.5v-1.25a.75.75 0 0 1 .75-.75Z"/></svg>Download as Excel</a>
+  </div>
+  <h2 class="text-xs font-medium tracking-[0.14em] uppercase text-stone mb-3.5 mt-0 mt-8">Traded Picks</h2>
+  <p class="text-sm text-fern">None</p>
+    <div class="mt-8">
+      <a href="#top" class="text-moss no-underline transition-opacity hover:opacity-70 text-sm">&#8593; Back to top</a>
+    </div>
+  <footer class="mt-8 text-xs text-stone">Data retrieved Aug 29, 2026, 5:30 PM PT</footer>
+  </div>
+</body>
+</html>

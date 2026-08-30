@@ -8,6 +8,8 @@ import type {
   SnapshotRoster,
   SnapshotType,
   PlayerDatabase,
+  Roster,
+  LeagueUser,
   DraftPick,
   NavLink,
   LeagueTradedPick,
@@ -20,7 +22,8 @@ import type {
 } from "./types.js";
 import { SNAPSHOT_TYPE_LABELS } from "./types.js";
 import { getLeague, getRosters, getUsers, fetchAllPlayers } from "./sleeper-api.js";
-import { getDraftOrder } from "./tiers.js";
+import { getDraftOrder, getTierConfig } from "./tiers.js";
+import { LEAGUE_FACTS } from "./league-info.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = join(__dirname, "..", "data");
@@ -69,10 +72,13 @@ function sortPlayers<T extends { name: string; position: string }>(players: T[])
 }
 
 /**
- * Build a roster_id → owner name map from the Sleeper API.
+ * Build a roster_id → owner name map from responses already in hand.
+ *
+ * Split out from `buildRosterOwnerMap()` because `takePostDraftSnapshot()` needs the rosters
+ * themselves as well — they carry the keepers — and fetching them twice to get the names
+ * would be the only reason to call the fetching form there.
  */
-export async function buildRosterOwnerMap(leagueId: string): Promise<Map<number, string>> {
-  const [rosters, users] = await Promise.all([getRosters(leagueId), getUsers(leagueId)]);
+function rosterOwnerMapFrom(rosters: Roster[], users: LeagueUser[]): Map<number, string> {
   const userMap = new Map<string, string>();
   for (const user of users) {
     const name = applyOwnerNameOverride(user.metadata?.team_name || user.display_name);
@@ -85,6 +91,14 @@ export async function buildRosterOwnerMap(leagueId: string): Promise<Map<number,
     }
   }
   return rosterOwnerMap;
+}
+
+/**
+ * Build a roster_id → owner name map from the Sleeper API.
+ */
+export async function buildRosterOwnerMap(leagueId: string): Promise<Map<number, string>> {
+  const [rosters, users] = await Promise.all([getRosters(leagueId), getUsers(leagueId)]);
+  return rosterOwnerMapFrom(rosters, users);
 }
 
 export async function takeSnapshot(leagueId: string, snapshotType: SnapshotType, playerDb?: PlayerDatabase): Promise<Snapshot> {
@@ -157,14 +171,68 @@ export async function takeSnapshot(leagueId: string, snapshotType: SnapshotType,
   };
 }
 
+/**
+ * Which tier each kept player occupies in the season they were kept into, 0-based.
+ *
+ * The rules give a kept player a **one-tier climb**: keep a Tier 2 player and he is Tier 1
+ * next season, keep a Tier 3 and he is Tier 2, and a Tier 1 has nowhere left to climb. The
+ * tier he climbs *from* is the one the previous season's draft put him in, which is exactly
+ * what this season's own pre-draft page tiers by — so the origin lookup is `<season>:pre-draft`'s
+ * config read against the previous season's rounds, and the two pages cannot disagree about
+ * where a keeper started. An undrafted player is a free-agent pickup and starts in the last
+ * tier, per the same rule.
+ *
+ * Keyed by player name, the join key `DraftRoundLookup` already uses. An empty map means the
+ * climb could not be worked out (no pre-draft tier config, or no previous post-draft
+ * snapshot), and the renderer falls back to the top tier.
+ */
+async function loadKeeperTiers(season: string, keepers: SnapshotPlayer[]): Promise<Map<string, number>> {
+  const map = new Map<string, number>();
+  const originTiers = getTierConfig(season, "pre-draft");
+  if (keepers.length === 0 || !originTiers) return map;
+
+  const originRounds = (await loadDraftRoundsFor(season, "pre-draft")) ?? new Map<string, number>();
+  for (const player of keepers) {
+    const round = originRounds.get(player.name);
+    // The last tier whose `beforeRound` this round has reached. Undrafted skips the scan and
+    // lands in the last tier outright, which is where the rules put a free-agent pickup.
+    let origin = originTiers.length - 1;
+    if (round != null) {
+      origin = 0;
+      for (let i = 0; i < originTiers.length; i++) {
+        if (round >= originTiers[i].beforeRound) origin = i;
+      }
+    }
+    // Tier 1 is index 0, so climbing is a decrement, and Tier 1 stays put.
+    map.set(player.name, Math.max(0, origin - 1));
+  }
+  return map;
+}
+
 export async function takePostDraftSnapshot(
   leagueId: string,
   draftPicks: DraftPick[]
 ): Promise<Snapshot> {
-  const [league, rosterOwnerMap] = await Promise.all([
+  const [league, rosters, users] = await Promise.all([
     getLeague(leagueId),
-    buildRosterOwnerMap(leagueId),
+    getRosters(leagueId),
+    getUsers(leagueId),
   ]);
+  const rosterOwnerMap = rosterOwnerMapFrom(rosters, users);
+  const rosterById = new Map(rosters.map((r) => [r.roster_id, r]));
+
+  // Sleeper does not put kept players on the draft board. A keeper year's board carries the
+  // picks alone and `is_keeper` is null on every one of them (verified against the 2026
+  // draft, where none of the 30 kept players appears), so the roster a team leaves the draft
+  // with is its keepers plus its picks and the keepers have to come off the live rosters.
+  const keepersByRoster = new Map<number, string[]>();
+  for (const roster of rosters) {
+    if (roster.keepers?.length) keepersByRoster.set(roster.roster_id, roster.keepers);
+  }
+
+  // The 15MB player fetch is the only thing that turns a keeper id into a name, and a
+  // throwback year keeps nobody — so it stays skipped in exactly the years it buys nothing.
+  const playerDb = keepersByRoster.size > 0 ? await fetchAllPlayers() : undefined;
 
   console.log(`League: ${league.name} (${league.season})`);
   console.log(`Teams: ${league.total_rosters}`);
@@ -187,20 +255,86 @@ export async function takePostDraftSnapshot(
     picks.sort((a, b) => a.pick_no - b.pick_no);
   }
 
-  // Build resolved rosters from draft picks, ordered by draft slot
+  // Build resolved rosters from keepers + draft picks, ordered by draft slot
   const snapshotRosters: SnapshotRoster[] = [];
+  const staleRosters: string[] = [];
   for (const rosterId of draftSlotOrder) {
     const picks = picksByRoster.get(rosterId) ?? [];
     const ownerName = rosterOwnerMap.get(rosterId) ?? `Roster ${rosterId} (unowned)`;
+    const live = rosterById.get(rosterId);
 
-    const players: SnapshotPlayer[] = picks.map((pick) => ({
+    const keepers: SnapshotPlayer[] = (keepersByRoster.get(rosterId) ?? []).map((id) => ({
+      ...resolvePlayer(id, playerDb ?? {}),
+      keeper: true,
+    }));
+    sortPlayers(keepers);
+
+    // Every roster leaves the draft at exactly the roster limit, so a team drafts only the
+    // slots its keepers do not already fill and cuts the rest. Sleeper's board is not
+    // trimmed to that — 2026 ran a full 17 rounds and all ten teams dropped back to 14
+    // picks afterwards — and which ones a team cut was its own call, one keeping a round-15
+    // pick over a round-13 one. So the survivors are read off the live roster rather than
+    // guessed by taking the first N in pick order.
+    //
+    // That makes this a point-in-time capture: run it once the draft ends and before
+    // waivers open. A roster that has moved on since (a drop, a pickup) no longer describes
+    // the draft, so it falls back to the mechanical trim and is named in a warning.
+    const draftedSlots = LEAGUE_FACTS.rosterLimit - keepers.length;
+    const held = new Set(live?.players ?? []);
+    const survived = picks.filter((p) => held.has(p.player_id));
+    const fromLiveRoster = survived.length === draftedSlots;
+    if (!fromLiveRoster) staleRosters.push(ownerName);
+    const kept = fromLiveRoster ? survived : picks.slice(0, draftedSlots);
+
+    // A cut leaves a hole in the team's round numbers and a trade leaves one too, and only
+    // one of them is real. A traded-away round has no pick on the board at all, so its gap
+    // is a fact about the draft and stays; a cut round *does* have a pick, so its gap is an
+    // artifact of the oversized board and the picks after it shift up to close it. Sanger
+    // cut a round-13 pick in 2026 and their last two picks read 14 and 15 without this.
+    //
+    // Only on the live-roster path: the fallback cannot tell a cut from a stale roster, so
+    // it leaves the board's own numbers alone.
+    const shift = new Map<string, number>();
+    if (fromLiveRoster) {
+      let cuts = 0;
+      for (const pick of picks) {
+        if (held.has(pick.player_id)) shift.set(pick.player_id, cuts);
+        else cuts++;
+      }
+    }
+
+    const drafted: SnapshotPlayer[] = kept.map((pick) => ({
       name: `${pick.metadata.last_name}, ${pick.metadata.first_name}`,
       position: pick.metadata.position,
       team: pick.metadata.team,
-      round: pick.round,
+      round: pick.round - (shift.get(pick.player_id) ?? 0),
     }));
 
-    snapshotRosters.push({ ownerName, players });
+    snapshotRosters.push({ ownerName, players: [...keepers, ...drafted] });
+  }
+
+  // Stamp each keeper with the tier his climb earned him. Done here rather than at render
+  // time because it reads the *previous* season's snapshot, and a self-contained capture is
+  // what lets a page regenerate from its own file alone.
+  const allKeepers = snapshotRosters.flatMap((r) => r.players.filter((p) => p.keeper));
+  const keeperTiers = await loadKeeperTiers(league.season, allKeepers);
+  for (const player of allKeepers) {
+    const tier = keeperTiers.get(player.name);
+    if (tier != null) player.keeperTier = tier;
+  }
+  const untiered = allKeepers.filter((p) => p.keeperTier == null);
+  if (untiered.length > 0) {
+    console.warn(`\nWarning: ${untiered.length} keeper(s) could not be placed in a tier:`);
+    for (const p of untiered) console.warn(`  ${p.name}`);
+    console.warn("They render in the top tier. Check the previous season's post-draft snapshot");
+    console.warn(`and the ${league.season}:pre-draft entry in TIER_CONFIGS.`);
+  }
+
+  if (staleRosters.length > 0) {
+    console.warn(`\nWarning: ${staleRosters.length} roster(s) no longer match their draft picks:`);
+    for (const name of staleRosters) console.warn(`  ${name}`);
+    console.warn("Fell back to the first picks in draft order for those teams. A post-draft");
+    console.warn("capture is only accurate between the end of the draft and the first waiver run.");
   }
 
   return {

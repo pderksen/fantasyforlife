@@ -95,7 +95,13 @@ export interface SnapshotPlayer {
   position: string;   // "QB", "RB", etc.
   team: string;       // "KC", "SF", "FA", etc.
   round?: number;     // Draft round (post-draft snapshots only)
-  keeper?: boolean;   // Held for the upcoming draft (pre-draft snapshots only)
+  keeper?: boolean;   // Kept from the previous season (pre-draft and post-draft snapshots)
+  /**
+   * Which tier a kept player occupies this season, 0-based. Keepers alone carry it: they were
+   * not drafted this year, so no round places them. Settled at capture by `loadKeeperTiers()`
+   * in `snapshot.ts` from the rules' one-tier climb.
+   */
+  keeperTier?: number;
 }
 
 export interface SnapshotRoster {

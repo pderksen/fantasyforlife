@@ -1169,10 +1169,11 @@ it changed.
   both the index sections and `tradedPicksSection()` on roster pages. It used to be index-only,
   with `tradedPicksSection()` carrying a hand-written duplicate that had to be kept in sync;
   the redesign collapsed the two. Don't reintroduce a second one.
-- **Inline `<style>`** via `ROSTER_STYLES` / `ROUND_COL_STYLE`: position colors (`.pos-qb` etc.),
-  keeper highlight (`.keeper`), sticky-header borders (`th.sticky`), tier colors (`.tier-1`
-  etc.), round label column. `ROSTER_STYLES` ships on every roster page, so rules for absent
-  features (the keeper tint on a throwback year) are inert rather than conditional.
+- **Inline `<style>`** via `ROSTER_STYLES`: position colors (`.pos-qb` etc.), keeper highlight
+  (`.keeper`), sticky-header borders (`th.sticky`), tier colors (`.tier-1` etc.).
+  `ROSTER_STYLES` ships on every roster page, so rules for absent features (the keeper tint on
+  a throwback year) are inert rather than conditional. A `ROUND_COL_STYLE` sat beside it until
+  Aug 2026, styling the post-draft round label column; that column is gone and so is it.
 - **Keeper highlight**: `.keeper { background: #ffff00 }` (fluorescent yellow) deliberately
   overrides the position tint — it is declared *after* the `.pos-*` rules and wins on source
   order, since both are single-class selectors. Keep it there. The position is still spelled
