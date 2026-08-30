@@ -801,16 +801,25 @@ function flexFloor(px: number): string {
 const HERO_CARD = `flex-1 ${flexFloor(340)} rounded-[14px] px-6 py-4 flex items-center justify-between gap-4`;
 
 /**
- * The two cards below the honors: a shortcut to the newest tiers, and the countdown to the
- * next draft. Either can be absent — a fresh season with no pages yet has no tiers to link,
- * and a season whose draft isn't scheduled has no date in `DRAFT_DATES` — and the row simply
- * carries whichever it has.
+ * The cards below the honors: a shortcut to the newest tiers, then whichever of two seasonal
+ * cards is live. Before a scheduled draft the second slot is the countdown; once the draft has
+ * run it is the prize pool card, so the row reads "what's next" in the offseason and "what's
+ * at stake" during the season. Any card can be absent — a fresh season with no pages yet has
+ * no tiers to link, and a league with no `PRIZE_SEASONS` entry has no pool to show — and the
+ * row simply carries whichever it has.
  *
  * **The countdown card retires itself the moment its draft starts**, rather than sitting at
  * 0 DAYS / 0 HRS / 0 MINS for the eleven months until the next one. It comes back on its own
  * for the 2027 offseason: add `DRAFT_ORDERS["2027"]` in `tiers.ts` and `DRAFT_DATES["2027"]`
  * here, both of which the season checklist already calls for, and the card returns with no
  * edit to this function. That is the whole restore path — there is nothing commented out.
+ *
+ * **The prize card takes exactly the slot the countdown vacates** (it renders only while no
+ * countdown does), so the two swap on the same clock read and the row never holds three. Its
+ * figures come from `PRIZE_SEASONS` through the same `money()` / `prizeState()` the Prize
+ * Tracker renders with, so the card cannot disagree with the page it links: the pot bold, and
+ * the band's own state line ("Not started" / "Through Week N" / "Final") under it. No
+ * `tabular-nums`, per the standalone-figure rule the prize band documents.
  *
  * The tiers card names traded picks as well as tiers because the home page no longer carries a
  * traded-picks table of its own; that card is now the only route to one.
@@ -828,6 +837,22 @@ function upcomingDraftIso(draftSeason: string | undefined): string | undefined {
   // A draft in the past has nothing left to count. An unparseable date fails this too, which
   // hides the card rather than rendering "Invalid Date" across the top of the home page.
   return new Date(iso).getTime() > Date.now() ? iso : undefined;
+}
+
+/**
+ * Whether a season's draft has already run, per its `DRAFT_DATES` entry.
+ *
+ * Deliberately not `!upcomingDraftIso(...)`: the two differ on a season with no date at all,
+ * which has an order worth previewing but no draft known to be over, and on an unparseable
+ * date, which should keep the draft-prep card rather than claim the draft happened. This is
+ * what swaps the columns row's left card from the draft order to the league fact sheet, on
+ * the same clock read that retires the countdown, so the two flips land in the same run.
+ */
+function draftHasRun(season: string | undefined): boolean {
+  const iso = season ? getDraftDate(season) : undefined;
+  if (iso == null) return false;
+  const t = new Date(iso).getTime();
+  return Number.isFinite(t) && t <= Date.now();
 }
 
 function heroHtml(latest: NavLink | undefined, draftSeason: string | undefined): string {
@@ -869,6 +894,21 @@ function heroHtml(latest: NavLink | undefined, draftSeason: string | undefined):
         </span>
         <span class="flex gap-[18px]">${unit("days", "DAYS")}${unit("hours", "HRS")}${unit("mins", "MINS")}</span>
       </div>`);
+  }
+
+  if (!draftIso) {
+    const prizeSeason = prizeSeasons()[0];
+    const ps = prizeSeason ? PRIZE_SEASONS[prizeSeason] : undefined;
+    if (prizeSeason && ps) {
+      cards.push(`      <a href="prizes.html" class="no-underline text-ink ${CARD_BASE} ${HERO_CARD} transition-colors hover:border-moss">
+        <span>
+          <span class="${EYEBROW} text-stone">${esc(prizeSeason)} Prize Pool</span>
+          <span class="block text-[21px] font-bold tracking-[-0.02em]">${money(ps.pot)}</span>
+          <span class="block text-sm text-stone mt-0.5">${esc(prizeState(ps).text)}</span>
+        </span>
+        <span class="text-sm font-medium text-moss whitespace-nowrap">View prizes &#8594;</span>
+      </a>`);
+    }
   }
 
   if (cards.length === 0) return "";
@@ -1072,7 +1112,7 @@ const RULE_LINK = `${LINK} font-semibold whitespace-nowrap`;
  * figure rules prose is allowed, read out of the object the Prize Tracker renders so the two
  * pages can never quote different numbers. Everything else comes from `LEAGUE_FACTS` in
  * `league-info.ts`, which states each structural number once — `{rosterLimit}`, `{keeperCount}`,
- * `{teamCount}`, `{qbLimit}`, `{faabBudget}`, `{tradeDeadlineWeek}` — plus `{draftRounds}`,
+ * `{teamCount}`, `{qbLimit}`, `{faabBudget}`, `{tradeDeadlineWeek}`, `{playoffWeeks}` — plus `{draftRounds}`,
  * derived as roster limit minus keepers so the two can never disagree with their difference.
  * Both the home page's rule-changes card and the Official Rules page fill through this one
  * function, which is what keeps a figure from drifting between them.
@@ -1092,6 +1132,7 @@ function fillRuleTokens(text: string, season: string): string {
     qbLimit: String(LEAGUE_FACTS.qbLimit),
     faabBudget: money(LEAGUE_FACTS.faabBudget),
     tradeDeadlineWeek: String(LEAGUE_FACTS.tradeDeadlineWeek),
+    playoffWeeks: LEAGUE_FACTS.playoffWeeks,
     draftRounds: String(LEAGUE_FACTS.rosterLimit - LEAGUE_FACTS.keeperCount),
   };
   for (const [token, value] of Object.entries(facts)) {
@@ -1249,6 +1290,45 @@ function draftOrderHtml(draftOrder: DraftOrder | undefined): string {
         <h2 class="${SECTION_H2}">${esc(draftOrder.season)} Draft Order</h2>
         <div class="${CARD} overflow-hidden">
           <div class="px-5 py-[9px] bg-shell text-[11px] font-medium tracking-[0.12em] uppercase text-stone">Team</div>
+${rows}
+        </div>
+      </section>`;
+}
+
+/**
+ * The league fact sheet: the draft order card's in-season replacement, in the same slot beside
+ * the gallery. Once a draft has run its order is just round one of the board, which the tiers
+ * hub's `Draft Results` pill already links, so the slot goes to the questions owners actually
+ * ask mid-season — the trade deadline, the playoff weeks, the budgets and limits.
+ *
+ * **Every value is read from `LEAGUE_FACTS`**, the same object `fillRuleTokens()` fills rules
+ * prose from, so this card cannot disagree with the Official Rules page. That is also why it
+ * carries no season in its heading: `LEAGUE_FACTS` is the league as it stands, not a
+ * season-keyed record, and a year on the card would claim old years stay put when they don't.
+ * The money rows stay off on purpose — the prize hero card above already states the pot, and
+ * the rule changes card quotes the entry fee, so a third statement here is drift waiting.
+ *
+ * No `bg-shell` header strip, unlike the draft order card it replaces: strips on this site
+ * label columns ("Team") or list groups ("Stages & Drafts"), and a label/value list needs
+ * neither, so the first row drops its `border-t` instead of butting against a strip. Same
+ * section shell (`flex-1`, 320px floor) so the gallery column's split is undisturbed.
+ */
+function leagueFactsHtml(): string {
+  const facts: [string, string][] = [
+    ["Roster limit", `${LEAGUE_FACTS.rosterLimit} players`],
+    ["Keepers", `${LEAGUE_FACTS.keeperCount} per team`],
+    ["QB limit", `${LEAGUE_FACTS.qbLimit} per team`],
+    ["FAAB budget", money(LEAGUE_FACTS.faabBudget)],
+    ["Trade deadline", `End of Week ${LEAGUE_FACTS.tradeDeadlineWeek}`],
+    ["Playoffs", `Weeks ${LEAGUE_FACTS.playoffWeeks}`],
+  ];
+  const rows = facts
+    .map(([label, value], i) => `          <div class="flex items-baseline gap-4 px-5 py-2.5${i === 0 ? "" : " border-t border-rule"} text-[15px]"><span class="text-stone">${esc(label)}</span><span class="ml-auto font-semibold">${esc(value)}</span></div>`)
+    .join("\n");
+
+  return `      <section class="flex-1 ${flexFloor(320)}">
+        <h2 class="${SECTION_H2}">League at a Glance</h2>
+        <div class="${CARD} overflow-hidden">
 ${rows}
         </div>
       </section>`;
@@ -1515,10 +1595,15 @@ export function generateIndexHtml(
   const latest = newestNavLink(navLinks);
   const chrome: SiteChrome = { base: "", hasMark };
 
-  // Draft order and gallery share a row on wide screens and stack on narrow ones.
+  // The left card and the gallery share a row on wide screens and stack on narrow ones. From
+  // the hour a draft runs until the next one lands in DRAFT_DATES, the left card is the league
+  // fact sheet rather than an order that has become round one of the finished board.
+  const leftCard = draftOrder && draftHasRun(draftOrder.season)
+    ? leagueFactsHtml()
+    : draftOrderHtml(draftOrder);
   const columnsHtml = `
     <div class="flex gap-10 lg:gap-18 flex-wrap mb-14">
-${[draftOrderHtml(draftOrder), galleryHtml(chrome)].filter(Boolean).join("\n")}
+${[leftCard, galleryHtml(chrome)].filter(Boolean).join("\n")}
     </div>
 `;
 

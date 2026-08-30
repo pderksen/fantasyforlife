@@ -1041,6 +1041,11 @@ export const LEAGUE_FACTS = {
    * (`settings.trade_deadline`; Sleeper's deadline is the end of the named week, not its start).
    */
   tradeDeadlineWeek: 11,
+  /**
+   * The playoff bracket's weeks, as prose states them (`playoff_week_start` 15, three rounds).
+   * A string, not a pair of numbers: both consumers print the range and neither computes on it.
+   */
+  playoffWeeks: "15–17",
 };
 
 /** One rule, as a bold lead-in and the sentence that qualifies it. */

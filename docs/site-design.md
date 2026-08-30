@@ -585,16 +585,18 @@ held to a 1080px measure. Exact classes live in `html.ts`; this documents struct
 1. **"20XX Season Honors"** — cards from `SEASON_HONORS`, latest season only, each an icon disc
    over a label and a winner. Below them, a centred pointer to the full prize table.
 2. **Hero** — two cards. Left: shortcut to the newest tiers (`newestNavLink()`). Right: the
-   next draft's date and a live countdown. Either can be absent and the row carries whichever
-   it has, so between a draft finishing and the next one being scheduled the row is the tiers
-   card alone.
+   next draft's date and a live countdown while a scheduled draft is still ahead, the season's
+   prize pool card once it has run. Any card can be absent and the row carries whichever it
+   has.
 3. **"What's new in 20XX"** — one full-width card holding "What's changing" stacked above
    "Staying the same", then a footer that appears only once there is a rules document to
    point at. No header strip, and an optional `intro` paragraph that can sit above the pair;
    2026 sets neither. Copy from `RULE_CHANGES` in `league-info.ts`.
 4. **"20XX Draft Order" + "From the gallery"** — side by side on wide screens, stacked below
    ~900px. Draft order from `DRAFT_ORDERS` in `tiers.ts`, photos from `GALLERY` in
-   `league-info.ts`.
+   `league-info.ts`. Once the draft has run, the left card is "League at a Glance"
+   (`leagueFactsHtml()`, values from `LEAGUE_FACTS`) until the next draft lands in
+   `DRAFT_DATES`.
 5. **Survivor notice** — one band, no link. `survivorNoticeHtml()`, copy from `SURVIVOR` in
    `league-info.ts`.
 6. **Closing link rows** — "Past seasons" (Sleeper with the in-app menu path that finds the old
@@ -803,10 +805,41 @@ for the 2027 offseason, once that season has a `DRAFT_ORDERS` entry and a `DRAFT
 no code is commented out and nothing has to be remembered beyond the two the season checklist
 already asks for.
 
-This is the one thing on the home page whose *presence* depends on the clock, so it is also
-the one place `--generate` is not purely deterministic: regenerating across the draft instant
-drops the card, and every run after that matches. The card's contents stay deterministic, and
-the transition lands on a scheduled refresh, which commits `output/` anyway.
+That same clock read is the page's season switch. `draftHasRun()` is `upcomingDraftIso()`'s
+deliberate complement rather than its negation (both are false on a missing or unparseable
+date, so a bad entry keeps the draft-prep cards instead of claiming a draft happened), and
+three swaps land on the one read: the countdown retires, the prize pool card takes its hero
+slot, and the draft order yields its column to the league fact sheet. There is no in-season
+flag anywhere; each card arrives and leaves on its own signal, which is the same per-element
+derivation the throwback badge and the self-retiring notes already run on. It is also the one
+place `--generate` is not purely deterministic: regenerating across the draft instant swaps
+the cards, and every run after that matches. Each card's contents stay deterministic, and the
+transition lands on a scheduled refresh, which commits `output/` anyway.
+
+**The prize pool card is what in-season wayfinding looks like.** From September to January the
+money race is the ongoing thing this site frames that Sleeper does not, so the hero row's
+second slot points at it: the pot in bold, the Prize Tracker's own state line under it ("Not
+started", "Through Week N", "Final"), and a "View prizes" arrow matching the tiers card's. It
+is a static link card, deliberately not a live figure: the home page fetches nothing, and the
+refresh cadence from September is weekly, so any "current" number here would read as wrong
+every Sunday night. Both figures flow through the same `money()` and `prizeState()` the Prize
+Tracker renders with, so the card cannot disagree with the page it opens. It renders exactly
+when the countdown does not, which keeps the row at two cards without either knowing about
+the other's season.
+
+**The league fact sheet is what the draft order slot is for once the order is history.** A
+finished draft's order is round one of a board the tiers hub already links through its Draft
+Results pill, so spending the page's second-largest card on it from September to July answered
+August's question all year. The replacement answers the questions owners actually ask
+mid-season (roster limit, keepers, QB limit, FAAB, the trade deadline, the playoff weeks),
+which until now lived only in rules-page prose. The slot itself has to stay occupied either
+way: the gallery's crop math assumes a neighbour in the `flex-1` / `flex-[1.9]` split, and an
+empty column would hand the photos the full measure and upscale the 900px cuts. Every value
+reads `LEAGUE_FACTS`, the object `fillRuleTokens()` fills rules prose from (`{playoffWeeks}`
+was added there for exactly this second consumer), so the card and the Official Rules page
+cannot drift. The heading names no season because `LEAGUE_FACTS` is not season-keyed, and the
+money rows stay off because the prize card above states the pot and the rule changes card
+quotes the entry fee.
 
 **Season-by-season tiers ordering lives on the hub**, not here: `siteLinksHtml()` takes no
 `NavLink` list at all now, and the Keeper Tiers page section below carries the ordering rule.

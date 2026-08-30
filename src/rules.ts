@@ -405,7 +405,7 @@ export const RULES_SECTIONS: RulesSection[] = [
       {
         kind: "list",
         items: [
-          "Playoffs run weeks 15–17. The top 6 records make the championship bracket, and the top 2 take the first-round byes; the other 4 teams enter the losers bracket.",
+          "Playoffs run weeks {playoffWeeks}. The top 6 records make the championship bracket, and the top 2 take the first-round byes; the other 4 teams enter the losers bracket.",
           "Round 1 is #3 vs #6 and #4 vs #5. The bracket re-seeds after round 1, so the #1 seed faces the lowest surviving seed.",
           "One loss eliminates. The champion's name goes on the trophy, which they hold until the next champion takes it.",
           "A regular-season tie stands as a tie on your record. A playoff tie goes to the higher seed.",
