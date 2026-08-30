@@ -586,7 +586,8 @@ held to a 1080px measure. Exact classes live in `html.ts`; this documents struct
    over a label and a winner. Below them, a centred pointer to the full prize table.
 2. **Hero** — two cards. Left: shortcut to the newest tiers (`newestNavLink()`). Right: the
    next draft's date and a live countdown. Either can be absent and the row carries whichever
-   it has.
+   it has, so between a draft finishing and the next one being scheduled the row is the tiers
+   card alone.
 3. **"What's new in 20XX"** — one full-width card holding "What's changing" stacked above
    "Staying the same", then a footer that appears only once there is a rules document to
    point at. No header strip, and an optional `intro` paragraph that can sit above the pair;
@@ -793,6 +794,19 @@ league fixture, everyone is in the same zone, and a fixed string keeps `--genera
 deterministic — only the counter reads the viewer's clock, so regenerating produces no diff.
 With JS off the card still reads as a date, with en dashes where the numbers go. The offset in
 the ISO string is required: a bare local datetime would mean a different instant per time zone.
+
+**The card is only rendered while its draft is still ahead**, checked against the same ISO
+string at generate time. A countdown that has finished counting is not a countdown, and the
+alternative was a card reading 0 DAYS / 0 HRS / 0 MINS from the 2026 draft in August through
+to the 2027 one a year later. It was pulled the day the 2026 draft ran and returns on its own
+for the 2027 offseason, once that season has a `DRAFT_ORDERS` entry and a `DRAFT_DATES` one:
+no code is commented out and nothing has to be remembered beyond the two the season checklist
+already asks for.
+
+This is the one thing on the home page whose *presence* depends on the clock, so it is also
+the one place `--generate` is not purely deterministic: regenerating across the draft instant
+drops the card, and every run after that matches. The card's contents stay deterministic, and
+the transition lands on a scheduled refresh, which commits `output/` anyway.
 
 **Season-by-season tiers ordering lives on the hub**, not here: `siteLinksHtml()` takes no
 `NavLink` list at all now, and the Keeper Tiers page section below carries the ordering rule.

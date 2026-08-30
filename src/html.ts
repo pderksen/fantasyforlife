@@ -806,9 +806,30 @@ const HERO_CARD = `flex-1 ${flexFloor(340)} rounded-[14px] px-6 py-4 flex items-
  * and a season whose draft isn't scheduled has no date in `DRAFT_DATES` — and the row simply
  * carries whichever it has.
  *
+ * **The countdown card retires itself the moment its draft starts**, rather than sitting at
+ * 0 DAYS / 0 HRS / 0 MINS for the eleven months until the next one. It comes back on its own
+ * for the 2027 offseason: add `DRAFT_ORDERS["2027"]` in `tiers.ts` and `DRAFT_DATES["2027"]`
+ * here, both of which the season checklist already calls for, and the card returns with no
+ * edit to this function. That is the whole restore path — there is nothing commented out.
+ *
  * The tiers card names traded picks as well as tiers because the home page no longer carries a
  * traded-picks table of its own; that card is now the only route to one.
  */
+/**
+ * The next draft's ISO instant while it is still ahead, otherwise undefined.
+ *
+ * The card and `COUNTDOWN_SCRIPT` both gate on this, so a page can never ship one without the
+ * other: a script hunting an element that was not rendered is dead weight, and a card with no
+ * script would show en dashes where its numbers go.
+ */
+function upcomingDraftIso(draftSeason: string | undefined): string | undefined {
+  const iso = draftSeason ? getDraftDate(draftSeason) : undefined;
+  if (iso == null) return undefined;
+  // A draft in the past has nothing left to count. An unparseable date fails this too, which
+  // hides the card rather than rendering "Invalid Date" across the top of the home page.
+  return new Date(iso).getTime() > Date.now() ? iso : undefined;
+}
+
 function heroHtml(latest: NavLink | undefined, draftSeason: string | undefined): string {
   const cards: string[] = [];
 
@@ -822,7 +843,7 @@ function heroHtml(latest: NavLink | undefined, draftSeason: string | undefined):
       </a>`);
   }
 
-  const draftIso = draftSeason ? getDraftDate(draftSeason) : undefined;
+  const draftIso = upcomingDraftIso(draftSeason);
   if (draftSeason && draftIso) {
     // Rendered in Pacific at generate time rather than the viewer's zone: it is a league
     // fixture, everyone is in the same time zone, and a fixed string keeps the output
@@ -1515,7 +1536,7 @@ ${honorsHtml()}${heroHtml(latest, draftOrder?.season)}${ruleChangesHtml()}${colu
 ${backToTopHtml()}
   </main>
 ${lightboxHtml(GALLERY.length)}
-${COUNTDOWN_SCRIPT}
+${upcomingDraftIso(draftOrder?.season) ? COUNTDOWN_SCRIPT : ""}
 ${LIGHTBOX_SCRIPT}
 </body>
 </html>`;
