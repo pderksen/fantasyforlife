@@ -595,10 +595,11 @@ held to a 1080px measure. Exact classes live in `html.ts`; this documents struct
    over a label and a winner. Below them, a centred pointer to the full prize table.
 2. **Hero** — two shapes. Off-season: the big two-card row, the newest-tiers shortcut
    (`newestNavLink()`) beside the draft countdown. In season: one quiet band, a single card
-   of two-line label-over-value cells: the tiers link, the Sleeper draft board, and one dated
-   cell per `HOME_DATES` entry still ahead (waiver bidding opening, the first waiver run, and
-   the NFL opener, in 2026). Any cell can be absent and `justify-between` spreads whatever
-   renders.
+   of two-line label-over-value cells: the tiers link, the Sleeper draft board, the prize
+   pool link, and one dated cell per `HOME_DATES` entry still ahead (waiver bidding opening,
+   the first waiver run, and the NFL opener, in 2026). Cells sit on a three-column grid from
+   `md` (two rows of three today), and any cell can be absent: the grid reflows the rest in
+   DOM order.
 3. **"What's new in 20XX"** — one full-width card holding "What's changing" stacked above
    "Staying the same", then a footer that appears only once there is a rules document to
    point at. No header strip, and an optional `intro` paragraph that can sit above the pair;
@@ -831,30 +832,36 @@ place `--generate` is not purely deterministic: regenerating across the draft in
 the cards, and every run after that matches. Each card's contents stay deterministic, and the
 transition lands on a scheduled refresh, which commits `output/` anyway.
 
-**The in-season band is one card of listings, not a row of cards.** Five cells today, two
-lines each: the tiers link and the season's Sleeper draft board (gated on
-`SLEEPER_DRAFT_IDS`), then a label-over-date cell for waiver bidding opening, the first
-waiver run, and the NFL opener, from `HOME_DATES` in `league-info.ts`. Cells sit at natural
-width with `justify-between` spreading them across the card, wrapping on narrower screens,
-so a cell leaving is redistribution rather than a layout event. Links bold their value line
-and carry the moss arrow; dated facts sit a step lighter at `font-semibold`, so the two
-kinds read apart without separate treatments. The kickoff cell carries the matchup as its
-one `detail` line (Patriots at Seahawks in 2026, NBC's announced Kickoff Game, cross-checked
-against the rules page's waivers table).
+**The in-season band is one card of listings, not a row of cards.** Six cells today, two
+lines each: three durable links (the tiers page, the season's Sleeper draft board gated on
+`SLEEPER_DRAFT_IDS`, and the prize pool, "$1,600 up for grabs", gated on `PRIZE_SEASONS`
+with the figure through `money()` so it cannot disagree with the Prize Tracker it opens),
+then a label-over-date cell for waiver bidding opening, the first waiver run, and the NFL
+opener, from `HOME_DATES` in `league-info.ts`. The links sit together ahead of the dates,
+so the band reads as places to go, then things coming up, and settles to just the three
+links once the season is underway. The cells sit on a fixed grid rather than a wrapping
+flex row: three columns from `md`, which puts six cells in two even rows and the surviving
+three links on one, two columns from `sm`, one on a phone, each breakpoint sized by the
+~172px date line against that tier's column width. A cell leaving is pure reflow, since
+grid items fill in DOM order and leave no hole. Links bold their
+value line and carry the moss arrow; dated facts sit a step lighter at `font-semibold`, so
+the two kinds read apart without separate treatments. The kickoff cell carries the matchup
+as its one `detail` line (Patriots at Seahawks in 2026, NBC's announced Kickoff Game,
+cross-checked against the rules page's waivers table).
 
-**No counters, and the dates still cannot go stale.** Ticking countdown tiles shipped here
-for a day (Aug 31, 2026) and came out for this quieter form: three dates two days apart need
-announcing, not dramatizing. What replaced the counter mechanics is `STRIP_EXPIRY_SCRIPT`, a
+**No counters, and the dates still cannot go stale.** Ticking countdown tiles were tried
+here and cut for this quieter form: three dates two days apart need announcing, not
+dramatizing. What replaced the counter mechanics is `STRIP_EXPIRY_SCRIPT`, a
 sweep that hides a cell the minute its instant passes, because the in-season refresh is
 weekly and a Monday deadline still shown as upcoming on a Wednesday visit would read wrong;
 the next generate then drops the cell for good through `upcomingDates()`, the same
 per-instant gate the draft countdown uses. With JS off the static date simply stands, which
 is the usual enhancement-over-working-content call.
 
-(A prize pool hero card held the second slot from Aug 30 to Aug 31, 2026. It went with this
-redesign: the Prize Tracker stays one click away in the nav and the honors row's prize
-pointer, and every cell in the band earns its place in September, which a season-long pot
-figure does not.)
+(A full prize-pool hero card was also tried and cut; the pool stayed as the band's third
+link cell. Both moves are the same judgment about price: a whole hero card was too much slot
+for a season-long pot figure, and a two-line listing is about right for the thing the season
+is played for.)
 
 **The League Photos band is what the draft order row is for once the order is history.** A
 finished draft's order is round one of a board the tiers hub already links through its Draft

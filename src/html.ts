@@ -824,15 +824,15 @@ const HERO_CARD = `flex-1 ${flexFloor(340)} rounded-[14px] px-6 py-4 flex items-
  *
  * **In season**: one quiet band, a single white card of label-over-value cells two lines
  * each: the tiers link, the season's Sleeper draft board (gated on `SLEEPER_DRAFT_IDS`),
- * then one dated cell per `HOME_DATES` entry still ahead. Plain dates, no counters: five
- * cells earn a listing, not a row of cards. A cell whose instant passes is hidden by the
+ * the prize pool link (gated on `PRIZE_SEASONS`), then one dated cell per `HOME_DATES`
+ * entry still ahead. Plain dates, no counters: these earn a listing, not a row of cards,
+ * and the three links are what the band settles to once the dates have passed. A cell whose instant passes is hidden by the
  * expiry sweep client-side (the in-season refresh is weekly, so a page can sit in a browser
- * days past a moment) and dropped entirely at the next generate, with the row's
- * `justify-between` redistributing the survivors.
+ * days past a moment) and dropped entirely at the next generate, with the grid reflowing
+ * the survivors in DOM order.
  *
- * (This row has iterated: big tiers + countdown cards through draft day, a prize pool card
- * Aug 30–31, ticking countdown tiles for a day after that. The Prize Tracker stays reachable
- * from the nav and the honors row's prize pointer.)
+ * Counters and card-per-item forms were tried here and cut; `docs/site-design.md` carries
+ * the reasoning that survives them.
  */
 /**
  * The next draft's ISO instant while it is still ahead, otherwise undefined.
@@ -903,6 +903,17 @@ function heroStripHtml(latest: NavLink | undefined, season: string): string {
       </a>`);
   }
 
+  // The third durable cell, closing the link group before the dates: what the season is
+  // played for. The figure comes from PRIZE_SEASONS through money(), so the cell cannot
+  // disagree with the Prize Tracker it links; a season with no pool recorded renders none.
+  const pool = PRIZE_SEASONS[season];
+  if (pool) {
+    cells.push(`      <a href="prizes.html" class="no-underline text-ink block transition-opacity hover:opacity-70">
+        <span class="${EYEBROW} text-stone">${esc(season)} Prize Pool</span>
+        <span class="${BAND_VALUE} font-bold">${money(pool.pot)} up for grabs <span class="text-moss">&#8594;</span></span>
+      </a>`);
+  }
+
   for (const d of upcomingDates(season)) {
     cells.push(`      <div data-until="${esc(d.iso)}">
         <span class="${EYEBROW} text-stone">${esc(d.label)}</span>
@@ -912,9 +923,13 @@ function heroStripHtml(latest: NavLink | undefined, season: string): string {
   }
 
   if (cells.length === 0) return "";
-  // gap-x-8 is a floor `justify-between` grows from, and it is what keeps the five current
-  // cells (~820px of text by the 8px/char metric) on one line inside the 968px inner measure.
-  return `    <div class="${CARD_BASE} rounded-[14px] px-6 py-4 flex flex-wrap justify-between gap-x-8 gap-y-4 mb-12">
+  // A fixed grid, not a wrapping flex row: three columns from `md` up puts the six current
+  // cells in two even rows of three (and the three durable links on one row once the dates
+  // retire), two columns from `sm`, one below. The breakpoints are sized by the widest cell,
+  // the ~172px date line: a `md` column runs ~197px inside the card's padding and gaps, an
+  // `sm` column ~248px, and a phone's ~302px inner measure cannot fit two. A cell the expiry
+  // sweep hides leaves no hole, since grid items reflow in DOM order.
+  return `    <div class="${CARD_BASE} rounded-[14px] px-6 py-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-4 mb-12">
 ${cells.join("\n")}
     </div>
 `;
