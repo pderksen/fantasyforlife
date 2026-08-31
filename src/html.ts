@@ -37,6 +37,7 @@ import {
   getLatestHonors,
   isThrowbackSeason,
   latestRuleChanges,
+  nextThrowbackSeason,
   prizeSeasons,
   type Honor,
   type RuleNote,
@@ -306,8 +307,14 @@ const LAST_ROW_FLUSH = "[&>tr:last-child>td]:border-b-0";
 const LINK = "text-moss no-underline transition-opacity hover:opacity-70";
 
 /**
- * The return-to-top link every page closes on. `#top` is the document top with no id to match,
+ * The return-to-top link a long page closes on. `#top` is the document top with no id to match,
  * which is why nothing on any page carries one.
+ *
+ * Four of the six pages call it. The Keeper Tiers hub and the Prize Tracker do not: each is a
+ * single card that runs under a screen on a desktop and about one and a half on a phone, so the
+ * link sat below a scroll nobody had made. That is a measurement and not a rule, and both pages
+ * grow (a season row a year, a season block plus the all-time table a year), so re-add the call
+ * when either starts running the two-to-four screens the other four do.
  *
  * A plain link and not a floating button: a fixed control would have to be reasoned about
  * against the roster table's sticky header, the History table's frozen column and edge fade,
@@ -319,8 +326,9 @@ const LINK = "text-moss no-underline transition-opacity hover:opacity-70";
  * `max-h` the table stays where it was and the page top (chip bar, Excel button) is what comes
  * back. That is the destination worth returning to on every page here.
  *
- * `spacing` is the only knob, since the four pages close on blocks with different bottom
- * margins and the link should sit the same distance off each.
+ * `spacing` is the only knob, since the callers close on blocks with different bottom margins
+ * and the link should sit the same distance off each: the default `pt-2` on the home, History,
+ * Rules and Gallery pages, `mt-8` on a roster page, which puts it above the timestamp footer.
  */
 function backToTopHtml(spacing = "pt-2"): string {
   return `    <div class="${spacing}">
@@ -1636,29 +1644,58 @@ ${LIGHTBOX_SCRIPT}
  * pill on the page is marked and the mark moves on its own the run after a new snapshot lands.
  * Matching on the href rather than on a season/type pair keeps the rule in one place: whatever
  * that function calls newest is what this row marks.
+ *
+ * `nextThrowback` is a year to hang under this row's badge. The row only renders what it is
+ * handed, the same split `honorsSection()` makes with its own badge, so which row earns the
+ * note stays one decision in `generateTiersHtml()` rather than a rule repeated here.
  */
-function tiersRowHtml(season: string, links: NavLink[], currentHref?: string): string {
-  const pills = links
-    .map((l) => {
-      const current = l.href === currentHref;
-      const label = current ? `${l.chip} (current)` : l.chip;
-      return `<a href="${esc(l.href)}" class="${current ? PILL_CURRENT : PILL_ON_CARD}">${esc(label)}</a>`;
-    })
-    .join("\n            ");
+function tiersRowHtml(
+  season: string,
+  links: NavLink[],
+  currentHref?: string,
+  nextThrowback?: string,
+): string {
+  const stagePills = links.map((l) => {
+    const current = l.href === currentHref;
+    const label = current ? `${l.chip} (current)` : l.chip;
+    return `<a href="${esc(l.href)}" class="${current ? PILL_CURRENT : PILL_ON_CARD}">${esc(label)}</a>`;
+  });
   const badge = throwbackBadgeHtml(season);
-  const badgeLine = badge ? `\n          ${badge}` : "";
-  // Last in the row, after the stages, and carrying the arrow every off-site pill on this site
-  // carries. It is `PILL_ON_CARD` like the stages beside it because there is no fourth level of
-  // fill available here, and a season's draft board is a peer of its stages, not a step above.
+  const badgeLine = badge ? `\n              ${badge}` : "";
+  // Carries the arrow every off-site pill on this site carries, and is `PILL_ON_CARD` like the
+  // stages beside it because there is no fourth level of fill available here: a season's draft
+  // board is a peer of its stages, not a step above them.
   const draftHref = draftResultsUrl(season);
   const draftPill = draftHref
-    ? `\n            <a href="${draftHref}" target="_blank" rel="noopener noreferrer" class="${PILL_ON_CARD}">Draft Results &#x2197;</a>`
+    ? `<a href="${draftHref}" target="_blank" rel="noopener noreferrer" class="${PILL_ON_CARD}">Draft Results &#x2197;</a>`
+    : "";
+
+  // The draft goes where the draft happened. `discoverPages()` orders the stages newest-first
+  // (end-of-season, post-draft, pre-draft), so the draft's slot in that run is after post-draft
+  // and before pre-draft, which is what the pill takes. Anchored on the *pre-draft* pill rather
+  // than the post-draft one so both gaps fall right: a throwback season has no pre-draft page
+  // and the pill lands last, after post-draft, and a season whose draft has run but whose
+  // post-draft capture hasn't yet gets it first, in the slot that capture will fill.
+  const pills = [...stagePills];
+  const preDraftAt = links.findIndex((l) => l.page === "pre-draft");
+  if (draftPill) pills.splice(preDraftAt === -1 ? pills.length : preDraftAt, 0, draftPill);
+
+  // Stacked under the year and badge, which is the archive row's idiom mirrored to the other
+  // side of the card: that row stacks its note under the pill it qualifies, and this one
+  // qualifies the badge. The stack is a flex column so the pills stay centred against it, and
+  // it is the left-hand item of the row, so `ml-auto` on the pills is undisturbed.
+  const throwbackNote = nextThrowback
+    ? `\n            <span class="${THROWBACK_NOTE}">Next throwback year: ${esc(nextThrowback)}</span>`
     : "";
 
   return `        <div class="flex items-center gap-3 flex-wrap px-5 py-3.5 border-t border-rule">
-          <span class="text-[19px] font-bold tracking-tight">${esc(season)}</span>${badgeLine}
+          <span class="flex flex-col gap-1">
+            <span class="flex items-center gap-3 flex-wrap">
+              <span class="text-[19px] font-bold tracking-tight">${esc(season)}</span>${badgeLine}
+            </span>${throwbackNote}
+          </span>
           <span class="ml-auto flex gap-2 flex-wrap justify-end">
-            ${pills}${draftPill}
+            ${pills.join("\n            ")}
           </span>
         </div>`;
 }
@@ -1675,6 +1712,13 @@ function tiersRowHtml(season: string, links: NavLink[], currentHref?: string): s
  * `decoration-moss/40` so the rule reads as an affordance rather than as emphasis.
  */
 const ARCHIVE_NOTE = "text-[13px] text-moss underline underline-offset-2 decoration-moss/40 transition-opacity hover:opacity-70";
+
+/**
+ * The line under the throwback row, naming the next one. Same 13px as `ARCHIVE_NOTE` and in the
+ * same slot under its row's left-hand identity, but stone and unstyled: it is a fact about the
+ * cadence rather than a destination, and moss on this card means something is clickable.
+ */
+const THROWBACK_NOTE = "text-[13px] text-stone";
 
 /**
  * The Keeper Tiers hub: one row per season with its stages as pills, closing on the row for
@@ -1702,8 +1746,19 @@ export function generateTiersHtml(navLinks: NavLink[], hasMark = false): string 
     bySeason.set(link.season, [...(bySeason.get(link.season) ?? []), link]);
   }
   const currentHref = newestNavLink(navLinks)?.href;
-  const rows = [...bySeason.keys()].sort().reverse()
-    .map((season) => tiersRowHtml(season, bySeason.get(season)!, currentHref))
+  const seasonsDesc = [...bySeason.keys()].sort().reverse();
+  // The newest throwback row and no other, so the note always points forward. Every earlier
+  // throwback season's "next" has already happened, and a second copy of the line would be a
+  // page repeating a five-year cadence once per throwback row. Derived from the rows on the
+  // page, so 2030's own row takes the note over from 2025's the run that season first appears.
+  const notedThrowback = seasonsDesc.find((season) => isThrowbackSeason(season));
+  const rows = seasonsDesc
+    .map((season) => tiersRowHtml(
+      season,
+      bySeason.get(season)!,
+      currentHref,
+      season === notedThrowback ? nextThrowbackSeason(season) : undefined,
+    ))
     .join("\n");
 
   // Typed exactly like a season row, because it is one: those years' tiers are the next
@@ -1726,8 +1781,8 @@ export function generateTiersHtml(navLinks: NavLink[], hasMark = false): string 
   return `<!DOCTYPE html>
 <html lang="en">
 ${htmlHead({
-    title: `${SITE.wordmark} \u2014 Keeper Tiers & Drafts`,
-    ogTitle: "Keeper Tiers & Drafts",
+    title: `${SITE.wordmark} \u2014 Keeper Tiers & Draft Results`,
+    ogTitle: "Keeper Tiers & Draft Results",
     description: "Every season's roster tiers, from pre-draft keepers to final rosters, plus each season's draft board.",
     siteName: SITE.wordmark,
     path: "tiers.html",
@@ -1735,7 +1790,7 @@ ${htmlHead({
 <body class="bg-cream text-ink font-sans antialiased">
 ${siteHeader(chrome)}
   <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
-    <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-8">Keeper Tiers &amp; Drafts</h1>
+    <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-8">Keeper Tiers &amp; Draft Results</h1>
     <div class="${CARD} overflow-hidden">
       <div class="flex items-center justify-between gap-3 px-5 py-[9px] bg-shell text-[11px] font-medium tracking-[0.12em] uppercase text-stone">
         <span>Season</span>
@@ -1744,7 +1799,6 @@ ${siteHeader(chrome)}
 ${rows}
 ${archiveRow}
     </div>
-${backToTopHtml("pt-6")}
   </main>
 </body>
 </html>`;
@@ -3112,7 +3166,6 @@ ${siteHeader(chrome)}
     <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-ink mb-8">Prize Tracker</h1>
 ${prizesNavHtml(seasons, allTime !== "")}
 ${blocks}${prizeArchiveHtml()}
-${backToTopHtml()}
   </main>
 </body>
 </html>`;

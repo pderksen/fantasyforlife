@@ -117,6 +117,22 @@ export function isThrowbackSeason(season: string): boolean {
 }
 
 /**
+ * The next throwback season strictly after `season`, off the same two constants
+ * `isThrowbackSeason()` reads, so the pair can never name different cadences.
+ *
+ * Strictly after, so a throwback season asking about itself gets the following one: the tiers
+ * hub hangs this under the throwback row, where "next" means the next time it happens and not
+ * the row it sits on. A season before the cadence starts gets `THROWBACK_FIRST`, and an
+ * unparseable one gets `undefined` so a caller renders nothing rather than a `NaN` year.
+ */
+export function nextThrowbackSeason(season: string): string | undefined {
+  const year = Number(season);
+  if (!Number.isFinite(year)) return undefined;
+  const steps = Math.floor((year - THROWBACK_FIRST) / THROWBACK_EVERY) + 1;
+  return String(THROWBACK_FIRST + Math.max(steps, 0) * THROWBACK_EVERY);
+}
+
+/**
  * When each season's draft starts, as an ISO string with an explicit offset.
  *
  * The offset is required: the home page counts down to this instant in the viewer's own

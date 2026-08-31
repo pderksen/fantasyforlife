@@ -79,11 +79,20 @@ the same way and the field went with it. `newestNavLink()` still exists and stil
 one caller: the home page's hero card, which is the only thing on the site that deliberately
 points at a specific season and stage.
 
-### The header scrolls away, and every page closes on "Back to top"
+### The header scrolls away, and a long page closes on "Back to top"
 
-`backToTopHtml()` in `html.ts`, one renderer, called by all six page generators. It emits a
-plain `<a href="#top">`; `#top` is the document top by definition, so no page carries an id to
+`backToTopHtml()` in `html.ts`, one renderer, called by four of the six page generators. It emits
+a plain `<a href="#top">`; `#top` is the document top by definition, so no page carries an id to
 match it.
+
+**Two pages skip it, and the reason is length rather than layout.** The Keeper Tiers hub and the
+Prize Tracker are each one card: the hub is three rows, and the Prize Tracker is one season's band
+and ledger. On a desktop neither fills a screen, and on a phone each runs about one and a half, so
+the link sat under a scroll the reader had not made and offered to undo it. Every argument below
+still holds for the four pages that keep it; what does not hold is the assumption that every page
+here runs two to four screens. Both of these grow (the hub gains a season row a year, and the
+Prize Tracker gains a season block, the all-time table and its sub-nav the run 2027 lands), so
+this is a measurement to take again, not a decision. Re-adding it is one call apiece.
 
 **Three things on this site are sticky, and the site header is still not one of them:** the
 roster `TH` row, the History table's frozen Season column, and from Aug 2026 the History page's
@@ -896,7 +905,8 @@ era as a footnote to the list rather than a member of it, which is backwards: it
 league's 21 seasons. The range is derived from `LEAGUE_FIRST_SEASON` and `SLEEPER_FIRST_SEASON`,
 so it cannot claim years the sheet doesn't hold and the site doesn't serve.
 
-**The draft board is the last pill on a season's row.** The h1 is "Keeper Tiers & Drafts" because
+**The draft board is a pill in the stage run, between Post-Draft and Pre-Draft.** The h1 is
+"Keeper Tiers & Draft Results" because
 the page now answers both questions a reader has about a past season, and the second one is one
 link: `SLEEPER_DRAFT_IDS` in `league-info.ts` maps a season to its Sleeper draft id, and
 `draftResultsUrl()` turns that into the public board. A season with no id renders no pill, so an
@@ -912,8 +922,22 @@ already written down in CLAUDE.md's League table, so the hand-kept version costs
 It is `PILL_ON_CARD` with the `↗` and a new tab, identical to the archive row's link and to the
 stage pills beside it. There is no fill level left below the stages and none above them short of
 `PILL_CURRENT`, which belongs to the newest stage; and a draft board is a peer of that season's
-stages, not a rank above them. It sits last in the row for the same reason the archive sits last
-in the card: the stages are what this page is for, and the board is where you go when they aren't.
+stages, not a rank above them.
+
+**It sits between Post-Draft and Pre-Draft, which is where the draft happened.** The stage run is
+already a timeline, newest-first out of `discoverPages()` (end-of-season, post-draft, pre-draft),
+so that gap is the board's own place in it and the row reads as one sequence rather than a list of
+pages with an off-site link tacked on the end. It sat last until Aug 2026 on the reasoning that
+the stages are what the page is for and the board is where you go when they aren't. Chronology is
+the better answer: everything else in the row is ordered by time, so a pill outside that order
+reads as an afterthought rather than as a category.
+
+`tiersRowHtml()` splices it in at the index of the **pre-draft** pill, not after the post-draft
+one, and that choice is what makes both gaps fall right with no special case. A throwback season
+has no pre-draft page, so the pill lands last, immediately after Post-Draft, exactly where it
+belongs. And a season whose draft has run before its post-draft capture has landed gets the pill
+first, in the slot that capture will fill. Anchoring on post-draft would have put it after
+Pre-Draft in that second case, which is the one arrangement the rule is meant to rule out.
 
 **The archive row's second line is the one thing on it not typed like a season.** Those years'
 drafts are not on the sheet its pill opens (they are on the MyFantasyLeague sites the League
@@ -943,6 +967,24 @@ the first time a pre-draft capture is simply skipped — a silent failure, since
 looks exactly like a right one. It is a filled forest chip rather than an outline: it is the one
 thing on the row that isn't a link, and an outlined chip beside outlined pills would read as a
 fourth destination.
+
+**The next throwback year hangs under the badge, on the newest throwback row alone.** The badge
+says a season drafted fresh; the obvious next question is when that happens again, and the answer
+is one line of 13px stone (`THROWBACK_NOTE`) reading "Next throwback year: 2030". It is computed
+by `nextThrowbackSeason()` off the same `THROWBACK_FIRST` / `THROWBACK_EVERY` pair the badge
+reads, so the two cannot disagree and no year is typed on the page.
+
+Stacked under the year and badge in a `flex-col`, which is the archive row's idiom mirrored to the
+other side of the card: that row stacks a note under the pill it qualifies, and this one qualifies
+the badge. Stone rather than the archive note's underlined moss, because moss in this card means
+something is clickable and this is a fact about the calendar. The stack is the row's left-hand
+item, so the pills keep their `ml-auto` and stay vertically centred against the taller block.
+
+Only the newest throwback row on the page carries it. `generateTiersHtml()` finds that row and
+`tiersRowHtml()` renders whatever year it is handed, the same split `honorsSection()` makes with
+its own badge, so the note walks forward to 2030's row the run that season lands and 2025 gives it
+up. One note rather than one per throwback row: an earlier throwback season's "next" has already
+happened, and repeating the line down the card would be the page reciting its own cadence.
 
 **The nav item points here, not at the newest page.** `SITE_NAV`'s first entry was "Current
 Tiers", resolving at render time through `newestNavLink()` to whichever roster page was newest.
