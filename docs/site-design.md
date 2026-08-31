@@ -593,19 +593,21 @@ held to a 1080px measure. Exact classes live in `html.ts`; this documents struct
 
 1. **"20XX Season Honors"** — cards from `SEASON_HONORS`, latest season only, each an icon disc
    over a label and a winner. Below them, a centred pointer to the full prize table.
-2. **Hero** — two cards. Left: shortcut to the newest tiers (`newestNavLink()`). Right: the
-   next draft's date and a live countdown while a scheduled draft is still ahead, the season's
-   prize pool card once it has run. Any card can be absent and the row carries whichever it
-   has.
+2. **Hero** — two shapes. Off-season: the big two-card row, the newest-tiers shortcut
+   (`newestNavLink()`) beside the draft countdown. In season: one quiet band, a single card
+   of two-line label-over-value cells: the tiers link, the Sleeper draft board, and one dated
+   cell per `HOME_DATES` entry still ahead (waiver bidding opening, the first waiver run, and
+   the NFL opener, in 2026). Any cell can be absent and `justify-between` spreads whatever
+   renders.
 3. **"What's new in 20XX"** — one full-width card holding "What's changing" stacked above
    "Staying the same", then a footer that appears only once there is a rules document to
    point at. No header strip, and an optional `intro` paragraph that can sit above the pair;
    2026 sets neither. Copy from `RULE_CHANGES` in `league-info.ts`.
 4. **"20XX Draft Order" + "From the gallery"** — side by side on wide screens, stacked below
    ~900px. Draft order from `DRAFT_ORDERS` in `tiers.ts`, photos from `GALLERY` in
-   `league-info.ts`. Once the draft has run, the left card is "League at a Glance"
-   (`leagueFactsHtml()`, values from `LEAGUE_FACTS`) until the next draft lands in
-   `DRAFT_DATES`.
+   `league-info.ts`. Once the draft has run, the whole row gives way to the full-width
+   "League Photos" band (`homePhotosHtml()`, the hand-picked `HOME_PHOTOS` rendered as the
+   gallery page's justified rows) until the next draft lands in `DRAFT_DATES`.
 5. **Survivor notice** — one band, no link. `survivorNoticeHtml()`, copy from `SURVIVOR` in
    `league-info.ts`.
 6. **Closing link rows** — "Past seasons" (Sleeper with the in-app menu path that finds the old
@@ -724,7 +726,9 @@ The grid auto-fits at `minmax(230px, 1fr)` rather than sitting on a fixed four-c
 season could record three honors or five, and auto-fit reflows either without a breakpoint per
 count.
 
-**The gallery column crops to a cap.** Photos are `object-cover` in `min-h-0` flex children
+**The gallery column crops to a cap** (the off-season shape; in season the row is the
+full-width League Photos band, covered under the seasonal swap below). Photos are
+`object-cover` in `min-h-0` flex children
 dividing the column by weight, which does nothing at all unless something bounds the height —
 otherwise the images' intrinsic heights set it and the column runs about twice the draft order
 card beside it. `GALLERY_MAX_H` is that bound, and `GalleryPhoto.focus` only bites because of it.
@@ -817,38 +821,65 @@ already asks for.
 That same clock read is the page's season switch. `draftHasRun()` is `upcomingDraftIso()`'s
 deliberate complement rather than its negation (both are false on a missing or unparseable
 date, so a bad entry keeps the draft-prep cards instead of claiming a draft happened), and
-three swaps land on the one read: the countdown retires, the prize pool card takes its hero
-slot, and the draft order yields its column to the league fact sheet. There is no in-season
+three swaps land on the one read: the countdown retires, the hero row trades its big cards
+for the in-season date band, and the draft order row gives way to the League Photos band.
+The band's dated cells then apply the same per-instant gate individually, through
+`upcomingDates()`, so each retires on its own moment too. There is no in-season
 flag anywhere; each card arrives and leaves on its own signal, which is the same per-element
 derivation the throwback badge and the self-retiring notes already run on. It is also the one
 place `--generate` is not purely deterministic: regenerating across the draft instant swaps
 the cards, and every run after that matches. Each card's contents stay deterministic, and the
 transition lands on a scheduled refresh, which commits `output/` anyway.
 
-**The prize pool card is what in-season wayfinding looks like.** From September to January the
-money race is the ongoing thing this site frames that Sleeper does not, so the hero row's
-second slot points at it: the pot in bold, the Prize Tracker's own state line under it ("Not
-started", "Through Week N", "Final"), and a "View prizes" arrow matching the tiers card's. It
-is a static link card, deliberately not a live figure: the home page fetches nothing, and the
-refresh cadence from September is weekly, so any "current" number here would read as wrong
-every Sunday night. Both figures flow through the same `money()` and `prizeState()` the Prize
-Tracker renders with, so the card cannot disagree with the page it opens. It renders exactly
-when the countdown does not, which keeps the row at two cards without either knowing about
-the other's season.
+**The in-season band is one card of listings, not a row of cards.** Five cells today, two
+lines each: the tiers link and the season's Sleeper draft board (gated on
+`SLEEPER_DRAFT_IDS`), then a label-over-date cell for waiver bidding opening, the first
+waiver run, and the NFL opener, from `HOME_DATES` in `league-info.ts`. Cells sit at natural
+width with `justify-between` spreading them across the card, wrapping on narrower screens,
+so a cell leaving is redistribution rather than a layout event. Links bold their value line
+and carry the moss arrow; dated facts sit a step lighter at `font-semibold`, so the two
+kinds read apart without separate treatments. The kickoff cell carries the matchup as its
+one `detail` line (Patriots at Seahawks in 2026, NBC's announced Kickoff Game, cross-checked
+against the rules page's waivers table).
 
-**The league fact sheet is what the draft order slot is for once the order is history.** A
+**No counters, and the dates still cannot go stale.** Ticking countdown tiles shipped here
+for a day (Aug 31, 2026) and came out for this quieter form: three dates two days apart need
+announcing, not dramatizing. What replaced the counter mechanics is `STRIP_EXPIRY_SCRIPT`, a
+sweep that hides a cell the minute its instant passes, because the in-season refresh is
+weekly and a Monday deadline still shown as upcoming on a Wednesday visit would read wrong;
+the next generate then drops the cell for good through `upcomingDates()`, the same
+per-instant gate the draft countdown uses. With JS off the static date simply stands, which
+is the usual enhancement-over-working-content call.
+
+(A prize pool hero card held the second slot from Aug 30 to Aug 31, 2026. It went with this
+redesign: the Prize Tracker stays one click away in the nav and the honors row's prize
+pointer, and every cell in the band earns its place in September, which a season-long pot
+figure does not.)
+
+**The League Photos band is what the draft order row is for once the order is history.** A
 finished draft's order is round one of a board the tiers hub already links through its Draft
-Results pill, so spending the page's second-largest card on it from September to July answered
-August's question all year. The replacement answers the questions owners actually ask
-mid-season (roster limit, keepers, QB limit, FAAB, the trade deadline, the playoff weeks),
-which until now lived only in rules-page prose. The slot itself has to stay occupied either
-way: the gallery's crop math assumes a neighbour in the `flex-1` / `flex-[1.9]` split, and an
-empty column would hand the photos the full measure and upscale the 900px cuts. Every value
-reads `LEAGUE_FACTS`, the object `fillRuleTokens()` fills rules prose from (`{playoffWeeks}`
-was added there for exactly this second consumer), so the card and the Official Rules page
-cannot drift. The heading names no season because `LEAGUE_FACTS` is not season-keyed, and the
-money rows stay off because the prize card above states the pot and the rule changes card
-quotes the entry fee.
+Results pill, so spending the page's second-largest element on it from September to July
+answered August's question all year. In season the whole row goes to the photos: the
+hand-picked `HOME_PHOTOS` filenames, resolved against `PHOTO_ARCHIVE` so dimensions, captions
+and alt text stay stated once (an unknown name throws at generate time), rendered through
+`archiveFigureHtml()` as the gallery page's justified full-width rows. Replacing the row
+whole also sidesteps the crop machinery: the off-season column crops because it pairs with
+the draft order card's height, and with no card there is nothing to pair with, so the band
+runs uncropped at each photo's own aspect, exactly as the gallery page argues for.
+
+The band deliberately omits the gallery page's trailing spacer. An archive feed ends wherever
+it ends, so its last row keeps natural sizes; this band is curated, every row is meant to
+justify to the measure, and a spacer would leave the final row hanging short. The cost is
+that curation owns the flow: rows break on flex basis (`GALLERY_ROW_H` times aspect against
+the 1016px inner measure), the current six split three and three (~323px and ~295px rows,
+every photo well inside its 650px cut), and the arithmetic wants re-checking whenever the set
+changes, because a lone landscape left on a final row would stretch toward the full measure
+and past what its cut carries.
+
+(A "League at a Glance" fact card, `LEAGUE_FACTS` as label/value rows, held the draft order's
+half of the row for the two days after the 2026 draft before the photos took the whole
+section. Its facts live on the rules page, which is one statement of each number rather than
+two.)
 
 **Season-by-season tiers ordering lives on the hub**, not here: `siteLinksHtml()` takes no
 `NavLink` list at all now, and the Keeper Tiers page section below carries the ordering rule.

@@ -15,7 +15,10 @@ import {
   SLEEPER_FIRST_SEASON,
   mflHomeUrl,
   GALLERY,
+  HOME_DATES,
+  HOME_PHOTOS,
   PHOTO_ARCHIVE,
+  type HomeDate,
   type ArchivePhoto,
   SEASON_HONORS,
   LEAGUE_HISTORY,
@@ -809,28 +812,27 @@ function flexFloor(px: number): string {
 const HERO_CARD = `flex-1 ${flexFloor(340)} rounded-[14px] px-6 py-4 flex items-center justify-between gap-4`;
 
 /**
- * The cards below the honors: a shortcut to the newest tiers, then whichever of two seasonal
- * cards is live. Before a scheduled draft the second slot is the countdown; once the draft has
- * run it is the prize pool card, so the row reads "what's next" in the offseason and "what's
- * at stake" during the season. Any card can be absent — a fresh season with no pages yet has
- * no tiers to link, and a league with no `PRIZE_SEASONS` entry has no pool to show — and the
- * row simply carries whichever it has.
+ * The hero row below the honors, with two seasonal shapes on the `draftHasRun()` read.
  *
- * **The countdown card retires itself the moment its draft starts**, rather than sitting at
- * 0 DAYS / 0 HRS / 0 MINS for the eleven months until the next one. It comes back on its own
- * for the 2027 offseason: add `DRAFT_ORDERS["2027"]` in `tiers.ts` and `DRAFT_DATES["2027"]`
- * here, both of which the season checklist already calls for, and the card returns with no
- * edit to this function. That is the whole restore path — there is nothing commented out.
+ * **Off-season** (a draft scheduled, or an order awaiting a date): the big two-card row, the
+ * newest tiers shortcut beside the draft countdown while its instant is still ahead. The
+ * countdown retires itself the moment the draft starts rather than sitting at 0 DAYS for
+ * eleven months, and returns for 2027 through the checklist's step 0a (`DRAFT_ORDERS` plus
+ * `DRAFT_DATES`), with no edit here; nothing is commented out. The tiers card's eyebrow names
+ * traded picks as well as tiers because the home page carries no traded-picks table of its
+ * own, and that card is the only route to one.
  *
- * **The prize card takes exactly the slot the countdown vacates** (it renders only while no
- * countdown does), so the two swap on the same clock read and the row never holds three. Its
- * figures come from `PRIZE_SEASONS` through the same `money()` / `prizeState()` the Prize
- * Tracker renders with, so the card cannot disagree with the page it links: the pot bold, and
- * the band's own state line ("Not started" / "Through Week N" / "Final") under it. No
- * `tabular-nums`, per the standalone-figure rule the prize band documents.
+ * **In season**: one quiet band, a single white card of label-over-value cells two lines
+ * each: the tiers link, the season's Sleeper draft board (gated on `SLEEPER_DRAFT_IDS`),
+ * then one dated cell per `HOME_DATES` entry still ahead. Plain dates, no counters: five
+ * cells earn a listing, not a row of cards. A cell whose instant passes is hidden by the
+ * expiry sweep client-side (the in-season refresh is weekly, so a page can sit in a browser
+ * days past a moment) and dropped entirely at the next generate, with the row's
+ * `justify-between` redistributing the survivors.
  *
- * The tiers card names traded picks as well as tiers because the home page no longer carries a
- * traded-picks table of its own; that card is now the only route to one.
+ * (This row has iterated: big tiers + countdown cards through draft day, a prize pool card
+ * Aug 30–31, ticking countdown tiles for a day after that. The Prize Tracker stays reachable
+ * from the nav and the honors row's prize pointer.)
  */
 /**
  * The next draft's ISO instant while it is still ahead, otherwise undefined.
@@ -863,7 +865,66 @@ function draftHasRun(season: string | undefined): boolean {
   return Number.isFinite(t) && t <= Date.now();
 }
 
+/**
+ * The `HOME_DATES` entries still worth a cell: the same gate `upcomingDraftIso()` applies to
+ * the draft card — a moment already passed has nothing to announce, and an unparseable
+ * instant drops its cell rather than rendering "Invalid Date".
+ */
+function upcomingDates(season: string): HomeDate[] {
+  return (HOME_DATES[season] ?? []).filter((d) => new Date(d.iso).getTime() > Date.now());
+}
+
+/** One compact date-and-time line, rendered in Pacific at generate time (the draft card's rule). */
+function pacificShort(iso: string): string {
+  return new Date(iso).toLocaleString("en-US", {
+    timeZone: "America/Los_Angeles", weekday: "short", month: "short", day: "numeric",
+    hour: "numeric", minute: "2-digit", timeZoneName: "short",
+  });
+}
+
+/** A band cell's value line; the links bold theirs, the dated facts sit a step lighter. */
+const BAND_VALUE = "block text-[15px]";
+
+function heroStripHtml(latest: NavLink | undefined, season: string): string {
+  const cells: string[] = [];
+
+  if (latest) {
+    cells.push(`      <a href="${esc(latest.href)}" class="no-underline text-ink block transition-opacity hover:opacity-70">
+        <span class="${EYEBROW} text-stone">Current Tiers</span>
+        <span class="${BAND_VALUE} font-bold">${esc(latest.season)} ${esc(latest.chip)} <span class="text-moss">&#8594;</span></span>
+      </a>`);
+  }
+
+  const boardUrl = draftResultsUrl(season);
+  if (boardUrl) {
+    cells.push(`      <a href="${boardUrl}" target="_blank" rel="noopener noreferrer" class="no-underline text-ink block transition-opacity hover:opacity-70">
+        <span class="${EYEBROW} text-stone">Draft Results</span>
+        <span class="${BAND_VALUE} font-bold">Sleeper board <span class="text-moss">&#x2197;</span></span>
+      </a>`);
+  }
+
+  for (const d of upcomingDates(season)) {
+    cells.push(`      <div data-until="${esc(d.iso)}">
+        <span class="${EYEBROW} text-stone">${esc(d.label)}</span>
+        <span class="${BAND_VALUE} font-semibold">${esc(pacificShort(d.iso))}</span>${d.detail ? `
+        <span class="block text-[13px] text-stone">${esc(d.detail)}</span>` : ""}
+      </div>`);
+  }
+
+  if (cells.length === 0) return "";
+  // gap-x-8 is a floor `justify-between` grows from, and it is what keeps the five current
+  // cells (~820px of text by the 8px/char metric) on one line inside the 968px inner measure.
+  return `    <div class="${CARD_BASE} rounded-[14px] px-6 py-4 flex flex-wrap justify-between gap-x-8 gap-y-4 mb-12">
+${cells.join("\n")}
+    </div>
+`;
+}
+
 function heroHtml(latest: NavLink | undefined, draftSeason: string | undefined): string {
+  if (draftSeason && draftHasRun(draftSeason)) {
+    return heroStripHtml(latest, draftSeason);
+  }
+
   const cards: string[] = [];
 
   if (latest) {
@@ -904,21 +965,6 @@ function heroHtml(latest: NavLink | undefined, draftSeason: string | undefined):
       </div>`);
   }
 
-  if (!draftIso) {
-    const prizeSeason = prizeSeasons()[0];
-    const ps = prizeSeason ? PRIZE_SEASONS[prizeSeason] : undefined;
-    if (prizeSeason && ps) {
-      cards.push(`      <a href="prizes.html" class="no-underline text-ink ${CARD_BASE} ${HERO_CARD} transition-colors hover:border-moss">
-        <span>
-          <span class="${EYEBROW} text-stone">${esc(prizeSeason)} Prize Pool</span>
-          <span class="block text-[21px] font-bold tracking-[-0.02em]">${money(ps.pot)}</span>
-          <span class="block text-sm text-stone mt-0.5">${esc(prizeState(ps).text)}</span>
-        </span>
-        <span class="text-sm font-medium text-moss whitespace-nowrap">View prizes &#8594;</span>
-      </a>`);
-    }
-  }
-
   if (cards.length === 0) return "";
   return `    <div class="flex gap-6 flex-wrap mb-12">\n${cards.join("\n")}\n    </div>\n`;
 }
@@ -942,6 +988,28 @@ const COUNTDOWN_SCRIPT = `  <script>
       }
       tick();
       setInterval(tick, 30000);
+    })();
+  </script>`;
+
+/**
+ * Hides a hero band cell the minute its instant passes. Vanilla and inline, like
+ * `COUNTDOWN_SCRIPT`, and an enhancement over correct static content: with JS off the cell
+ * simply keeps showing its date. The generate-time gate in `upcomingDates()` is what drops a
+ * passed cell for good; this sweep covers the days a weekly-refreshed page can sit in a
+ * browser after a moment passes, when a date still presented as upcoming would read wrong.
+ */
+const STRIP_EXPIRY_SCRIPT = `  <script>
+    (function () {
+      var els = document.querySelectorAll("[data-until]");
+      if (!els.length) return;
+      function sweep() {
+        for (var i = 0; i < els.length; i++) {
+          var t = new Date(els[i].dataset.until).getTime();
+          if (!isNaN(t) && t <= Date.now()) els[i].hidden = true;
+        }
+      }
+      sweep();
+      setInterval(sweep, 60000);
     })();
   </script>`;
 
@@ -1120,7 +1188,7 @@ const RULE_LINK = `${LINK} font-semibold whitespace-nowrap`;
  * figure rules prose is allowed, read out of the object the Prize Tracker renders so the two
  * pages can never quote different numbers. Everything else comes from `LEAGUE_FACTS` in
  * `league-info.ts`, which states each structural number once — `{rosterLimit}`, `{keeperCount}`,
- * `{teamCount}`, `{qbLimit}`, `{faabBudget}`, `{tradeDeadlineWeek}`, `{playoffWeeks}` — plus `{draftRounds}`,
+ * `{teamCount}`, `{qbLimit}`, `{faabBudget}`, `{tradeDeadlineWeek}` — plus `{draftRounds}`,
  * derived as roster limit minus keepers so the two can never disagree with their difference.
  * Both the home page's rule-changes card and the Official Rules page fill through this one
  * function, which is what keeps a figure from drifting between them.
@@ -1140,7 +1208,6 @@ function fillRuleTokens(text: string, season: string): string {
     qbLimit: String(LEAGUE_FACTS.qbLimit),
     faabBudget: money(LEAGUE_FACTS.faabBudget),
     tradeDeadlineWeek: String(LEAGUE_FACTS.tradeDeadlineWeek),
-    playoffWeeks: LEAGUE_FACTS.playoffWeeks,
     draftRounds: String(LEAGUE_FACTS.rosterLimit - LEAGUE_FACTS.keeperCount),
   };
   for (const [token, value] of Object.entries(facts)) {
@@ -1304,42 +1371,52 @@ ${rows}
 }
 
 /**
- * The league fact sheet: the draft order card's in-season replacement, in the same slot beside
- * the gallery. Once a draft has run its order is just round one of the board, which the tiers
- * hub's `Draft Results` pill already links, so the slot goes to the questions owners actually
- * ask mid-season — the trade deadline, the playoff weeks, the budgets and limits.
+ * The in-season photo band: `HOME_PHOTOS` as full-width justified rows, replacing the whole
+ * draft order + photo column row from the hour a draft runs until the next one is scheduled.
+ * A finished draft's order is round one of a board the tiers hub already links through its
+ * `Draft Results` pill, so the season spends the slot on the photos instead. (A "League at a
+ * Glance" fact card held the draft order's half of the row for the two days after the 2026
+ * draft and gave way to this band; its facts live on the rules page, where they always were.)
  *
- * **Every value is read from `LEAGUE_FACTS`**, the same object `fillRuleTokens()` fills rules
- * prose from, so this card cannot disagree with the Official Rules page. That is also why it
- * carries no season in its heading: `LEAGUE_FACTS` is the league as it stands, not a
- * season-keyed record, and a year on the card would claim old years stay put when they don't.
- * The money rows stay off on purpose — the prize hero card above already states the pot, and
- * the rule changes card quotes the entry fee, so a third statement here is drift waiting.
+ * The figures are `archiveFigureHtml()`, the gallery page's own renderer, resolved out of
+ * `PHOTO_ARCHIVE` by filename so the dimensions, captions and alt text stay stated once. A
+ * name that matches nothing **throws at generate time** rather than silently dropping the
+ * photo — the `rulesPartSpans()` call, made for the same reason.
  *
- * No `bg-shell` header strip, unlike the draft order card it replaces: strips on this site
- * label columns ("Team") or list groups ("Stages & Drafts"), and a label/value list needs
- * neither, so the first row drops its `border-t` instead of butting against a strip. Same
- * section shell (`flex-1`, 320px floor) so the gallery column's split is undisturbed.
+ * **No trailing spacer, unlike the gallery page, and that is the difference in intent.** The
+ * archive feed ends wherever it ends, so its last row keeps natural sizes; this band is
+ * hand-picked, every row is meant to fill the measure, and the spacer would leave the final
+ * row hanging short. The cost is that curation owns the flow: rows break on flex basis
+ * (`GALLERY_ROW_H` x aspect), the current six split three and three at the 1016px inner
+ * measure (~323px and ~295px tall), and every photo renders well inside its 650px cut. Check
+ * that arithmetic when the set changes, because a lone landscape on the last row would be
+ * stretched toward the full measure and past what its cut can carry.
+ *
+ * An empty `HOME_PHOTOS` renders nothing at all, which leaves the in-season page without a
+ * photo section rather than falling back to the off-season column.
  */
-function leagueFactsHtml(): string {
-  const facts: [string, string][] = [
-    ["Roster limit", `${LEAGUE_FACTS.rosterLimit} players`],
-    ["Keepers", `${LEAGUE_FACTS.keeperCount} per team`],
-    ["QB limit", `${LEAGUE_FACTS.qbLimit} per team`],
-    ["FAAB budget", money(LEAGUE_FACTS.faabBudget)],
-    ["Trade deadline", `End of Week ${LEAGUE_FACTS.tradeDeadlineWeek}`],
-    ["Playoffs", `Weeks ${LEAGUE_FACTS.playoffWeeks}`],
-  ];
-  const rows = facts
-    .map(([label, value], i) => `          <div class="flex items-baseline gap-4 px-5 py-2.5${i === 0 ? "" : " border-t border-rule"} text-[15px]"><span class="text-stone">${esc(label)}</span><span class="ml-auto font-semibold">${esc(value)}</span></div>`)
+function homePhotosHtml(chrome: SiteChrome): string {
+  if (HOME_PHOTOS.length === 0) return "";
+
+  const byFile = new Map(PHOTO_ARCHIVE.map((p) => [p.file, p]));
+  const figures = HOME_PHOTOS
+    .map((file) => {
+      const photo = byFile.get(file);
+      if (!photo) throw new Error(`HOME_PHOTOS names "${file}", which is not in PHOTO_ARCHIVE`);
+      return archiveFigureHtml(photo, chrome);
+    })
     .join("\n");
 
-  return `      <section class="flex-1 ${flexFloor(320)}">
-        <h2 class="${SECTION_H2}">League at a Glance</h2>
-        <div class="${CARD} overflow-hidden">
-${rows}
-        </div>
-      </section>`;
+  return `    <section class="mb-14">
+      <h2 class="${SECTION_H2}">League Photos</h2>
+      <div class="flex flex-wrap gap-6">
+${figures}
+      </div>
+      <div class="mt-3 text-[13px]">
+        <a href="${esc(chrome.base)}gallery.html" class="${LINK}">More in the Photo Gallery &#8594;</a>
+      </div>
+    </section>
+`;
 }
 
 /**
@@ -1588,9 +1665,11 @@ function siteLinksHtml(): string {
  * The home page.
  *
  * Sections, in order: the season's honors, the two hero cards, the season's rule changes, the
- * draft order beside the photo gallery, the Survivor notice, then the closing link rows. Honors
- * lead because a finished season is the thing worth opening on; the hero cards are navigation,
- * and navigation reads fine second.
+ * photo section, the Survivor notice, then the closing link rows. Honors lead because a
+ * finished season is the thing worth opening on; the hero cards are navigation, and navigation
+ * reads fine second. The photo section has two seasonal shapes: the draft order beside the
+ * cropped `GALLERY` column while a draft is ahead or unscheduled, the full-width `HOME_PHOTOS`
+ * band once it has run.
  */
 export function generateIndexHtml(
   navLinks: NavLink[],
@@ -1603,17 +1682,24 @@ export function generateIndexHtml(
   const latest = newestNavLink(navLinks);
   const chrome: SiteChrome = { base: "", hasMark };
 
-  // The left card and the gallery share a row on wide screens and stack on narrow ones. From
-  // the hour a draft runs until the next one lands in DRAFT_DATES, the left card is the league
-  // fact sheet rather than an order that has become round one of the finished board.
-  const leftCard = draftOrder && draftHasRun(draftOrder.season)
-    ? leagueFactsHtml()
-    : draftOrderHtml(draftOrder);
-  const columnsHtml = `
+  // From the hour a draft runs until the next one lands in DRAFT_DATES, the draft order and
+  // its side column give way to the full-width photo band: the order has become round one of
+  // the finished board, and the photos are what the slot is for in season.
+  const inSeason = draftOrder !== undefined && draftHasRun(draftOrder.season);
+  const columnsHtml = inSeason
+    ? homePhotosHtml(chrome)
+    : `
     <div class="flex gap-10 lg:gap-18 flex-wrap mb-14">
-${[leftCard, galleryHtml(chrome)].filter(Boolean).join("\n")}
+${[draftOrderHtml(draftOrder), galleryHtml(chrome)].filter(Boolean).join("\n")}
     </div>
 `;
+
+  // The lightbox gates on whichever photo list this run actually rendered.
+  const photoCount = inSeason ? HOME_PHOTOS.length : GALLERY.length;
+
+  // Rendered once so the expiry sweep can gate on what the row actually holds: a dated cell
+  // and its script ship together or not at all, the COUNTDOWN_SCRIPT rule.
+  const heroRow = heroHtml(latest, draftOrder?.season);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -1625,11 +1711,11 @@ ${htmlHead({
 <body class="bg-cream text-ink font-sans antialiased">
 ${siteHeader(chrome)}
   <main class="max-w-[1080px] w-full mx-auto px-5 sm:px-8 pt-10 sm:pt-14 pb-16">
-${honorsHtml()}${heroHtml(latest, draftOrder?.season)}${ruleChangesHtml()}${columnsHtml}${survivorNoticeHtml()}${siteLinksHtml()}
+${honorsHtml()}${heroRow}${ruleChangesHtml()}${columnsHtml}${survivorNoticeHtml()}${siteLinksHtml()}
 ${backToTopHtml()}
   </main>
-${lightboxHtml(GALLERY.length)}
-${upcomingDraftIso(draftOrder?.season) ? COUNTDOWN_SCRIPT : ""}
+${lightboxHtml(photoCount)}
+${upcomingDraftIso(draftOrder?.season) ? COUNTDOWN_SCRIPT : ""}${heroRow.includes("data-until") ? STRIP_EXPIRY_SCRIPT : ""}
 ${LIGHTBOX_SCRIPT}
 </body>
 </html>`;

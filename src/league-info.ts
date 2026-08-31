@@ -147,6 +147,52 @@ export function getDraftDate(season: string): string | undefined {
   return DRAFT_DATES[season];
 }
 
+/** One upcoming moment the in-season hero band lists. */
+export interface HomeDate {
+  /** Eyebrow label on the cell, e.g. "First Waiver Run". */
+  label: string;
+  /**
+   * The instant, as an ISO string with an explicit offset — the `DRAFT_DATES` rule, since
+   * the client-side expiry sweep compares it against the viewer's clock.
+   */
+  iso: string;
+  /** Extra small line under the date, e.g. the kickoff matchup. */
+  detail?: string;
+}
+
+/**
+ * Season moments the in-season hero band lists, per season. Hand-kept, like `DRAFT_DATES`,
+ * and season-keyed so old entries stay put as a record. Plain dated facts, not countdowns:
+ * the ticking counters shipped for a day (Aug 31, 2026) and came out for a quieter band.
+ *
+ * A cell renders only while its instant is still ahead at generate time. The in-season
+ * refresh is weekly, so a page already sitting in a browser can outlive the moment; a small
+ * client-side sweep hides a cell the minute its instant passes, and the next generate drops
+ * it entirely.
+ *
+ * 2026 sources: both waiver moments are the rules page's own waivers section (bidding opens
+ * Mon 8pm PT; the run is the Week 1 row of its table, the Tue-before-a-Wednesday-opener
+ * rule), and the opener is NBC's Kickoff Game announcement (Patriots at Seahawks, Super
+ * Bowl LX rematch), cross-checked against that same table's "First game" column.
+ */
+export const HOME_DATES: Record<string, HomeDate[]> = {
+  "2026": [
+    {
+      label: "Waiver Bidding Opens",
+      iso: "2026-09-07T20:00:00-07:00",
+    },
+    {
+      label: "First Waiver Run",
+      iso: "2026-09-08T20:00:00-07:00",
+    },
+    {
+      label: "NFL Kickoff",
+      iso: "2026-09-09T17:20:00-07:00",
+      detail: "Patriots at Seahawks",
+    },
+  ],
+};
+
 /**
  * Sleeper's draft id per season, which is all a public draft board needs.
  *
@@ -1057,11 +1103,6 @@ export const LEAGUE_FACTS = {
    * (`settings.trade_deadline`; Sleeper's deadline is the end of the named week, not its start).
    */
   tradeDeadlineWeek: 11,
-  /**
-   * The playoff bracket's weeks, as prose states them (`playoff_week_start` 15, three rounds).
-   * A string, not a pair of numbers: both consumers print the range and neither computes on it.
-   */
-  playoffWeeks: "15–17",
 };
 
 /** One rule, as a bold lead-in and the sentence that qualifies it. */
@@ -1233,10 +1274,13 @@ export interface GalleryPhoto {
 }
 
 /**
- * The two photos beside the draft order. The column stretches to the draft order card's
- * height and the figures divide it, so this is a fixed pair rather than a feed — adding a
- * third would squeeze all three into letterbox strips. `PHOTO_ARCHIVE` is where more go,
- * and this pair should hold the league's newest photos, rotated by hand as new ones land.
+ * The two photos beside the draft order — the *off-season* photo slot. The column stretches
+ * to the draft order card's height and the figures divide it, so this is a fixed pair rather
+ * than a feed — adding a third would squeeze all three into letterbox strips. `PHOTO_ARCHIVE`
+ * is where more go, and this pair should hold the league's newest photos, rotated by hand as
+ * new ones land. Once a season's draft has run, the home page renders the `HOME_PHOTOS` band
+ * instead of this column, so from draft day to the next draft's scheduling this pair is
+ * dormant rather than gone.
  */
 export const GALLERY: GalleryPhoto[] = [
   {
@@ -1261,6 +1305,31 @@ export const GALLERY: GalleryPhoto[] = [
     weight: 1.55,
     focus: "50%_10%",
   },
+];
+
+/**
+ * The in-season home page's photo band: a hand-picked run of `PHOTO_ARCHIVE` entries, named
+ * by their `file` and rendered in this order as full-width justified rows (the gallery page's
+ * own mechanism), from draft day until the next draft is scheduled.
+ *
+ * Filenames rather than a second list of photo objects, so the dimensions, captions and alt
+ * text stay stated once in the archive: a recut there flows here with no edit. A name that
+ * matches no archive entry **throws at generate time** — a typo silently dropping a photo is
+ * the failure `rulesPartSpans()` guards the rules nav against, and the same call applies.
+ *
+ * Curate for the rows: photos flow three-ish to a desktop row by aspect, every row justifies
+ * to the full measure, and the 650px cuts carry roughly 1.5x headroom at that width. See
+ * `homePhotosHtml()` in `html.ts` for the flow math before adding or removing one.
+ */
+export const HOME_PHOTOS: string[] = [
+  // The 2026 draft day set, in the archive's own order …
+  "2026-draft-day-650.jpg",
+  "2025-champion-toilet-bowl-winners-650.jpg",
+  "2026-new-trophy-vest-650.jpg",
+  "2026-draft-board-650.jpg",
+  // … then the two most recent championship photos before it.
+  "2024-champion-toilet-bowl-trophies-650.jpg",
+  "2023-champion-kingsburg-killaz-650.jpg",
 ];
 
 /**
