@@ -134,10 +134,18 @@ an `--optimize-assets` CLI step; it was not worth the dependency at current volu
 
 ## What is in `assets/photos/` today
 
-The 2024 trophy and 2025 league-photo cuts landed 2026-08-16, from two iPhone 15 originals shot at the 2025 draft. The other nine photos were cut 2026-08-23 from the originals then staged in the inbox, several of them small or already-compressed files that are the best surviving copy of their year.
+The 2024 trophy and 2025 league-photo cuts landed 2026-08-16, from two iPhone 15 originals shot at the 2025 draft. Nine more photos were cut 2026-08-23 from the originals then staged in the inbox, several of them small or already-compressed files that are the best surviving copy of their year. The four 2026 draft-day photos were cut 2026-08-31, two days after that draft.
 
 | File | Size | Bytes | Is |
 |------|------|-------|-----|
+| `2025-champion-toilet-bowl-winners-2000.jpg` | 1594×2000 | 587 KB | The 2025 champion and Toilet Bowl winner side by side, shot at the 2026 draft. Lightbox |
+| `2025-champion-toilet-bowl-winners-650.jpg` | 650×816 | 147 KB | Same, gallery row |
+| `2026-draft-board-2000.jpg` | 2000×1500 | 1.12 MB | The completed 2026 draft board. Lightbox |
+| `2026-draft-board-650.jpg` | 650×488 | 210 KB | Same, gallery row |
+| `2026-draft-day-2000.jpg` | 2000×1416 | 637 KB | Eight owners with the trophy on 2026 draft day, two more on a laptop. Lightbox |
+| `2026-draft-day-650.jpg` | 650×460 | 104 KB | Same, gallery row |
+| `2026-new-trophy-vest-2000.jpg` | 1572×2000 | 595 KB | The new championship trophy and the back of the new Toilet Bowl vest, its wearer pointing at it. Lightbox |
+| `2026-new-trophy-vest-650.jpg` | 650×828 | 148 KB | Same, gallery row |
 | `2006-2018-champions.jpg` | 744×731 | 237 KB | Collage of champions through 2018. Single cut, gallery row + lightbox |
 | `2006-2018-toilet-bowl-champs.jpg` | 878×485 | 156 KB | Collage of Toilet Bowl champs through 2018. Single cut |
 | `2019-draft-day-2000.jpg` | 2000×1500 | 454 KB | 2019 draft day, one owner joining by iPad. Lightbox |
@@ -178,6 +186,23 @@ All are uncropped, at the aspect they arrived. Calls worth recording:
   Windows display, at under a third of the pixels. The large cuts stay in the ladder as what the
   lightbox opens, which is a slot that genuinely wants them: it renders at whatever the viewport
   gives it, and nothing loads it until a photo is clicked.
+- **The heaviest file in the repo is a draft board, and it stays at `-q:v 2`.** The 2026 board
+  is 1.12 MB at 2000px, against 848 KB for 2025's, because a wall of small sticker text is what
+  JPEG spends bytes on. `-q:v 3` measured 900 KB and is indistinguishable from `-q:v 2` at 2x
+  magnification, but the setting is the pipeline's one photo rule and a per-file exception is a
+  decision somebody has to re-derive later. The pixels are the point here: the lightbox caps at
+  the file's own natural size, so the board's width is what decides whether the picks can be
+  read at all.
+- **Two shots of one subject get descriptive names, not a numeric suffix.** The 2026 draft
+  yielded a front view of the two winners and a back view of the Toilet Bowl vest, so they are
+  `2025-champion-toilet-bowl-winners-*` and `2026-new-trophy-vest-*`. A `-1` / `-2` pair would
+  have named the shooting order, which nothing on the site cares about, and would have read as
+  a size rung beside the widths this scheme already puts in that position.
+- **Naming the subject is what put those two shots in different years**, one afternoon and one
+  pair of people notwithstanding. The front view is the 2025 season's award, so it takes 2025
+  by the year-prefix rule. The back view is about the trophy and the vest themselves, both new
+  for 2026, so it takes 2026. Neither year is the date the shutter fired, which is the whole
+  point of the rule and the reason two files a minute apart can disagree about the year.
 - **What a photo needs cut, by where it appears.** A gallery photo needs two files: the 650
   cut and a full cut for the lightbox, sized by the frame as above and capped at the
   original's width, since an upscale buys pixels with no detail in them. An original at or

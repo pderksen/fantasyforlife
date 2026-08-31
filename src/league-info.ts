@@ -1293,11 +1293,57 @@ export interface ArchivePhoto {
  * trophies photographed at the 2025 draft are the 2024 season's (the year-prefix rule in
  * `docs/photos.md`).
  *
+ * The one place that ordering bends is a draft day, which awards the previous season's
+ * trophies: the four photos from Aug 29, 2026 run as that day, so the 2025 winners shot sits
+ * between two 2026 ones. Filenames and captions still take the subject's year, which is what
+ * splits those four across two years rather than filing them all under the day.
+ *
  * Deliberately not reconciled with `GALLERY` (the SEASON_HONORS / LEAGUE_HISTORY call): the
  * home column is a hand-picked weighted pair sized for its own slot, this is the complete
  * archive, and the same photo appears in both by design — with its own cut for each slot.
  */
 export const PHOTO_ARCHIVE: ArchivePhoto[] = [
+  // The 2026 draft day set, all four shot on Aug 29, 2026, and the two trophy shots land on
+  // different years because their subjects do. The winners photo is the *2025* season's
+  // champion and Toilet Bowl winner, awarded at that draft, so it takes a 2025 filename and a
+  // 2025 caption: the year-prefix rule, and the same call the 2024 trophies made. The vest
+  // photo beside it is 2026, since what it is about is the new trophy and the new vest rather
+  // than the result they were handed out for. Both sit inside the day's run rather than below
+  // it, which is the ordering exception the comment above records.
+  {
+    file: "2026-draft-day-650.jpg",
+    full: "2026-draft-day-2000.jpg",
+    width: 650,
+    height: 460,
+    alt: "Eight owners around the championship trophy on 2026 draft day, two more joining by laptop",
+    caption: "Draft Day 2026",
+  },
+  {
+    file: "2025-champion-toilet-bowl-winners-650.jpg",
+    full: "2025-champion-toilet-bowl-winners-2000.jpg",
+    width: 650,
+    height: 816,
+    alt: "The 2025 champion holding the trophy beside the Toilet Bowl winner in his safety vest",
+    // Plain text, not an entity: every caption goes through `esc()`, so an `&amp;` written
+    // here would ship as a literal "&amp;".
+    caption: "2025 Champ (Visalia) & Toilet Bowl champ (South Town)",
+  },
+  {
+    file: "2026-new-trophy-vest-650.jpg",
+    full: "2026-new-trophy-vest-2000.jpg",
+    width: 650,
+    height: 828,
+    alt: "The Toilet Bowl winner pointing at the back of the new vest, which reads Please be patient, I suck at fantasy football, with the new championship trophy behind him",
+    caption: "2026 new trophy & vest",
+  },
+  {
+    file: "2026-draft-board-650.jpg",
+    full: "2026-draft-board-2000.jpg",
+    width: 650,
+    height: 488,
+    alt: "The 2026 draft board on the wall, every pick filled in",
+    caption: "The 2026 draft board",
+  },
   {
     file: "2025-draft-day-league-photo-650.jpg",
     full: "2025-draft-day-league-photo-2000.jpg",
