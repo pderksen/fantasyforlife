@@ -4,6 +4,10 @@ data/**/players-*.json
 # output/ is committed — Cloudflare Pages serves it directly from the repo
 .claude/
 *.code-workspace
-# Staging area for full-res photo originals. Never committed: they are downscaled into
-# assets/photos/ and deleted. See docs/photos.md.
+# Staging area for full-res photo and artwork originals. Never committed: photos are
+# downscaled into assets/photos/ and deleted, brand masters are archived off-repo.
+# See docs/photos.md.
+_images-inbox/
+# Legacy name of the same directory, kept so a stale copy elsewhere cannot be swept into
+# a commit by `git add -A`.
 photos-inbox/

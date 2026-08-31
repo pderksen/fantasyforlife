@@ -7,12 +7,16 @@ inbox rule but a different format rule; they have their own section at the botto
 
 | Directory | Tracked | Holds |
 |-----------|---------|-------|
-| `photos-inbox/` | No (gitignored) | Full-res originals, straight off the camera, any name |
+| `_images-inbox/` | No (gitignored) | Full-res photo originals and artwork masters, any name |
 | `assets/photos/` | Yes | Web-ready derivatives, final names, the only copies that ship |
 
-Drop originals in `photos-inbox/` with whatever filenames they came with. They get renamed,
+Drop originals in `_images-inbox/` with whatever filenames they came with. They get renamed,
 downscaled, and written to `assets/photos/`, then deleted from the inbox. Originals are kept
 outside this repo.
+
+It was `photos-inbox/` until Aug 2026. The name broadened because the brand masters stage here
+too, and the leading underscore sorts it to the top of the tree. The old name is still listed in
+`.gitignore`, so a stale copy in another clone cannot be swept into a commit by `git add -A`.
 
 `syncStaticAssets()` mirrors `assets/` into `output/assets/` on every run, so a file in
 `assets/photos/` needs no other step to be served. Reference it from a page as
@@ -103,7 +107,7 @@ manual pass. **ffmpeg is installed on the dev machine** (winget, `Gyan.FFmpeg`) 
 these assets were cut with:
 
 ```
-ffmpeg -y -i photos-inbox/IMG_4417.jpg -vf "scale=2000:-2:flags=lanczos" \
+ffmpeg -y -i _images-inbox/IMG_4417.jpg -vf "scale=2000:-2:flags=lanczos" \
   -map_metadata -1 -c:v mjpeg -q:v 2 assets/photos/2019-draft-table.jpg
 ```
 
@@ -190,8 +194,8 @@ texture** baked in. They arrived on 2026-08-16 and were staged in the gitignored
 
 | Master | Size | Is |
 |--------|------|-----|
-| `photos-inbox/ffl-avatar.png` | 1024×1024 | The square shield badge |
-| `photos-inbox/ffl-logo.png` | 2172×724 (exactly 3:1) | Shield plus "Fantasy For Life" wordmark, a banner lockup |
+| `_images-inbox/ffl-avatar.png` | 1024×1024 | The square shield badge |
+| `_images-inbox/ffl-logo.png` | 2172×724 (exactly 3:1) | Shield plus "Fantasy For Life" wordmark, a banner lockup |
 
 Unlike a photo original these are **not disposable once downscaled**. Every future cut comes
 from them and nothing else can regenerate them, so archive them outside the repo rather than
@@ -250,7 +254,7 @@ Five decisions worth not re-litigating:
 ### Cutting a new size
 
 ```
-ffmpeg -y -i photos-inbox/ffl-logo.png -vf "scale=999:333:flags=lanczos" \
+ffmpeg -y -i _images-inbox/ffl-logo.png -vf "scale=999:333:flags=lanczos" \
   -c:v png -compression_level 100 assets/ffl-logo-999.png
 ```
 
