@@ -1,13 +1,13 @@
 import { writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
 import type { Snapshot, SnapshotType, SnapshotRoster, SnapshotPlayer, NavLink, TierConfig, ResolvedTradedPick } from "./types.js";
-import { SNAPSHOT_TYPE_LABELS } from "./types.js";
+import { snapshotLabel } from "./types.js";
 import type { DraftOrder } from "./tiers.js";
 import { buildRosterGrid, columnOrderNote, type DraftRoundLookup, type GridRow } from "./roster-grid.js";
 import { exportFileName, newestNavLink, pageFileName } from "./snapshot.js";
 import {
   SITE,
-  REFRESH_NOTE,
+  REFRESH_NOTES,
   SITE_NAV,
   SURVIVOR,
   ARCHIVE_LINKS,
@@ -371,10 +371,12 @@ const THEME = `    @theme {
 `;
 
 /** Link-preview copy per snapshot type. Kept next to the labels it mirrors. */
-const OG_DESCRIPTIONS: Record<SnapshotType, (season: string) => string> = {
-  "pre-draft": (s) => `Carryover rosters with keepers flagged, captured before the ${s} draft.`,
-  "post-draft": (s) => `Every roster as drafted in ${s}, by round.`,
-  "end-of-season": (s) => `Final ${s} rosters after NFL Week 18.`,
+const OG_DESCRIPTIONS: Record<SnapshotType, (s: Snapshot) => string> = {
+  "pre-draft": (s) => `Carryover rosters with keepers flagged, captured before the ${s.season} draft.`,
+  "post-draft": (s) => `Every roster as drafted in ${s.season}, by round.`,
+  "end-of-season": (s) => s.final
+    ? `Final ${s.season} rosters after the championship, tiered by draft round.`
+    : `${s.season} rosters as they stand, tiered by draft round. Updated weekly in season.`,
 };
 
 interface HeadOptions {
@@ -722,12 +724,23 @@ const ROSTER_STYLES = `    .pos-wr  { background: #d0e8ff; }
  * "newest" the hero card uses. Matched on season and type, not `href`: a nav link to the page
  * you are standing on is a bare filename while every other season's is `../<season>/...`.
  *
- * Advances on its own. The 2026 pre-draft page carries the note today; the run that first writes
- * the 2026 post-draft page moves the note there and off this one, with no edit here.
+ * Advances on its own: the run that first writes a season's in-season page moves the hero card
+ * there and off post-draft, with no edit here.
+ *
+ * The refresh note asks this *and* whether the page is one the workflow refreshes at all
+ * (`REFRESH_NOTES` has no post-draft entry, and a final end-of-season capture is sealed), so
+ * being newest is necessary but not sufficient for the note.
  */
 function isNewestPage(snapshot: Snapshot, navLinks: NavLink[]): boolean {
   const newest = newestNavLink(navLinks);
   return newest?.season === snapshot.season && newest?.page === snapshot.snapshotType;
+}
+
+/** The refresh-cadence clause for a roster page, or "" when the page is not one that refreshes. */
+function refreshNoteHtml(snapshot: Snapshot, navLinks: NavLink[]): string {
+  const note = REFRESH_NOTES[snapshot.snapshotType];
+  if (!note || snapshot.final || !isNewestPage(snapshot, navLinks)) return "";
+  return ` <span class="text-stone/70">&middot; ${esc(note)}</span>`;
 }
 
 export function generateHtml(
@@ -739,7 +752,7 @@ export function generateHtml(
   tradedPicks?: ResolvedTradedPick[],
   chrome: SiteChrome = { base: "../", hasMark: false, fullBleed: true },
 ): string {
-  const typeLabel = SNAPSHOT_TYPE_LABELS[snapshot.snapshotType] ?? "Rosters";
+  const typeLabel = snapshotLabel(snapshot);
   const grid = buildRosterGrid(snapshot, ownerOrder, tiers, draftRounds);
   const { rosters, rows } = grid;
 
@@ -750,9 +763,7 @@ export function generateHtml(
   const dataRows = renderGridRows(rows, rosters.length);
 
   const navHtml = navBar(navLinks, snapshot.season, `${chrome.base}tiers.html`);
-  const refreshHtml = isNewestPage(snapshot, navLinks)
-    ? ` <span class="text-stone/70">&middot; ${esc(REFRESH_NOTE)}</span>`
-    : "";
+  const refreshHtml = refreshNoteHtml(snapshot, navLinks);
   // Sibling file, written by the same run that writes this page.
   const exportHtml = exportRowHtml(exportFileName(snapshot.season, snapshot.snapshotType));
 
@@ -763,7 +774,7 @@ export function generateHtml(
 ${htmlHead({
     title: `${SITE.wordmark} \u2014 ${snapshot.season} ${typeLabel}`,
     ogTitle: `${snapshot.season} ${typeLabel}`,
-    description: (OG_DESCRIPTIONS[snapshot.snapshotType] ?? (() => `${snapshot.season} rosters.`))(snapshot.season),
+    description: (OG_DESCRIPTIONS[snapshot.snapshotType] ?? ((s: Snapshot) => `${s.season} rosters.`))(snapshot),
     siteName: SITE.wordmark,
     base: chrome.base,
     path: `${snapshot.season}/${pageFileName(snapshot.snapshotType)}`,

@@ -12,7 +12,7 @@ on:
     # 11:17 UTC lands at 4:17am PDT (summer) and 3:17am PST (winter): overnight Pacific
     # year-round. The odd minute dodges the top-of-hour queue on GitHub's schedulers.
     - cron: '17 11 * 8 *'        # Daily through August: keeper watch (also refreshes trades)
-    - cron: '17 11 * 9-12,1 4'   # Thursdays, Sep-Jan: in-season trade and pick refresh
+    - cron: '17 11 * 9-12,1 4'   # Thursdays, Sep-Jan: in-season roster, trade and pick refresh
   workflow_dispatch:
     inputs:
       pre_draft:
@@ -54,9 +54,10 @@ jobs:
           echo "season=$SEASON" >> "$GITHUB_OUTPUT"
 
       # Keepers can only be read while the league is still pre_draft, which in practice
-      # means August. Off-season runs skip the attempt so their logs stay clean; the
-      # CLI's own guard is the real backstop if one slips through.
-      - name: Decide whether to attempt a keeper snapshot
+      # means August, and the in-season roster capture belongs to September through January.
+      # Runs outside each window skip the attempt so their logs stay clean; the CLI's own
+      # guards are the real backstop if one slips through.
+      - name: Decide which roster snapshots to attempt
         id: window
         run: |
           if [ "${{ inputs.pre_draft }}" = "true" ] || [ "$(date -u +%m)" = "08" ]; then
@@ -64,6 +65,10 @@ jobs:
           else
             echo "try=false" >> "$GITHUB_OUTPUT"
           fi
+          case "$(date -u +%m)" in
+            09|10|11|12|01) echo "in_season=true" >> "$GITHUB_OUTPUT" ;;
+            *) echo "in_season=false" >> "$GITHUB_OUTPUT" ;;
+          esac
 
       # continue-on-error because a refusal here is expected behaviour, not a broken run,
       # and it must not stop the traded-picks and trades refresh below. The guard throws
@@ -74,6 +79,16 @@ jobs:
         if: steps.window.outputs.try == 'true'
         continue-on-error: true
         run: node dist/index.js --snapshot pre-draft
+
+      # Weekly from Week 1: the In-Season Rosters page. The capture that finds the league
+      # complete is final and seals the file, so from the first January run after the
+      # championship this step refuses, which is expected and must not fail the run. The
+      # standalone trade steps below cover what a refusal skipped. Never add --force.
+      - name: In-season roster snapshot
+        id: inseason
+        if: steps.window.outputs.in_season == 'true'
+        continue-on-error: true
+        run: node dist/index.js --snapshot end-of-season
 
       - name: Traded picks
         run: node dist/index.js --traded-picks
@@ -92,6 +107,13 @@ jobs:
           echo "### :warning: Pre-draft keeper snapshot did not write" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "Expected once the draft has run. Otherwise open the *Pre-draft keeper snapshot* step above." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Flag a refused in-season snapshot
+        if: steps.inseason.outcome == 'failure'
+        run: |
+          echo "### :lock: In-season roster snapshot did not write" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Expected once the season's end-of-season capture is final. Otherwise open the *In-season roster snapshot* step above." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Commit and push
         run: |

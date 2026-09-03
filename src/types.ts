@@ -90,16 +90,40 @@ export const SNAPSHOT_TYPE_LABELS: Record<SnapshotType, string> = {
   "end-of-season": "End-of-Season Rosters",
 };
 
+/** What the end-of-season file is called while the season is still being played. */
+export const IN_SEASON_LABEL = "In-Season Rosters";
+
+/**
+ * The page name for a snapshot. Two of the three types have one name each; the end-of-season
+ * file is captured weekly from Week 1 and reads "In-Season Rosters" until the capture that
+ * finds the league complete stamps `final`, at which point the same file, page, workbook, nav
+ * chip and hub pill read "End-of-Season Rosters". One evolving record rather than a fourth
+ * snapshot type, so no URL, filename or nav link moves when the season ends; the type name is
+ * the file's for life and "In-Season" is its state on the way there. (A single unchanging
+ * label was tried on 2026-09-03 and reversed the same day: the flip is what lets the hub row
+ * show which seasons are finished.)
+ */
+export function snapshotLabel(s: Pick<Snapshot, "snapshotType" | "final">): string {
+  if (s.snapshotType === "end-of-season" && !s.final) return IN_SEASON_LABEL;
+  return SNAPSHOT_TYPE_LABELS[s.snapshotType];
+}
+
 export interface SnapshotPlayer {
   name: string;       // "Last, First"
   position: string;   // "QB", "RB", etc.
   team: string;       // "KC", "SF", "FA", etc.
   round?: number;     // Draft round (post-draft snapshots only)
-  keeper?: boolean;   // Kept from the previous season (pre-draft and post-draft snapshots)
+  /**
+   * Pre-draft: held for the upcoming draft. Post-draft and end-of-season: kept into this
+   * season, so the flag follows the player through trades and drops for the whole year.
+   */
+  keeper?: boolean;
   /**
    * Which tier a kept player occupies this season, 0-based. Keepers alone carry it: they were
-   * not drafted this year, so no round places them. Settled at capture by `loadKeeperTiers()`
-   * in `snapshot.ts` from the rules' one-tier climb.
+   * not drafted this year, so no round places them. Settled at post-draft capture by
+   * `loadKeeperTiers()` in `snapshot.ts` from the rules' one-tier climb, and copied onto every
+   * end-of-season capture of the same season by name, so the in-season page tiers a keeper
+   * from its own file. Never set on a pre-draft snapshot, whose keepers have not climbed yet.
    */
   keeperTier?: number;
 }
@@ -115,6 +139,14 @@ export interface Snapshot {
   season: string;
   snapshotType: SnapshotType;
   capturedAt: string;  // ISO timestamp
+  /**
+   * End-of-season only. True when the league reported `status: "complete"` at capture, which
+   * turns the In-Season Rosters page into End-of-Season Rosters (`snapshotLabel()`), drops its
+   * refresh note, and seals the file against the weekly refresh (`assertEndOfSeasonUnsealed()`
+   * in `snapshot.ts`). Lives in the JSON rather than being read off the clock so the page
+   * regenerates from its own file.
+   */
+  final?: boolean;
   rosters: SnapshotRoster[];
 }
 

@@ -154,14 +154,19 @@ type SnapshotType = "pre-draft" | "post-draft" | "end-of-season";
 interface Snapshot {
   leagueId: string; leagueName: string; season: string;
   snapshotType: SnapshotType; capturedAt: string; // ISO timestamp
+  final?: boolean;   // end-of-season only: the league was complete at capture, so the
+                     // In-Season Rosters page becomes End-of-Season Rosters and the file seals
   rosters: SnapshotRoster[];
 }
 interface SnapshotRoster { ownerName: string; players: SnapshotPlayer[]; }
 interface SnapshotPlayer {
-  name: string;      // "Last, First"
-  position: string;  // "QB", "RB", etc.
-  team: string;      // "KC", "SF", etc.
-  round?: number;    // post-draft only
-  keeper?: boolean;  // pre-draft only; held for the upcoming draft
+  name: string;         // "Last, First"
+  position: string;     // "QB", "RB", etc.
+  team: string;         // "KC", "SF", etc.
+  round?: number;       // post-draft only
+  keeper?: boolean;     // pre-draft: held for the upcoming draft; post-draft and end-of-season:
+                        // kept into this season, following the player through trades and drops
+  keeperTier?: number;  // 0-based tier a keeper climbed into; stamped at post-draft capture and
+                        // copied onto every end-of-season capture by name. Never on pre-draft
 }
 ```

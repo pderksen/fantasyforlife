@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { readFile, writeFile, mkdir, cp } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -20,7 +20,7 @@ import type {
   TradeParty,
   TradesData,
 } from "./types.js";
-import { SNAPSHOT_TYPE_LABELS } from "./types.js";
+import { snapshotLabel } from "./types.js";
 import { getLeague, getRosters, getUsers, fetchAllPlayers } from "./sleeper-api.js";
 import { getDraftOrder, getTierConfig } from "./tiers.js";
 import { LEAGUE_FACTS } from "./league-info.js";
@@ -113,6 +113,14 @@ export async function takeSnapshot(leagueId: string, snapshotType: SnapshotType,
   console.log(`League: ${league.name} (${league.season})`);
   console.log(`Teams: ${league.total_rosters}`);
 
+  // In season the keeper flag and tier travel with the player, not the roster: a kept player
+  // is Tier 1 or 2 for the whole year whoever holds him in December, and Sleeper's own
+  // `roster.keepers` stays on the team that kept him. So both are read off the season's
+  // post-draft record by name, the same join `loadDraftRounds()` uses for everybody else.
+  const keptThisSeason = snapshotType === "end-of-season"
+    ? await loadKeptPlayers(league.season)
+    : new Map<string, number | undefined>();
+
   // Build owner name map from users
   const userMap = new Map<string, string>();
   for (const user of users) {
@@ -137,10 +145,17 @@ export async function takeSnapshot(leagueId: string, snapshotType: SnapshotType,
     // the upcoming draft flagged. Sleeper leaves kept players in `players` as well, so
     // the lists overlap and `keepers` is the only thing that tells them apart.
     const keeperIds = new Set(snapshotType === "pre-draft" ? roster.keepers ?? [] : []);
+    // `players` is the whole roster, IR slot included; a player on reserve is tiered like
+    // anyone else, since keeper eligibility does not care where he sits.
     const playerIds = roster.players ?? [];
     const players = playerIds.map((id) => {
       const player = resolvePlayer(id, playerDb);
-      return keeperIds.has(id) ? { ...player, keeper: true } : player;
+      if (keeperIds.has(id)) return { ...player, keeper: true };
+      if (keptThisSeason.has(player.name)) {
+        const keeperTier = keptThisSeason.get(player.name);
+        return keeperTier == null ? { ...player, keeper: true } : { ...player, keeper: true, keeperTier };
+      }
+      return player;
     });
     sortPlayers(players);
 
@@ -161,14 +176,39 @@ export async function takeSnapshot(leagueId: string, snapshotType: SnapshotType,
     }
   }
 
+  // The in-season capture becomes the end-of-season record the first time it finds the league
+  // finished. Stamped into the file so the label and the seal read the record, not the clock.
+  const final = snapshotType === "end-of-season" && league.status === "complete";
+  if (final) console.log("League status is complete: this capture is the final one and seals the file.");
+
   return {
     leagueId,
     leagueName: league.name,
     season: league.season,
     snapshotType,
     capturedAt: new Date().toISOString(),
+    ...(final ? { final } : {}),
     rosters: snapshotRosters,
   };
+}
+
+/**
+ * Who was kept into a season and which tier the climb put each of them in, by name, read off
+ * that season's post-draft record. Empty when the season has no post-draft snapshot or (a
+ * throwback year) kept nobody. The value is `undefined` for a keeper the post-draft capture
+ * could not place, who then falls back to the top tier at render exactly as he does there.
+ */
+async function loadKeptPlayers(season: string): Promise<Map<string, number | undefined>> {
+  const map = new Map<string, number | undefined>();
+  const path = getSnapshotPath(season, "post-draft");
+  if (!existsSync(path)) return map;
+  const snapshot = await loadSnapshot(path);
+  for (const roster of snapshot.rosters) {
+    for (const player of roster.players) {
+      if (player.keeper) map.set(player.name, player.keeperTier);
+    }
+  }
+  return map;
 }
 
 /**
@@ -683,6 +723,57 @@ export function preDraftWindowClosed(leagueStatus: string): boolean {
   return leagueStatus !== "pre_draft";
 }
 
+/**
+ * Refuse to overwrite a season's end-of-season snapshot once it is final, unless `force` is set.
+ *
+ * The file is re-captured every Thursday from Week 1 as the In-Season Rosters page, and the
+ * capture that finds the league `complete` stamps `final` and becomes the End-of-Season record.
+ * The weekly refresh keeps running into January, so without this it would go on rewriting
+ * `capturedAt` on a finished season (and, the year a league is not frozen promptly, could pick
+ * up an offseason move). A capture that is not yet final overwrites freely: that is the point.
+ */
+export function assertEndOfSeasonUnsealed(season: string, force: boolean): void {
+  if (force) return;
+  const filePath = getSnapshotPath(season, "end-of-season");
+  if (!isFinalSnapshot(season)) return;
+  throw new SnapshotGuardError(
+    `Refusing to overwrite ${filePath}\n` +
+    `  That capture is final: the league had reported complete, so it is the season's\n` +
+    `  end-of-season record. Nothing was written. Re-run with --force to replace it anyway.`,
+  );
+}
+
+/** Does the season's end-of-season snapshot exist and carry `final: true`? Sync, for the nav builder. */
+function isFinalSnapshot(season: string): boolean {
+  const path = getSnapshotPath(season, "end-of-season");
+  if (!existsSync(path)) return false;
+  return (JSON.parse(readFileSync(path, "utf-8")) as Snapshot).final === true;
+}
+
+/**
+ * Refuse to overwrite a season's post-draft snapshot unless `force` is set.
+ *
+ * The post-draft file is the season's tier record, not just a page of its own: it is where
+ * `loadDraftRoundsFor()` finds every player's draft round for the end-of-season page (the
+ * tier follows the player through trades, and a waiver pickup with no round there lands in
+ * the last tier), and where `loadKeeperTiers()` reads a kept player's origin for the next
+ * season's pre-draft page. Re-capturing it after waivers open would read a pickup as drafted
+ * and lose a dropped player's round, and both downstream pages would tier people wrong with
+ * no error. So the file is locked the moment it exists. Checked here and again by the two CLI
+ * paths before their 15MB player fetch, so a refused run costs nothing.
+ */
+export function assertPostDraftUnlocked(season: string, force: boolean): void {
+  if (force) return;
+  const filePath = getSnapshotPath(season, "post-draft");
+  if (!existsSync(filePath)) return;
+  throw new SnapshotGuardError(
+    `Refusing to overwrite ${filePath}\n` +
+    `  The post-draft snapshot is the season's tier record: the end-of-season page and next\n` +
+    `  season's keeper tiers both read draft rounds off it, so it is locked once captured.\n` +
+    `  Nothing was written. Re-run with --force to replace it anyway.`,
+  );
+}
+
 /** Players flagged as kept for the upcoming draft. */
 function countKeepers(snapshot: Snapshot): number {
   return snapshot.rosters.reduce(
@@ -701,10 +792,16 @@ function countKeepers(snapshot: Snapshot): number {
  * already ran, an API hiccup, the wrong league id) rather than an update, and it would
  * destroy the one record that cannot be rebuilt from the API. That case refuses unless
  * `force` is set.
+ *
+ * Post-draft is the opposite: existence alone refuses (see `assertPostDraftUnlocked()`).
+ * End-of-season overwrites weekly until the capture is final (`assertEndOfSeasonUnsealed()`).
  */
 export async function saveSnapshot(snapshot: Snapshot, force = false): Promise<string> {
   const seasonDir = join(DATA_DIR, snapshot.season);
   const filePath = join(seasonDir, `rosters-${snapshot.snapshotType}.json`);
+
+  if (snapshot.snapshotType === "post-draft") assertPostDraftUnlocked(snapshot.season, force);
+  if (snapshot.snapshotType === "end-of-season") assertEndOfSeasonUnsealed(snapshot.season, force);
 
   if (snapshot.snapshotType === "pre-draft" && !force && existsSync(filePath)) {
     const saved = countKeepers(await loadSnapshot(filePath));
@@ -749,9 +846,15 @@ function discoverPages(): Array<{ season: string; page: SnapshotType }> {
   return results;
 }
 
-/** Full page name ("2026 Pre-Draft Rosters") and its short chip form ("Pre-Draft"). */
+/**
+ * Full page name ("2026 Pre-Draft Rosters") and its short chip form ("Pre-Draft").
+ *
+ * The end-of-season page is "In-Season" until its file carries `final`, so this reads the file
+ * rather than the type alone; that is what moves every nav chip, hub pill and hero card to the
+ * new name in the same run that seals the capture.
+ */
 function pageLabels(season: string, page: SnapshotType): { label: string; chip: string } {
-  const name = SNAPSHOT_TYPE_LABELS[page];
+  const name = snapshotLabel({ snapshotType: page, final: page === "end-of-season" && isFinalSnapshot(season) });
   return { label: `${season} ${name}`, chip: name.replace(" Rosters", "") };
 }
 

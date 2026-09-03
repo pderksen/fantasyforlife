@@ -12,9 +12,9 @@ so **nothing is live until you commit and push**. Running a command locally is o
 | When | Command | Frequency | Who |
 |---|---|---|---|
 | Aug, up to draft day (non-throwback years) | `npm run dev -- --snapshot pre-draft` | Daily while keepers trickle in | **Automated** |
-| Right after the draft | `npm run dev -- --snapshot-draft <season>` | Once | You |
-| During the NFL season | `npm run dev -- --traded-picks`, `npm run dev -- --trades`, then `npm run dev -- --generate <season>` | Weekly, Thursdays | **Automated** |
-| After NFL Week 18 (~early Jan) | `npm run dev -- --snapshot end-of-season` | Once | You |
+| Right after the draft | `npm run dev -- --snapshot-draft <season>` | Once (locked after) | You |
+| During the NFL season | `npm run dev -- --snapshot end-of-season` (the In-Season Rosters page), `npm run dev -- --traded-picks`, `npm run dev -- --trades`, then `npm run dev -- --generate <season>` | Weekly, Thursdays; run the workflow by hand to refresh sooner | **Automated** |
+| After the championship (Week 17) | Nothing. The first Thursday capture after Sleeper reports `complete` is final: it relabels the page End-of-Season Rosters and seals the file | Once, on its own | **Automated** |
 | After the season settles | Type up the season in `league-info.ts` (see [5](#5-write-up-the-season)) | Once | You |
 | After anything you ran by hand | `git add -A && git commit && git push` | Every time | You |
 
@@ -89,6 +89,13 @@ It also lays down the season's immutable draft record on the first run: if
 if `data/<season>/draft-traded-picks.json` is missing it fetches that too. Both writes skip a
 file that already exists, so neither can be clobbered by a re-run. After the draft, confirm
 both files landed and commit them.
+
+**The roster snapshot itself locks the same way.** A second run of `--snapshot-draft` (or of
+`--snapshot post-draft`) refuses with `Refusing to overwrite .../rosters-post-draft.json` and
+writes nothing, because that file is what the end-of-season page and next year's keeper tiers
+read draft rounds from. Run it once, after the last draft-day cut and before waivers open. If
+the capture was genuinely bad (wrong league id, a roster that had not finished cutting down),
+re-run with `--force` before any waiver moves land, and never after.
 
 This one **is** safe to redo later. Draft picks are immutable and always retrievable.
 
@@ -170,14 +177,31 @@ at the time. That is why the log doesn't show one.
 
 ---
 
-## 4. After NFL Week 18
+## 4. In season, and after the championship
 
 ```
 npm run dev -- --snapshot end-of-season
 ```
 
-Final rosters, tiered by each player's original draft round. Run it any time after Week 18 ends
-and before the next season's league rolls over.
+The workflow runs this every Thursday from Week 1. It captures every roster as it stands (IR
+slot included), tiered by each player's original draft round, and writes
+`output/<season>/rosters-end-of-season.html` under the heading **In-Season Rosters**. Each run
+overwrites the last. Run the workflow by hand from the Actions tab (`Run workflow`) whenever the
+tiers need refreshing before Thursday.
+
+Tiers follow the player, not the roster: a drafted player keeps his round's tier whether he is
+traded or dropped and re-added, a keeper keeps the tier his climb put him in (stamped off the
+post-draft record), and a never-drafted pickup is Tier 3. That is the rules page's own wording,
+and it is why the post-draft snapshot is locked (step 2): it is the record this page tiers from.
+
+The capture that finds the league `complete` is the last one. It writes `final: true` into the
+file, the same page and workbook relabel themselves **End-of-Season Rosters** (the hub pill and
+the home page's hero card follow), the "Updated weekly" note drops off, and every later run
+refuses with `Refusing to overwrite .../rosters-end-of-season.json` and writes nothing. The
+workflow expects that refusal from the first January run after the championship onward and flags
+it in the run summary. Nothing to type in January; confirm the file carries `final` and the hub
+pill reads End-of-Season. `--force` is the only way past the seal, for a final capture that was
+genuinely wrong.
 
 ---
 
@@ -353,9 +377,10 @@ a warning into the run summary so it is visible without opening the logs.
 
 ### What stays manual
 
-The annual config edits in step 2, `--snapshot-draft` on draft night (it needs the draft to have
-actually finished), and `--snapshot end-of-season` in January. All three are judgment calls, and
-all three are worth eyeballing before they ship.
+The annual config edits in step 2 and `--snapshot-draft` on draft night (it needs the draft to
+have actually finished). Both are judgment calls, and both are worth eyeballing before they ship.
+The end-of-season record was a January hand-run until Sep 2026 and is now the last in-season
+capture (step 4), sealed on its own.
 
 ---
 
@@ -367,7 +392,7 @@ all three are worth eyeballing before they ship.
 | Mid–late Aug | Automated daily. Nothing to do (skip in throwback years: turn the workflow off, or let the keeper-less capture be overwritten). |
 | Draft day (late Aug) | Run `--snapshot pre-draft` by hand right before the draft starts, then `--snapshot-draft <season>` after it ends. Commit and push both. In 2026, also settle the post-draft keeper flag (step 2). |
 | Week 1 (early Sep) and Week 12 (Thanksgiving) | Move the Sleeper waiver day to Tuesday for that week, then back to Wednesday after the run. See [step 2](#2-draft-day-annual-config-first). |
-| Sep–Dec | Automated weekly on Thursdays. Nothing else to do. |
-| Early Jan | `--snapshot end-of-season` by hand. Commit and push. |
+| Sep–Dec | Automated weekly on Thursdays: rosters (the In-Season page), traded picks, trades. Run the workflow by hand whenever the tiers need refreshing sooner. |
+| Early Jan | Nothing to run: the first Thursday after the championship seals the end-of-season record on its own. Check `data/<season>/rosters-end-of-season.json` carries `final: true` and the hub pill reads End-of-Season. |
 | Early Jan, once results settle | Type the season into `LEAGUE_HISTORY`, `SEASON_HONORS`, `STAT_ERAS` and `PRIZE_SEASONS`. Nothing writes these for you. |
 | Feb–Jul | Nothing to run. Expect GitHub to disable the schedule. |

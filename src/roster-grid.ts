@@ -72,6 +72,10 @@ function buildTieredRows(
   }));
 
   function getTierIndex(p: SnapshotPlayer): number {
+    // A kept player has no round in this season's draft and sits where his climb put him,
+    // stamped at capture (see `keeperTier`). Pre-draft keepers never carry one and fall
+    // through to their round, since they have not climbed yet.
+    if (p.keeperTier != null) return Math.min(p.keeperTier, tiers.length - 1);
     const round = draftRounds.get(p.name);
     if (round == null) return tiers.length - 1;
     for (let i = 0; i < tierRanges.length; i++) {

@@ -1259,14 +1259,18 @@ it changed.
 
 ### Chrome details
 
-- **Refresh note**: `REFRESH_NOTE` from `league-info.ts` ("Updated nightly or upon request"),
-  appended to the league-name line under the `<h1>` as a dimmed `&middot;` clause. It renders on
-  **one page**, the newest stage of the newest season, which `isNewestPage()` decides by asking
-  `newestNavLink()` the same question the home page's hero card asks. That page is the one people
+- **Refresh note**: `REFRESH_NOTES` from `league-info.ts`, keyed by snapshot type ("Updated
+  nightly or upon request" for pre-draft, "Updated weekly or upon request" for the in-season
+  page, no entry for post-draft, which is locked at capture), appended to the league-name line
+  under the `<h1>` as a dimmed `&middot;` clause by `refreshNoteHtml()`. It renders on **at most
+  one page**, the newest stage of the newest season, which `isNewestPage()` decides by asking
+  `newestNavLink()` the same question the home page's hero card asks, and never on a `final`
+  end-of-season capture. That page is the one people
   open to see whether a keeper or a trade has landed, and it is the only page where the answer to
   "how current is this?" is worth a line; every older page is a sealed record whose footer
-  timestamp already says when it stopped moving. It advances on its own, so the run that first
-  writes 2026 post-draft moves the note there and off the pre-draft page.
+  timestamp already says when it stopped moving. It advances on its own: the run that first wrote
+  2026 post-draft took the note off pre-draft and rendered none (post-draft has no entry), and
+  the first in-season capture put it on that page.
   Riding on the existing league-name line rather than taking a line of its own is what keeps it
   from reading as the descriptive subheading these pages deliberately don't carry.
   The string is hand-maintained, not derived from `.github/workflows/refresh.yml`: that schedule

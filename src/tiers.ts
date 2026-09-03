@@ -44,6 +44,15 @@ const TIER_CONFIGS: Record<string, TierConfig> = {
     { label: "TIER 2 — Drafted Rounds 4–8", beforeRound: 4 },
     { label: "TIER 3 — Drafted Rounds 9+", beforeRound: 9 },
   ],
+  // The in-season page from Week 1 and the end-of-season record after the championship, one
+  // file (see `Snapshot.final`). Same boundaries as the draft that made the rosters; the
+  // `/ Free Agency` tail is back because waiver pickups reach this roster and land in T3.
+  // Keepers sit by their stamped `keeperTier`, as on the post-draft page.
+  "2026:end-of-season": [
+    { label: "TIER 1 — Drafted Rounds 1–3", beforeRound: 1 },
+    { label: "TIER 2 — Drafted Rounds 4–8", beforeRound: 4 },
+    { label: "TIER 3 — Drafted Rounds 9+ / Free Agency", beforeRound: 9 },
+  ],
 };
 
 export function getTierConfig(season: string, snapshotType: SnapshotType): TierConfig | undefined {

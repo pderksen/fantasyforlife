@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
-import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, getExportOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, getHistoryOutputPath, getPrizesOutputPath, getTiersOutputPath, getRulesOutputPath, getGalleryOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft, resolveTrades, saveTrades, preDraftWindowClosed, hasSiteMark, syncStaticAssets, SnapshotGuardError } from "./snapshot.js";
+import { takeSnapshot, takePostDraftSnapshot, saveSnapshot, loadSnapshot, getSnapshotPath, assertPostDraftUnlocked, assertEndOfSeasonUnsealed, getDraftPicksPath, getDraftTradedPicksPath, saveDraftPicks, saveDraftTradedPicks, getOutputPath, getExportOutputPath, buildNavLinks, buildIndexNavLinks, getIndexOutputPath, getHistoryOutputPath, getPrizesOutputPath, getTiersOutputPath, getRulesOutputPath, getGalleryOutputPath, loadDraftOrder, loadDraftRoundsFor, buildRosterOwnerMap, resolveTradedPicks, buildTradeDateMap, saveTradedPicks, loadTradedPicks, picksForDraft, picksAwaitingDraft, resolveTrades, saveTrades, preDraftWindowClosed, hasSiteMark, syncStaticAssets, SnapshotGuardError } from "./snapshot.js";
 import { generateHtml, generateIndexHtml, generateTiersHtml, generateHistoryHtml, generatePrizesHtml, generateRulesHtml, generateGalleryHtml, writeHtml, formatPacificDate } from "./html.js";
 import { generateWorkbook, writeWorkbook } from "./xlsx.js";
 import { getLeagueDrafts, getDraftPicks, getDraftTradedPicksRaw, fetchAllPlayers, getLeagueTradedPicks, getPickTrades, getTrades, getLeague } from "./sleeper-api.js";
@@ -204,11 +204,18 @@ function printUsage(): void {
     Re-running pre-draft is expected while keepers trickle in. --force is only
     needed to overwrite a saved capture with one holding fewer keepers, or to
     capture pre-draft after the draft has already run.
+    A post-draft snapshot is locked once it exists (it is the season's tier
+    record); --force is the only way to replace one.
+    end-of-season is the in-season page: re-run it weekly from Week 1. The
+    capture that finds the league complete is final and seals the file; only
+    --force replaces it after that.
 
-  npm run dev -- --snapshot-draft <season> [league_id]
+  npm run dev -- --snapshot-draft <season> [league_id] [--force]
     Generate post-draft roster snapshot from draft picks data.
     Uses existing data/<season>/draft-picks.json if available,
     otherwise fetches from the Sleeper API.
+    Refuses if data/<season>/rosters-post-draft.json already exists, unless
+    --force is passed.
 
   npm run dev -- --generate <season> [type]
     Generate HTML from existing snapshot(s).
@@ -229,6 +236,15 @@ async function snapshotAndGenerate(snapshotType: SnapshotType, leagueId: string,
   // Checked here, before the 15MB player fetch, because it is one cheap call and the answer
   // is definitive: past `pre_draft` there are no keepers left to read, so the capture could
   // only be worse than the file it would replace.
+  // Both locks are checked here, before the 15MB player fetch, for the same reason the
+  // pre-draft window is: one cheap call settles it. Post-draft is locked once it exists;
+  // end-of-season only once a capture has found the league complete.
+  if (snapshotType !== "pre-draft") {
+    const league = await getLeague(leagueId);
+    if (snapshotType === "post-draft") assertPostDraftUnlocked(league.season, force);
+    else assertEndOfSeasonUnsealed(league.season, force);
+  }
+
   if (snapshotType === "pre-draft" && !force) {
     const league = await getLeague(leagueId);
     if (preDraftWindowClosed(league.status)) {
@@ -268,7 +284,11 @@ async function snapshotAndGenerate(snapshotType: SnapshotType, leagueId: string,
   await writeRosterOutputs(snapshot, { navLinks, ownerOrder, tiers, draftRounds, tradedPicks: picksForType });
 }
 
-async function draftSnapshotAndGenerate(season: string, leagueId: string): Promise<void> {
+async function draftSnapshotAndGenerate(season: string, leagueId: string, force: boolean): Promise<void> {
+  // Checked before anything is fetched: the file is the season's tier record, and a second
+  // capture after waivers open would silently re-tier two pages (see assertPostDraftUnlocked).
+  assertPostDraftUnlocked(season, force);
+
   // Load draft picks from disk or fetch from API
   const draftPicksPath = getDraftPicksPath(season);
   let draftPicks: DraftPick[];
@@ -307,7 +327,7 @@ async function draftSnapshotAndGenerate(season: string, leagueId: string): Promi
   console.log(`\nGenerating post-draft snapshot from ${draftPicks.length} draft picks\n`);
 
   const snapshot = await takePostDraftSnapshot(leagueId, draftPicks);
-  const snapshotPath = await saveSnapshot(snapshot);
+  const snapshotPath = await saveSnapshot(snapshot, force);
   console.log(`\nSnapshot saved: ${snapshotPath}`);
 
   // Fetch and save traded picks
@@ -385,7 +405,7 @@ async function main(): Promise<void> {
       process.exit(1);
     }
     const leagueId = args[2] || DEFAULT_LEAGUE_ID;
-    await draftSnapshotAndGenerate(season, leagueId);
+    await draftSnapshotAndGenerate(season, leagueId, force);
 
   } else if (args[0] === "--generate") {
     const season = args[1];

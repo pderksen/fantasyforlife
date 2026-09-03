@@ -1,7 +1,7 @@
 import { writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
 import type { Snapshot, SnapshotPlayer, TierConfig, ResolvedTradedPick } from "./types.js";
-import { SNAPSHOT_TYPE_LABELS } from "./types.js";
+import { snapshotLabel } from "./types.js";
 import { buildRosterGrid, columnOrderNote, type DraftRoundLookup } from "./roster-grid.js";
 import { formatPacificDate, formatPacificTime } from "./html.js";
 import { zipSync, type ZipEntry } from "./zip.js";
@@ -209,7 +209,7 @@ function buildRosterSheet(
 
   const cols = `<cols><col min="1" max="${width}" width="26" customWidth="1"/></cols>`;
 
-  const typeLabel = SNAPSHOT_TYPE_LABELS[snapshot.snapshotType] ?? "Rosters";
+  const typeLabel = snapshotLabel(snapshot);
   return {
     name: sheetName(snapshot.season, typeLabel),
     cols,
