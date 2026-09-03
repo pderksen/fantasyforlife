@@ -99,25 +99,16 @@ re-run with `--force` before any waiver moves land, and never after.
 
 This one **is** safe to redo later. Draft picks are immutable and always retrievable.
 
-### Open after the 2026 draft: keepers on the post-draft page
+### Settled at the 2026 draft: keepers on the post-draft page
 
-Post-draft rosters carry no `keeper: true`, so the yellow highlight and its "Keeper" legend
-(`keeperLegend()` in [src/html.ts](src/html.ts), which keys off the data, not the snapshot type)
-render on pre-draft pages only. 2025 hid this: it was a throwback year with no keepers at all, so
-the page looked correct by accident. 2026 is the first year the gap is visible.
-
-Decide once the draft has run, in this order:
-
-1. **Check `is_keeper` on the fresh picks.** `takeSnapshot()` never sets the flag for post-draft
-   ([src/snapshot.ts:119](src/snapshot.ts#L119)), but Sleeper's own draft picks have an
-   `is_keeper` field. It is `null` on all 170 of 2025's, which proves nothing in a throwback year.
-   If 2026 populates it, `snapshotFromDraft()` can read it straight through:
-   `node -e "const p=require('./data/2026/draft-picks.json'); console.log([...new Set(p.map(x=>String(x.is_keeper)))])"`
-2. **Otherwise carry the flag over from the pre-draft capture.** Match `data/2026/rosters-pre-draft.json`
-   players marked `keeper: true` by name against the post-draft roster. Degrades cleanly: no
-   pre-draft file means no flags, which is right for throwback years.
-
-Either way, re-run `--snapshot-draft 2026` afterward and confirm the legend appears.
+Until Aug 2026 this was an open question, since 2025 was a throwback year and no post-draft page
+had ever had a keeper on it. The 2026 draft answered it: Sleeper puts kept players nowhere on the
+board (`is_keeper` is `null` on every pick, and none of the 30 kept players appears), so
+`--snapshot-draft` reads keepers off the live `roster.keepers`, resolves them through the player
+database, flags them `keeper: true` and stamps each with the tier his one-tier climb earned
+(`keeperTier`). The in-season capture (step 4) copies both onto the same players by name every
+week. Nothing to decide on draft night; the legend appears on its own. The reasoning and the
+edge cases are in `CLAUDE.md` under Post-Draft Snapshots and League Rules.
 
 ### Waiver day: the two Tuesday weeks
 
@@ -153,7 +144,8 @@ hand-written per season. Update it when the NFL schedule comes out.
 ## 3. In-season: traded picks and trade log refresh
 
 Trades happen all season: players move now, and pick trades apply to next year's draft. Three
-commands, and the last one is not optional:
+commands, and the last one is not optional (the weekly roster capture is step 4 and runs in the
+same Thursday job):
 
 ```
 npm run dev -- --traded-picks
@@ -303,7 +295,7 @@ Both `data/` and `output/` are committed on purpose; only `dist/` and `node_modu
 
 ## Automation: the GitHub Actions refresh
 
-[`.github/workflows/refresh.yml`](.github/workflows/refresh.yml) does steps 3 and 5 on a
+[`.github/workflows/refresh.yml`](.github/workflows/refresh.yml) does steps 3, 4 and 6 on a
 schedule, and takes a run at step 1 while the keeper window is open. GitHub lends a throwaway
 Ubuntu VM with the repo checked out, runs the CLI on Node 24, commits `data/` and `output/`,
 and pushes to `main`. Cloudflare Pages deploys that push like any other, so **a green run means
@@ -315,7 +307,11 @@ manage: Sleeper needs no auth, and `GITHUB_TOKEN` is minted per run.
 ### What it runs
 
 Every run: `--traded-picks`, `--trades`, `--generate <newest data season>`, then commit and push
-if anything changed. In August it first attempts `--snapshot pre-draft`.
+if anything changed. In August it first attempts `--snapshot pre-draft`; September through
+January it first attempts `--snapshot end-of-season`, the in-season roster capture (step 4). Both
+attempts are `continue-on-error`, since each has a guard that is meant to refuse at some point
+(the keeper window closing, the end-of-season capture going final), and a refusal is flagged in
+the run summary rather than failing the run.
 
 The season argument is derived from the newest four-digit directory under `data/`, so it needs
 no annual edit. `--traded-picks` and `--trades` take the league from `DEFAULT_LEAGUE_ID`, which
@@ -329,14 +325,14 @@ Pacific year-round; the odd minute dodges the top-of-hour queue on GitHub's sche
 | Cron | When | Why |
 |---|---|---|
 | `17 11 * 8 *` | Daily, all August | Keeper watch. `--snapshot pre-draft` also refreshes picks and trades, so this covers everything. |
-| `17 11 * 9-12,1 4` | Thursdays, Sep–Jan | In-season pick and trade refresh. |
+| `17 11 * 9-12,1 4` | Thursdays, Sep–Jan | In-season roster capture (step 4), plus the pick and trade refresh. Thursday sits after Tuesday-night waivers and before the first game. |
 
 **The draft-day handover is automatic.** The daily cron stops firing on Sep 1 by month, and any
 August run after the draft hits the guard, which refuses and exits without writing. Nothing to
 remember to switch off. That was the one way schedule A could previously do damage.
 
-`--force` appears nowhere in the workflow and must not be added. It exists to override the guard
-that protects the keeper record.
+`--force` appears nowhere in the workflow and must not be added. It exists to override the three
+guards: the keeper-record guard, the post-draft lock and the end-of-season seal.
 
 ### Why the trade refresh is repeated outside `--snapshot`
 
@@ -390,7 +386,7 @@ capture (step 4), sealed on its own.
 |---|---|
 | Early Aug | Update `DEFAULT_LEAGUE_ID`, `DRAFT_ORDERS`, `TIER_CONFIGS`. Re-enable the workflow in the Actions tab if the dead season disabled it. |
 | Mid–late Aug | Automated daily. Nothing to do (skip in throwback years: turn the workflow off, or let the keeper-less capture be overwritten). |
-| Draft day (late Aug) | Run `--snapshot pre-draft` by hand right before the draft starts, then `--snapshot-draft <season>` after it ends. Commit and push both. In 2026, also settle the post-draft keeper flag (step 2). |
+| Draft day (late Aug) | Run `--snapshot pre-draft` by hand right before the draft starts, then `--snapshot-draft <season>` after it ends. Commit and push both. |
 | Week 1 (early Sep) and Week 12 (Thanksgiving) | Move the Sleeper waiver day to Tuesday for that week, then back to Wednesday after the run. See [step 2](#2-draft-day-annual-config-first). |
 | Sep–Dec | Automated weekly on Thursdays: rosters (the In-Season page), traded picks, trades. Run the workflow by hand whenever the tiers need refreshing sooner. |
 | Early Jan | Nothing to run: the first Thursday after the championship seals the end-of-season record on its own. Check `data/<season>/rosters-end-of-season.json` carries `final: true` and the hub pill reads End-of-Season. |

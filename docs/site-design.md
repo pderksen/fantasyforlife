@@ -1028,8 +1028,8 @@ happened, and repeating the line down the card would be the page reciting its ow
 Tiers", resolving at render time through `newestNavLink()` to whichever roster page was newest.
 It is now "Keeper Tiers" → `tiers.html`. The nav is where you go when you don't already know
 which season and stage you want; the home page's hero card is what points at the newest, and it
-still does, advancing on its own from 2026 Pre-Draft to 2026 Post-Draft the run after that page
-is generated.
+still does, advancing on its own: Pre-Draft to Post-Draft on draft day, Post-Draft to In-Season
+with the first weekly capture (Sep 2026), and In-Season to End-of-Season the run that seals it.
 
 ---
 
@@ -1418,12 +1418,15 @@ When it appears:
   a draft order, so the note is suppressed rather than half-true. Every page clears this
   today — `loadDraftOrder()` returns the post-draft snapshot's slot order, or
   `DRAFT_ORDERS[season]` before that season has drafted.
-- **End-of-season is excluded outright** (Aug 2026). Its columns really are that season's draft
-  order (same `loadDraftOrder()` call the post-draft page makes, so the two pages share a
-  header row), but by January that draft is months gone and a reader of a final roster is
-  thinking about the *next* one. The true sentence gets read as a claim about next season.
-  Don't "fix" this by relabeling it with the following season; that would be false unless the
-  columns were re-sorted, which was considered and declined.
+- **A final end-of-season page is excluded** (Aug 2026, narrowed Sep 2026). Its columns really
+  are that season's draft order (same `loadDraftOrder()` call the post-draft page makes, so the
+  two pages share a header row), but once the season is over that draft is months gone and a
+  reader of a final roster is thinking about the *next* one. The true sentence gets read as a
+  claim about next season. Don't "fix" this by relabeling it with the following season; that
+  would be false unless the columns were re-sorted, which was considered and declined. The
+  exclusion keys on `snapshot.final`, not the type: while the file is the in-season page the
+  draft is the current one, and the note reads as it does on the post-draft page beside it. The
+  run that seals the capture drops it.
 
 ---
 

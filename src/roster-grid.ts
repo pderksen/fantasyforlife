@@ -220,12 +220,15 @@ export function buildRosterGrid(
  * shouldn't claim one. The sentence lives here rather than in either renderer so the page
  * and its workbook can't word it differently or disagree about when it applies.
  *
- * End-of-season is excluded on purpose. Its columns *are* that season's draft order — it
- * reads the same post-draft snapshot the post-draft page does — but by January that draft is
- * months gone, and the order anyone reading a final roster has in mind is the next one's. A
- * true statement that invites the wrong reading is worse than no statement.
+ * A final end-of-season page is excluded on purpose. Its columns *are* that season's draft
+ * order — it reads the same post-draft snapshot the post-draft page does — but once the season
+ * is over that draft is months gone, and the order anyone reading a final roster has in mind is
+ * the next one's. A true statement that invites the wrong reading is worse than no statement.
+ * While the same file is still the in-season page (Sep 2026 onward) the draft is the current
+ * one and the note reads exactly as it does on the post-draft page beside it, so it stays until
+ * the capture that seals the file drops it.
  */
 export function columnOrderNote(snapshot: Snapshot, grid: RosterGrid): string | undefined {
-  if (!grid.columnsInDraftOrder || snapshot.snapshotType === "end-of-season") return undefined;
+  if (!grid.columnsInDraftOrder || snapshot.final) return undefined;
   return `Column order is the ${snapshot.season} draft order.`;
 }
